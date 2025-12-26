@@ -15,30 +15,34 @@ All validation functions follow security best practices:
 - Comprehensive logging for debugging
 """
 
+import json
+import logging
 import re
 from decimal import Decimal, InvalidOperation
-from typing import Any, Dict, List, Optional, Union, Tuple
-import logging
+from typing import Any, Dict, Union
+
+from eth_utils import is_address
 from web3 import Web3
-from eth_utils import is_address, is_checksum_address
-import json
 
 logger = logging.getLogger(__name__)
 
+
 class ValidationError(ValueError):
     """Custom exception for validation errors"""
+
     pass
+
 
 class InputValidator:
     """Comprehensive input validation utility"""
 
     # Pre-compiled regex patterns for performance
-    _WALLET_ADDRESS_PATTERN = re.compile(r'^0x[a-fA-F0-9]{40}$')
-    _PRIVATE_KEY_PATTERN = re.compile(r'^0x[a-fA-F0-9]{64}$')
-    _CONDITION_ID_PATTERN = re.compile(r'^0x[a-fA-F0-9]{64}$')
-    _HEX_STRING_PATTERN = re.compile(r'^0x[a-fA-F0-9]+$')
-    _POSITIVE_NUMBER_PATTERN = re.compile(r'^[0-9]+(\.[0-9]+)?$')
-    _URL_PATTERN = re.compile(r'^https?://[^\s/$.?#].[^\s]*$')
+    _WALLET_ADDRESS_PATTERN = re.compile(r"^0x[a-fA-F0-9]{40}$")
+    _PRIVATE_KEY_PATTERN = re.compile(r"^0x[a-fA-F0-9]{64}$")
+    _CONDITION_ID_PATTERN = re.compile(r"^0x[a-fA-F0-9]{64}$")
+    _HEX_STRING_PATTERN = re.compile(r"^0x[a-fA-F0-9]+$")
+    _POSITIVE_NUMBER_PATTERN = re.compile(r"^[0-9]+(\.[0-9]+)?$")
+    _URL_PATTERN = re.compile(r"^https?://[^\s/$.?#].[^\s]*$")
 
     @staticmethod
     def validate_wallet_address(address: str, allow_empty: bool = False) -> str:
@@ -55,7 +59,7 @@ class InputValidator:
         Raises:
             ValidationError: If address is invalid
         """
-        if not address:
+        if not address or address.startswith("#"):
             if allow_empty:
                 return ""
             raise ValidationError("Wallet address cannot be empty")
@@ -96,17 +100,23 @@ class InputValidator:
         key = key.strip()
 
         if not InputValidator._PRIVATE_KEY_PATTERN.match(key):
-            raise ValidationError("Invalid private key format. Must be 0x followed by 64 hex characters")
+            raise ValidationError(
+                "Invalid private key format. Must be 0x followed by 64 hex characters"
+            )
 
         if len(key) != 66:  # 0x + 64 characters
-            raise ValidationError(f"Invalid private key length: {len(key)} characters (expected 66)")
+            raise ValidationError(
+                f"Invalid private key length: {len(key)} characters (expected 66)"
+            )
 
         return key
 
     @staticmethod
-    def validate_trade_amount(amount: Union[int, float, str, Decimal],
-                            min_amount: float = 0.01,
-                            max_amount: float = 10000.0) -> float:
+    def validate_trade_amount(
+        amount: Union[int, float, str, Decimal],
+        min_amount: float = 0.01,
+        max_amount: float = 10000.0,
+    ) -> float:
         """
         Validate trade amount
 
@@ -141,15 +151,15 @@ class InputValidator:
                 raise ValidationError(f"Amount above maximum {max_amount}: {decimal_amount}")
 
             # Convert to float with precision
-            return float(decimal_amount.quantize(Decimal('0.000000')))
+            return float(decimal_amount.quantize(Decimal("0.000000")))
 
         except (InvalidOperation, TypeError, ValueError) as e:
             raise ValidationError(f"Invalid amount value: {amount} - {e}")
 
     @staticmethod
-    def validate_price(price: Union[int, float, str, Decimal],
-                     min_price: float = 0.01,
-                     max_price: float = 0.99) -> float:
+    def validate_price(
+        price: Union[int, float, str, Decimal], min_price: float = 0.01, max_price: float = 0.99
+    ) -> float:
         """
         Validate price between 0 and 1
 
@@ -181,7 +191,7 @@ class InputValidator:
             # Validate precision
             if decimal_price.as_tuple().exponent < -6:  # More than 6 decimal places
                 logger.warning(f"Price {decimal_price} has high precision, rounding to 6 decimals")
-                decimal_price = decimal_price.quantize(Decimal('0.000000'))
+                decimal_price = decimal_price.quantize(Decimal("0.000000"))
 
             return float(decimal_price)
 
@@ -228,7 +238,7 @@ class InputValidator:
         Raises:
             ValidationError: If transaction data is invalid
         """
-        required_fields = ['hash', 'from', 'to', 'blockNumber', 'timeStamp']
+        required_fields = ["hash", "from", "to", "blockNumber", "timeStamp"]
 
         # Check required fields
         for field in required_fields:
@@ -236,24 +246,24 @@ class InputValidator:
                 raise ValidationError(f"Missing required transaction field: {field}")
 
         # Validate address fields
-        tx_data['from'] = InputValidator.validate_wallet_address(tx_data['from'])
-        tx_data['to'] = InputValidator.validate_wallet_address(tx_data['to'])
+        tx_data["from"] = InputValidator.validate_wallet_address(tx_data["from"])
+        tx_data["to"] = InputValidator.validate_wallet_address(tx_data["to"])
 
         # Validate hash format
-        if not InputValidator._HEX_STRING_PATTERN.match(tx_data['hash']):
+        if not InputValidator._HEX_STRING_PATTERN.match(tx_data["hash"]):
             raise ValidationError(f"Invalid transaction hash format: {tx_data['hash']}")
 
         # Validate numeric fields
         try:
-            tx_data['blockNumber'] = int(tx_data['blockNumber'])
-            tx_data['timeStamp'] = int(tx_data['timeStamp'])
+            tx_data["blockNumber"] = int(tx_data["blockNumber"])
+            tx_data["timeStamp"] = int(tx_data["timeStamp"])
         except (ValueError, TypeError) as e:
             raise ValidationError(f"Invalid numeric field: {e}")
 
         # Validate gas fields if present
-        if 'gasUsed' in tx_data:
+        if "gasUsed" in tx_data:
             try:
-                gas_used = int(tx_data['gasUsed'])
+                gas_used = int(tx_data["gasUsed"])
                 if gas_used < 21000:  # Minimum gas for simple transfer
                     raise ValidationError(f"Gas used below minimum: {gas_used}")
                 if gas_used > 10000000:  # Reasonable maximum
@@ -302,13 +312,15 @@ class InputValidator:
             return {
                 k: InputValidator._deep_sanitize(v)
                 for k, v in obj.items()
-                if not k.lower().startswith(('script', 'eval', 'exec', 'import', 'os', 'sys'))
+                if not k.lower().startswith(("script", "eval", "exec", "import", "os", "sys"))
             }
         elif isinstance(obj, list):
             return [InputValidator._deep_sanitize(item) for item in obj]
         elif isinstance(obj, str):
             # Remove potentially dangerous patterns
-            if any(pattern in obj.lower() for pattern in ['<script', 'javascript:', 'data:text/html']):
+            if any(
+                pattern in obj.lower() for pattern in ["<script", "javascript:", "data:text/html"]
+            ):
                 return "[SANITIZED]"
             return obj
         else:
@@ -329,23 +341,23 @@ class InputValidator:
             ValidationError: If settings are invalid
         """
         # Validate critical settings
-        if 'PRIVATE_KEY' not in settings:
+        if "PRIVATE_KEY" not in settings:
             raise ValidationError("Missing PRIVATE_KEY in configuration")
 
-        InputValidator.validate_private_key(settings['PRIVATE_KEY'])
+        InputValidator.validate_private_key(settings["PRIVATE_KEY"])
 
         # Validate numeric settings
         numeric_settings = [
-            ('MAX_POSITION_SIZE', 0.01, 100000.0),
-            ('MAX_DAILY_LOSS', 0.01, 1000000.0),
-            ('MIN_TRADE_AMOUNT', 0.01, 1000.0),
-            ('MAX_SLIPPAGE', 0.001, 0.1),
-            ('MONITOR_INTERVAL', 5, 300),
-            ('MAX_GAS_PRICE', 1, 1000),
-            ('GAS_LIMIT', 100000, 2000000),
-            ('MAX_CONCURRENT_POSITIONS', 1, 100),
-            ('STOP_LOSS_PERCENTAGE', 0.001, 0.5),
-            ('TAKE_PROFIT_PERCENTAGE', 0.001, 1.0),
+            ("MAX_POSITION_SIZE", 0.01, 100000.0),
+            ("MAX_DAILY_LOSS", 0.01, 1000000.0),
+            ("MIN_TRADE_AMOUNT", 0.01, 1000.0),
+            ("MAX_SLIPPAGE", 0.001, 0.1),
+            ("MONITOR_INTERVAL", 5, 300),
+            ("MAX_GAS_PRICE", 1, 1000),
+            ("GAS_LIMIT", 100000, 2000000),
+            ("MAX_CONCURRENT_POSITIONS", 1, 100),
+            ("STOP_LOSS_PERCENTAGE", 0.001, 0.5),
+            ("TAKE_PROFIT_PERCENTAGE", 0.001, 1.0),
         ]
 
         for setting_name, min_val, max_val in numeric_settings:
@@ -360,7 +372,7 @@ class InputValidator:
                     raise ValidationError(f"Invalid {setting_name} value: {e}")
 
         # Validate URLs if present
-        url_settings = ['POLYGON_RPC_URL', 'CLOB_HOST']
+        url_settings = ["POLYGON_RPC_URL", "CLOB_HOST"]
         for url_setting in url_settings:
             if url_setting in settings and settings[url_setting]:
                 if not InputValidator._URL_PATTERN.match(settings[url_setting]):
@@ -384,7 +396,9 @@ class InputValidator:
             ValidationError: If response is invalid
         """
         if not isinstance(response_data, expected_type):
-            raise ValidationError(f"API response type mismatch. Expected {expected_type.__name__}, got {type(response_data).__name__}")
+            raise ValidationError(
+                f"API response type mismatch. Expected {expected_type.__name__}, got {type(response_data).__name__}"
+            )
 
         if expected_type == dict and not response_data:
             raise ValidationError("Empty API response")
@@ -416,15 +430,19 @@ class InputValidator:
             raise ValidationError(f"Invalid hex format: {hex_str}")
 
         if not (min_length <= len(hex_str) <= max_length):
-            raise ValidationError(f"Hex string length {len(hex_str)} out of range [{min_length}, {max_length}]")
+            raise ValidationError(
+                f"Hex string length {len(hex_str)} out of range [{min_length}, {max_length}]"
+            )
 
         return hex_str
 
     @staticmethod
-    def validate_token_amount(amount: Union[int, float, str, Decimal],
-                            decimals: int = 6,
-                            min_amount: float = 0.0,
-                            max_amount: float = 10**12) -> float:
+    def validate_token_amount(
+        amount: Union[int, float, str, Decimal],
+        decimals: int = 6,
+        min_amount: float = 0.0,
+        max_amount: float = 10**12,
+    ) -> float:
         """
         Validate token amount with decimal precision
 
@@ -442,12 +460,14 @@ class InputValidator:
         """
         try:
             decimal_amount = Decimal(str(amount))
-            quantized = decimal_amount.quantize(Decimal(f'1e-{decimals}'))
+            quantized = decimal_amount.quantize(Decimal(f"1e-{decimals}"))
 
             float_amount = float(quantized)
 
             if not (min_amount <= float_amount <= max_amount):
-                raise ValidationError(f"Token amount {float_amount} out of range [{min_amount}, {max_amount}]")
+                raise ValidationError(
+                    f"Token amount {float_amount} out of range [{min_amount}, {max_amount}]"
+                )
 
             return float_amount
 

@@ -15,21 +15,14 @@ Features:
 - Comprehensive backtesting framework
 """
 
-import asyncio
 import logging
-import math
-import time
 from datetime import datetime, timedelta
-from decimal import Decimal, ROUND_DOWN
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
-from scipy import stats
 
 from config.settings import settings
 from core.market_maker_detector import MarketMakerDetector
-from utils.helpers import format_currency
-from utils.security import secure_log
 
 logger = logging.getLogger(__name__)
 
@@ -118,7 +111,7 @@ class MarketMakerRiskManager:
                 "gas_price_multiplier_limit": 1.0,
                 "volatility_multiplier": 0.7,
                 "correlation_limit": 0.8,  # Stricter correlation limits
-            }
+            },
         }
 
         # Global risk limits
@@ -161,7 +154,7 @@ class MarketMakerRiskManager:
         self,
         wallet_address: str,
         trade_data: Dict[str, Any],
-        market_conditions: Optional[Dict[str, Any]] = None
+        market_conditions: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Evaluate comprehensive risk for a potential market maker trade.
@@ -185,7 +178,7 @@ class MarketMakerRiskManager:
             "quality_score": 0.0,
             "rejection_reason": None,
             "risk_metrics": {},
-            "recommendations": []
+            "recommendations": [],
         }
 
         try:
@@ -196,11 +189,15 @@ class MarketMakerRiskManager:
             # Get wallet classification
             wallet_info = await self.detector.get_wallet_classification_report(wallet_address)
             if "error" in wallet_info:
-                evaluation["rejection_reason"] = f"Wallet classification error: {wallet_info['error']}"
+                evaluation["rejection_reason"] = (
+                    f"Wallet classification error: {wallet_info['error']}"
+                )
                 return evaluation
 
             wallet_type = wallet_info.get("classification", "unknown")
-            config = self.wallet_type_configs.get(wallet_type, self.wallet_type_configs["directional_trader"])
+            config = self.wallet_type_configs.get(
+                wallet_type, self.wallet_type_configs["directional_trader"]
+            )
 
             # Check circuit breaker
             if self._is_circuit_breaker_active():
@@ -208,12 +205,17 @@ class MarketMakerRiskManager:
                 return evaluation
 
             # Calculate trade quality score
-            quality_score = await self._calculate_trade_quality_score(wallet_address, trade_data, wallet_info)
+            quality_score = await self._calculate_trade_quality_score(
+                wallet_address, trade_data, wallet_info
+            )
             evaluation["quality_score"] = quality_score
 
             # Apply quality threshold filter
             if quality_score < config["min_trade_quality_score"]:
-                evaluation["rejection_reason"] = ".2f"                return evaluation
+                evaluation["rejection_reason"] = (
+                    f"Trade quality score {quality_score:.2f} below threshold"
+                )
+                return evaluation
 
             # Check trade frequency limits
             if not self._check_trade_frequency_limits(wallet_address, config):
@@ -232,12 +234,13 @@ class MarketMakerRiskManager:
                 return evaluation
 
             if position_size > self.global_limits["max_single_position_usd"]:
-                evaluation["rejection_reason"] = ".2f"                return evaluation
+                evaluation["rejection_reason"] = (
+                    f"Position size {position_size:.2f} exceeds maximum"
+                )
+                return evaluation
 
             # Calculate stop loss and take profit levels
-            stop_loss, take_profit = self._calculate_risk_levels(
-                trade_data, position_size, config
-            )
+            stop_loss, take_profit = self._calculate_risk_levels(trade_data, position_size, config)
             evaluation["stop_loss_usd"] = stop_loss
             evaluation["take_profit_usd"] = take_profit
 
@@ -265,14 +268,9 @@ class MarketMakerRiskManager:
                 "gas_price_multiplier": self.market_conditions["gas_price_multiplier"],
             }
 
-            evaluation["recommendations"] = self._generate_risk_recommendations(
-                evaluation, config
-            )
+            evaluation["recommendations"] = self._generate_risk_recommendations(evaluation, config)
 
-            logger.info(
-                f"🎯 Risk evaluation for {wallet_address[:8]}...: "
-                ".2f"
-            )
+            logger.info(f"🎯 Risk evaluation for {wallet_address[:8]}...: " ".2f")
 
         except Exception as e:
             logger.error(f"Error evaluating trade risk for {wallet_address}: {e}")
@@ -281,10 +279,7 @@ class MarketMakerRiskManager:
         return evaluation
 
     async def _calculate_trade_quality_score(
-        self,
-        wallet_address: str,
-        trade_data: Dict[str, Any],
-        wallet_info: Dict[str, Any]
+        self, wallet_address: str, trade_data: Dict[str, Any], wallet_info: Dict[str, Any]
     ) -> float:
         """
         Calculate comprehensive trade quality score (0-1).
@@ -367,9 +362,10 @@ class MarketMakerRiskManager:
         # Count trades in last hour for this wallet
         one_hour_ago = datetime.now() - timedelta(hours=1)
         recent_trades = [
-            pos for pos in self.active_positions.values()
-            if pos.get("wallet_address") == wallet_address and
-            pos.get("entry_time", datetime.min) > one_hour_ago
+            pos
+            for pos in self.active_positions.values()
+            if pos.get("wallet_address") == wallet_address
+            and pos.get("entry_time", datetime.min) > one_hour_ago
         ]
 
         return len(recent_trades) < max_trades_per_hour
@@ -379,7 +375,7 @@ class MarketMakerRiskManager:
         wallet_address: str,
         trade_data: Dict[str, Any],
         config: Dict[str, Any],
-        quality_score: float
+        quality_score: float,
     ) -> float:
         """
         Calculate adaptive position size based on wallet type and conditions.
@@ -403,10 +399,14 @@ class MarketMakerRiskManager:
             quality_multiplier = 0.5 + (quality_score * 0.5)  # 0.5-1.0 range
 
             # Volatility adjustment (higher volatility = smaller size)
-            volatility_multiplier = config["volatility_multiplier"] * self.market_conditions["volatility_index"]
+            volatility_multiplier = (
+                config["volatility_multiplier"] * self.market_conditions["volatility_index"]
+            )
 
             # Calculate final position size
-            position_size = base_size * wallet_multiplier * quality_multiplier * volatility_multiplier
+            position_size = (
+                base_size * wallet_multiplier * quality_multiplier * volatility_multiplier
+            )
 
             # Apply global limits
             position_size = min(position_size, self.global_limits["max_single_position_usd"])
@@ -417,7 +417,9 @@ class MarketMakerRiskManager:
 
             # Check account balance
             available_balance = await self._get_available_balance()
-            position_size = min(position_size, available_balance * 0.1)  # Max 10% of available balance
+            position_size = min(
+                position_size, available_balance * 0.1
+            )  # Max 10% of available balance
 
             return position_size
 
@@ -426,14 +428,11 @@ class MarketMakerRiskManager:
             return 0.0
 
     def _calculate_risk_levels(
-        self,
-        trade_data: Dict[str, Any],
-        position_size: float,
-        config: Dict[str, Any]
+        self, trade_data: Dict[str, Any], position_size: float, config: Dict[str, Any]
     ) -> Tuple[float, float]:
         """Calculate stop loss and take profit levels."""
 
-        entry_price = trade_data.get("price", 1.0)  # Default $1 if not provided
+        trade_data.get("price", 1.0)  # Default $1 if not provided
 
         # Stop loss calculation
         stop_loss_pct = config["stop_loss_pct"] / 100.0
@@ -451,7 +450,7 @@ class MarketMakerRiskManager:
         stop_loss: float,
         take_profit: float,
         config: Dict[str, Any],
-        quality_score: float
+        quality_score: float,
     ) -> float:
         """Calculate overall risk score for the trade."""
 
@@ -477,7 +476,9 @@ class MarketMakerRiskManager:
 
         return min(risk_score, 1.0)
 
-    async def _check_correlation_limits(self, wallet_address: str, trade_data: Dict[str, Any]) -> bool:
+    async def _check_correlation_limits(
+        self, wallet_address: str, trade_data: Dict[str, Any]
+    ) -> bool:
         """Check if adding this position would exceed correlation limits."""
 
         # Get market/condition ID
@@ -485,8 +486,7 @@ class MarketMakerRiskManager:
 
         # Count positions in same market
         market_positions = [
-            pos for pos in self.active_positions.values()
-            if pos.get("market_id") == market_id
+            pos for pos in self.active_positions.values() if pos.get("market_id") == market_id
         ]
 
         if len(market_positions) >= 3:  # Limit to 3 positions per market
@@ -494,16 +494,15 @@ class MarketMakerRiskManager:
 
         # Check wallet correlation (simplified - would need more sophisticated correlation analysis)
         wallet_positions = [
-            pos for pos in self.active_positions.values()
+            pos
+            for pos in self.active_positions.values()
             if pos.get("wallet_address") == wallet_address
         ]
 
         return len(wallet_positions) >= 2  # Limit to 2 positions per wallet
 
     def _generate_risk_recommendations(
-        self,
-        evaluation: Dict[str, Any],
-        config: Dict[str, Any]
+        self, evaluation: Dict[str, Any], config: Dict[str, Any]
     ) -> List[str]:
         """Generate risk management recommendations."""
 
@@ -580,7 +579,9 @@ class MarketMakerRiskManager:
         self.circuit_breaker_active = True
         self.circuit_breaker_until = datetime.now() + timedelta(hours=duration_hours)
 
-        logger.warning(f"🚨 Circuit breaker activated: {reason} (until {self.circuit_breaker_until})")
+        logger.warning(
+            f"🚨 Circuit breaker activated: {reason} (until {self.circuit_breaker_until})"
+        )
 
     def update_position_status(self, position_id: str, status_update: Dict[str, Any]):
         """Update position status and check for risk limit breaches."""
@@ -628,7 +629,7 @@ class MarketMakerRiskManager:
 
         # Maintain history size
         if len(self.performance_history) > self.max_performance_history:
-            self.performance_history = self.performance_history[-self.max_performance_history:]
+            self.performance_history = self.performance_history[-self.max_performance_history :]
 
         # Update daily stats
         if trade_result.get("pnl_usd", 0) > 0:
@@ -648,10 +649,14 @@ class MarketMakerRiskManager:
             win_rate = profitable_trades / total_trades
 
             total_pnl = sum(t["pnl_usd"] for t in self.performance_history)
-            avg_win = sum(t["pnl_usd"] for t in self.performance_history if t["pnl_usd"] > 0) / max(profitable_trades, 1)
-            avg_loss = abs(sum(t["pnl_usd"] for t in self.performance_history if t["pnl_usd"] < 0)) / max(total_trades - profitable_trades, 1)
+            avg_win = sum(t["pnl_usd"] for t in self.performance_history if t["pnl_usd"] > 0) / max(
+                profitable_trades, 1
+            )
+            avg_loss = abs(
+                sum(t["pnl_usd"] for t in self.performance_history if t["pnl_usd"] < 0)
+            ) / max(total_trades - profitable_trades, 1)
 
-            profit_factor = avg_win / avg_loss if avg_loss > 0 else float('inf')
+            profit_factor = avg_win / avg_loss if avg_loss > 0 else float("inf")
         else:
             win_rate = 0.0
             total_pnl = 0.0
@@ -667,7 +672,11 @@ class MarketMakerRiskManager:
                 "win_rate": win_rate,
                 "total_pnl_usd": total_pnl,
                 "profit_factor": profit_factor,
-                "avg_trade_size": np.mean([t["position_size_usd"] for t in self.performance_history]) if self.performance_history else 0,
+                "avg_trade_size": (
+                    np.mean([t["position_size_usd"] for t in self.performance_history])
+                    if self.performance_history
+                    else 0
+                ),
             },
             "risk_limits": self.global_limits.copy(),
         }
@@ -698,7 +707,7 @@ class MarketMakerRiskManager:
         win_probability: float,
         win_loss_ratio: float,
         wallet_type: str,
-        base_position_size: float
+        base_position_size: float,
     ) -> float:
         """
         Calculate position size using Kelly Criterion adapted for wallet types.
@@ -713,12 +722,12 @@ class MarketMakerRiskManager:
 
         # Adjust win probability based on wallet type confidence
         type_multipliers = {
-            "market_maker": 0.7,      # Conservative adjustment for MMs
+            "market_maker": 0.7,  # Conservative adjustment for MMs
             "arbitrage_trader": 0.8,  # Slightly more aggressive
             "high_frequency_trader": 0.6,  # Very conservative
-            "directional_trader": 1.0,     # No adjustment
+            "directional_trader": 1.0,  # No adjustment
             "mixed_trader": 0.8,
-            "low_activity": 0.5       # Very conservative
+            "low_activity": 0.5,  # Very conservative
         }
 
         adjusted_win_prob = win_probability * type_multipliers.get(wallet_type, 0.7)
@@ -728,7 +737,9 @@ class MarketMakerRiskManager:
         win_loss_ratio = max(0.1, min(5.0, win_loss_ratio))
 
         # Calculate Kelly fraction
-        kelly_fraction = (adjusted_win_prob * win_loss_ratio - (1 - adjusted_win_prob)) / win_loss_ratio
+        kelly_fraction = (
+            adjusted_win_prob * win_loss_ratio - (1 - adjusted_win_prob)
+        ) / win_loss_ratio
 
         # Apply half-Kelly for risk management (more conservative)
         kelly_fraction *= 0.5
@@ -746,7 +757,7 @@ class MarketMakerRiskManager:
         base_size: float,
         market_volatility: float,
         position_volatility: float,
-        wallet_type: str
+        wallet_type: str,
     ) -> float:
         """
         Calculate position size adjusted for market and position volatility.
@@ -755,21 +766,23 @@ class MarketMakerRiskManager:
         """
 
         # Base volatility adjustment (higher volatility = smaller size)
-        volatility_ratio = market_volatility / position_volatility if position_volatility > 0 else 1.0
+        volatility_ratio = (
+            market_volatility / position_volatility if position_volatility > 0 else 1.0
+        )
         volatility_multiplier = 1.0 / max(1.0, volatility_ratio)
 
         # Wallet type specific volatility sensitivity
         type_sensitivity = {
-            "market_maker": 1.5,      # More sensitive to volatility
+            "market_maker": 1.5,  # More sensitive to volatility
             "arbitrage_trader": 1.2,
             "high_frequency_trader": 1.8,  # Very sensitive
-            "directional_trader": 0.8,     # Less sensitive
+            "directional_trader": 0.8,  # Less sensitive
             "mixed_trader": 1.0,
-            "low_activity": 2.0       # Extremely sensitive
+            "low_activity": 2.0,  # Extremely sensitive
         }
 
         sensitivity = type_sensitivity.get(wallet_type, 1.0)
-        adjusted_multiplier = volatility_multiplier ** sensitivity
+        adjusted_multiplier = volatility_multiplier**sensitivity
 
         # Apply bounds
         adjusted_multiplier = max(0.1, min(2.0, adjusted_multiplier))
@@ -779,11 +792,7 @@ class MarketMakerRiskManager:
         return position_size
 
     async def calculate_correlation_diversified_size(
-        self,
-        base_size: float,
-        wallet_address: str,
-        market_id: str,
-        max_correlation: float = 0.7
+        self, base_size: float, wallet_address: str, market_id: str, max_correlation: float = 0.7
     ) -> float:
         """
         Calculate position size considering portfolio correlation diversification.
@@ -793,13 +802,15 @@ class MarketMakerRiskManager:
 
         # Count existing positions in same market
         market_positions = [
-            pos for pos in self.active_positions.values()
+            pos
+            for pos in self.active_positions.values()
             if pos.get("market_id") == market_id and pos.get("wallet_address") != wallet_address
         ]
 
         # Count positions from same wallet
         wallet_positions = [
-            pos for pos in self.active_positions.values()
+            pos
+            for pos in self.active_positions.values()
             if pos.get("wallet_address") == wallet_address
         ]
 
@@ -823,10 +834,7 @@ class MarketMakerRiskManager:
     # ===== TRADE FILTERING LOGIC =====
 
     async def apply_comprehensive_trade_filters(
-        self,
-        wallet_address: str,
-        trade_data: Dict[str, Any],
-        wallet_info: Dict[str, Any]
+        self, wallet_address: str, trade_data: Dict[str, Any], wallet_info: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Apply comprehensive filtering logic to determine if trade should be executed.
@@ -838,11 +846,13 @@ class MarketMakerRiskManager:
             "passed_all_filters": True,
             "failed_filters": [],
             "filter_scores": {},
-            "recommendations": []
+            "recommendations": [],
         }
 
         wallet_type = wallet_info.get("classification", "unknown")
-        config = self.wallet_type_configs.get(wallet_type, self.wallet_type_configs["directional_trader"])
+        config = self.wallet_type_configs.get(
+            wallet_type, self.wallet_type_configs["directional_trader"]
+        )
 
         # 1. Minimum Profitability Filter
         profitability_score = await self._calculate_profitability_score(trade_data, wallet_info)
@@ -857,7 +867,9 @@ class MarketMakerRiskManager:
         if await self._detect_inventory_rebalancing(wallet_address, trade_data, wallet_info):
             filter_results["passed_all_filters"] = False
             filter_results["failed_filters"].append("inventory_rebalancing")
-            filter_results["recommendations"].append("Detected potential inventory rebalancing trade")
+            filter_results["recommendations"].append(
+                "Detected potential inventory rebalancing trade"
+            )
 
         # 3. Gas Price Efficiency Filter
         gas_efficiency = self._calculate_gas_efficiency(trade_data)
@@ -884,7 +896,9 @@ class MarketMakerRiskManager:
         if market_impact > 0.05:  # Maximum 5% market impact
             filter_results["passed_all_filters"] = False
             filter_results["failed_filters"].append("excessive_market_impact")
-            filter_results["recommendations"].append("Trade size would cause excessive market impact")
+            filter_results["recommendations"].append(
+                "Trade size would cause excessive market impact"
+            )
 
         # 6. Timing Quality Filter
         timing_score = self._assess_timing_quality(trade_data)
@@ -896,20 +910,22 @@ class MarketMakerRiskManager:
             filter_results["recommendations"].append("Trade timing suboptimal for execution")
 
         # 7. Wallet Behavior Consistency Filter
-        consistency_score = self._assess_wallet_behavior_consistency(wallet_address, trade_data, wallet_info)
+        consistency_score = self._assess_wallet_behavior_consistency(
+            wallet_address, trade_data, wallet_info
+        )
         filter_results["filter_scores"]["consistency"] = consistency_score
 
         if consistency_score < 0.6:  # Minimum consistency score
             filter_results["passed_all_filters"] = False
             filter_results["failed_filters"].append("inconsistent_behavior")
-            filter_results["recommendations"].append("Wallet behavior inconsistent with historical patterns")
+            filter_results["recommendations"].append(
+                "Wallet behavior inconsistent with historical patterns"
+            )
 
         return filter_results
 
     async def _calculate_profitability_score(
-        self,
-        trade_data: Dict[str, Any],
-        wallet_info: Dict[str, Any]
+        self, trade_data: Dict[str, Any], wallet_info: Dict[str, Any]
     ) -> float:
         """
         Calculate expected profitability score for the trade.
@@ -925,25 +941,31 @@ class MarketMakerRiskManager:
 
         # Base win rates by wallet type (would be calculated from historical data)
         base_win_rates = {
-            "market_maker": 0.55,      # Slightly above 50% due to edge
+            "market_maker": 0.55,  # Slightly above 50% due to edge
             "arbitrage_trader": 0.65,  # Higher win rate for arbitrage
             "high_frequency_trader": 0.52,  # Close to 50/50
-            "directional_trader": 0.45,     # Lower for directional
+            "directional_trader": 0.45,  # Lower for directional
             "mixed_trader": 0.50,
-            "low_activity": 0.60       # Higher for selective trading
+            "low_activity": 0.60,  # Higher for selective trading
         }
 
         win_rate = base_win_rates.get(wallet_type, 0.50)
 
         # Adjust for trade size (larger trades tend to be more profitable for MMs)
         trade_amount = abs(float(trade_data.get("amount", 0)))
-        avg_position = wallet_info.get("metrics_snapshot", {}).get("position_metrics", {}).get("avg_position_size", trade_amount)
+        avg_position = (
+            wallet_info.get("metrics_snapshot", {})
+            .get("position_metrics", {})
+            .get("avg_position_size", trade_amount)
+        )
 
         size_factor = min(trade_amount / avg_position, 2.0) if avg_position > 0 else 1.0
         size_adjustment = 0.05 * (size_factor - 1.0)  # ±5% adjustment
 
         # Adjust for market conditions
-        market_condition_factor = self.market_conditions["market_liquidity_score"] * 0.1 - 0.05  # ±5% adjustment
+        market_condition_factor = (
+            self.market_conditions["market_liquidity_score"] * 0.1 - 0.05
+        )  # ±5% adjustment
 
         # Gas cost adjustment
         gas_multiplier = self.market_conditions["gas_price_multiplier"]
@@ -955,10 +977,7 @@ class MarketMakerRiskManager:
         return profitability_score
 
     async def _detect_inventory_rebalancing(
-        self,
-        wallet_address: str,
-        trade_data: Dict[str, Any],
-        wallet_info: Dict[str, Any]
+        self, wallet_address: str, trade_data: Dict[str, Any], wallet_info: Dict[str, Any]
     ) -> bool:
         """
         Detect potential inventory rebalancing trades.
@@ -969,7 +988,11 @@ class MarketMakerRiskManager:
 
         # Check trade size relative to typical profitable trades
         trade_amount = abs(float(trade_data.get("amount", 0)))
-        avg_position = wallet_info.get("metrics_snapshot", {}).get("position_metrics", {}).get("avg_position_size", 0)
+        avg_position = (
+            wallet_info.get("metrics_snapshot", {})
+            .get("position_metrics", {})
+            .get("avg_position_size", 0)
+        )
 
         if avg_position > 0 and trade_amount / avg_position < 0.3:
             # Very small trade relative to typical size
@@ -1018,7 +1041,7 @@ class MarketMakerRiskManager:
         """
 
         # Get market data (would integrate with actual market data)
-        market_id = trade_data.get("market_id") or trade_data.get("condition_id", "unknown")
+        trade_data.get("market_id") or trade_data.get("condition_id", "unknown")
         market_cap = trade_data.get("market_cap", 100000)  # Default $100k
         daily_volume = trade_data.get("daily_volume", market_cap * 0.1)  # Default 10% of market cap
 
@@ -1029,8 +1052,8 @@ class MarketMakerRiskManager:
 
         # Composite liquidity score
         liquidity_score = (
-            min(volume_ratio * 10, 1.0) * 0.6 +  # Volume ratio (60% weight)
-            max(0, 1.0 - trade_impact * 20) * 0.4  # Trade impact (40% weight)
+            min(volume_ratio * 10, 1.0) * 0.6  # Volume ratio (60% weight)
+            + max(0, 1.0 - trade_impact * 20) * 0.4  # Trade impact (40% weight)
         )
 
         return min(liquidity_score, 1.0)
@@ -1077,10 +1100,7 @@ class MarketMakerRiskManager:
         return timing_score
 
     def _assess_wallet_behavior_consistency(
-        self,
-        wallet_address: str,
-        trade_data: Dict[str, Any],
-        wallet_info: Dict[str, Any]
+        self, wallet_address: str, trade_data: Dict[str, Any], wallet_info: Dict[str, Any]
     ) -> float:
         """
         Assess how consistent this trade is with wallet's historical behavior.
@@ -1093,7 +1113,9 @@ class MarketMakerRiskManager:
         position_std = metrics.get("position_size_std", avg_position_size)
 
         if avg_position_size > 0:
-            size_zscore = abs(trade_amount - avg_position_size) / max(position_std, avg_position_size * 0.1)
+            size_zscore = abs(trade_amount - avg_position_size) / max(
+                position_std, avg_position_size * 0.1
+            )
             size_consistency = 1.0 / (1.0 + size_zscore * 0.5)  # Convert z-score to 0-1 scale
         else:
             size_consistency = 0.5
@@ -1106,10 +1128,7 @@ class MarketMakerRiskManager:
     # ===== LOSS LIMITATION STRATEGIES =====
 
     def apply_wallet_specific_circuit_breakers(
-        self,
-        wallet_address: str,
-        wallet_type: str,
-        current_stats: Dict[str, Any]
+        self, wallet_address: str, wallet_type: str, current_stats: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Apply specialized circuit breakers based on wallet type and performance.
@@ -1117,14 +1136,16 @@ class MarketMakerRiskManager:
         Returns circuit breaker decision and reasoning.
         """
 
-        config = self.wallet_type_configs.get(wallet_type, self.wallet_type_configs["directional_trader"])
+        config = self.wallet_type_configs.get(
+            wallet_type, self.wallet_type_configs["directional_trader"]
+        )
 
         decision = {
             "activate_circuit_breaker": False,
             "circuit_breaker_type": None,
             "reason": "",
             "duration_hours": config.get("circuit_breaker_duration_hours", 2),
-            "severity": "low"
+            "severity": "low",
         }
 
         # 1. Daily Loss Limit Circuit Breaker
@@ -1132,25 +1153,29 @@ class MarketMakerRiskManager:
         max_daily_loss = config["max_daily_loss_pct"]
 
         if daily_loss_pct >= max_daily_loss:
-            decision.update({
-                "activate_circuit_breaker": True,
-                "circuit_breaker_type": "daily_loss_limit",
-                "reason": ".1f",
-                "severity": "high" if daily_loss_pct >= max_daily_loss * 1.5 else "medium"
-            })
+            decision.update(
+                {
+                    "activate_circuit_breaker": True,
+                    "circuit_breaker_type": "daily_loss_limit",
+                    "reason": ".1f",
+                    "severity": "high" if daily_loss_pct >= max_daily_loss * 1.5 else "medium",
+                }
+            )
             return decision
 
         # 2. Win Rate Circuit Breaker (for market makers)
         if wallet_type == "market_maker":
             recent_win_rate = current_stats.get("recent_win_rate", 0.5)
             if recent_win_rate < 0.45:  # Below 45% win rate
-                decision.update({
-                    "activate_circuit_breaker": True,
-                    "circuit_breaker_type": "win_rate_below_threshold",
-                    "reason": ".1f",
-                    "severity": "medium",
-                    "duration_hours": 4  # Longer cooldown for MMs
-                })
+                decision.update(
+                    {
+                        "activate_circuit_breaker": True,
+                        "circuit_breaker_type": "win_rate_below_threshold",
+                        "reason": ".1f",
+                        "severity": "medium",
+                        "duration_hours": 4,  # Longer cooldown for MMs
+                    }
+                )
                 return decision
 
         # 3. Trade Frequency Circuit Breaker
@@ -1158,49 +1183,57 @@ class MarketMakerRiskManager:
         max_trades_hour = config["max_trades_per_hour"]
 
         if trades_last_hour >= max_trades_hour * 1.5:  # 50% over limit
-            decision.update({
-                "activate_circuit_breaker": True,
-                "circuit_breaker_type": "excessive_trade_frequency",
-                "reason": f"Wallet exceeded trade frequency limit ({trades_last_hour}/{max_trades_hour} trades/hour)",
-                "severity": "medium",
-                "duration_hours": 1
-            })
+            decision.update(
+                {
+                    "activate_circuit_breaker": True,
+                    "circuit_breaker_type": "excessive_trade_frequency",
+                    "reason": f"Wallet exceeded trade frequency limit ({trades_last_hour}/{max_trades_hour} trades/hour)",
+                    "severity": "medium",
+                    "duration_hours": 1,
+                }
+            )
             return decision
 
         # 4. Drawdown Circuit Breaker
         current_drawdown = current_stats.get("current_drawdown_pct", 0)
         if current_drawdown >= 5.0:  # 5% drawdown
-            decision.update({
-                "activate_circuit_breaker": True,
-                "circuit_breaker_type": "portfolio_drawdown",
-                "reason": ".1f",
-                "severity": "high",
-                "duration_hours": 6
-            })
+            decision.update(
+                {
+                    "activate_circuit_breaker": True,
+                    "circuit_breaker_type": "portfolio_drawdown",
+                    "reason": ".1f",
+                    "severity": "high",
+                    "duration_hours": 6,
+                }
+            )
             return decision
 
         # 5. Correlation Risk Circuit Breaker
         correlation_risk = current_stats.get("correlation_risk_score", 0)
         if correlation_risk >= 0.8:  # High correlation risk
-            decision.update({
-                "activate_circuit_breaker": True,
-                "circuit_breaker_type": "high_correlation_risk",
-                "reason": ".2f",
-                "severity": "medium",
-                "duration_hours": 3
-            })
+            decision.update(
+                {
+                    "activate_circuit_breaker": True,
+                    "circuit_breaker_type": "high_correlation_risk",
+                    "reason": ".2f",
+                    "severity": "medium",
+                    "duration_hours": 3,
+                }
+            )
             return decision
 
         # 6. Time-based Circuit Breaker (end of day for market makers)
         current_hour = datetime.now().hour
         if wallet_type in ["market_maker", "high_frequency_trader"] and current_hour >= 22:
-            decision.update({
-                "activate_circuit_breaker": True,
-                "circuit_breaker_type": "end_of_trading_day",
-                "reason": f"End of trading day circuit breaker for {wallet_type} wallet",
-                "severity": "low",
-                "duration_hours": 10  # Until next morning
-            })
+            decision.update(
+                {
+                    "activate_circuit_breaker": True,
+                    "circuit_breaker_type": "end_of_trading_day",
+                    "reason": f"End of trading day circuit breaker for {wallet_type} wallet",
+                    "severity": "low",
+                    "duration_hours": 10,  # Until next morning
+                }
+            )
             return decision
 
         return decision
@@ -1211,7 +1244,7 @@ class MarketMakerRiskManager:
         position_size: float,
         entry_price: float,
         market_volatility: float,
-        wallet_confidence: float
+        wallet_confidence: float,
     ) -> float:
         """
         Calculate adaptive stop loss based on wallet type and market conditions.
@@ -1219,7 +1252,9 @@ class MarketMakerRiskManager:
         Returns stop loss amount in USD.
         """
 
-        config = self.wallet_type_configs.get(wallet_type, self.wallet_type_configs["directional_trader"])
+        config = self.wallet_type_configs.get(
+            wallet_type, self.wallet_type_configs["directional_trader"]
+        )
         base_stop_loss_pct = config["stop_loss_pct"]
 
         # Volatility adjustment (higher volatility = wider stops)
@@ -1232,7 +1267,9 @@ class MarketMakerRiskManager:
 
         # Calculate final stop loss percentage
         adjusted_stop_loss_pct = base_stop_loss_pct * volatility_multiplier * confidence_multiplier
-        adjusted_stop_loss_pct = max(0.1, min(5.0, adjusted_stop_loss_pct))  # Bound between 0.1% and 5%
+        adjusted_stop_loss_pct = max(
+            0.1, min(5.0, adjusted_stop_loss_pct)
+        )  # Bound between 0.1% and 5%
 
         # Convert to dollar amount
         stop_loss_amount = position_size * (adjusted_stop_loss_pct / 100.0)
@@ -1240,10 +1277,7 @@ class MarketMakerRiskManager:
         return stop_loss_amount
 
     def implement_correlation_based_position_limits(
-        self,
-        wallet_address: str,
-        market_id: str,
-        proposed_position_size: float
+        self, wallet_address: str, market_id: str, proposed_position_size: float
     ) -> float:
         """
         Implement correlation-based position size limits.
@@ -1253,7 +1287,8 @@ class MarketMakerRiskManager:
 
         # Get existing positions
         existing_positions = [
-            pos for pos in self.active_positions.values()
+            pos
+            for pos in self.active_positions.values()
             if pos.get("wallet_address") != wallet_address  # Exclude current wallet
         ]
 
@@ -1265,15 +1300,21 @@ class MarketMakerRiskManager:
         market_exposure = sum(pos.get("position_size_usd", 0) for pos in market_positions)
 
         # Calculate wallet concentration
-        wallet_positions = [pos for pos in existing_positions if pos.get("wallet_address") == wallet_address]
+        wallet_positions = [
+            pos for pos in existing_positions if pos.get("wallet_address") == wallet_address
+        ]
         wallet_exposure = sum(pos.get("position_size_usd", 0) for pos in wallet_positions)
 
         # Apply concentration limits
         max_market_concentration = 0.3  # Max 30% in single market
         max_wallet_concentration = 0.4  # Max 40% from single wallet
 
-        market_limit = self._get_available_limit(market_exposure, proposed_position_size, max_market_concentration)
-        wallet_limit = self._get_available_limit(wallet_exposure, proposed_position_size, max_wallet_concentration)
+        market_limit = self._get_available_limit(
+            market_exposure, proposed_position_size, max_market_concentration
+        )
+        wallet_limit = self._get_available_limit(
+            wallet_exposure, proposed_position_size, max_wallet_concentration
+        )
 
         # Take the more restrictive limit
         final_limit = min(market_limit, wallet_limit, proposed_position_size)
@@ -1287,10 +1328,7 @@ class MarketMakerRiskManager:
         return final_limit
 
     def _get_available_limit(
-        self,
-        current_exposure: float,
-        proposed_size: float,
-        max_concentration: float
+        self, current_exposure: float, proposed_size: float, max_concentration: float
     ) -> float:
         """Calculate available limit based on current exposure and max concentration."""
 
@@ -1309,10 +1347,7 @@ class MarketMakerRiskManager:
         return 10000.0  # Default placeholder
 
     def detect_unusual_patterns(
-        self,
-        wallet_address: str,
-        trade_data: Dict[str, Any],
-        wallet_info: Dict[str, Any]
+        self, wallet_address: str, trade_data: Dict[str, Any], wallet_info: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Detect unusual trading patterns that may indicate risk.
@@ -1320,11 +1355,7 @@ class MarketMakerRiskManager:
         Returns anomaly detection results.
         """
 
-        anomalies = {
-            "detected_anomalies": [],
-            "risk_level": "low",
-            "recommendations": []
-        }
+        anomalies = {"detected_anomalies": [], "risk_level": "low", "recommendations": []}
 
         wallet_type = wallet_info.get("classification", "unknown")
         metrics = wallet_info.get("metrics_snapshot", {})
@@ -1337,7 +1368,9 @@ class MarketMakerRiskManager:
             volume_ratio = trade_amount / avg_volume
             if volume_ratio > 3.0:  # 3x normal volume
                 anomalies["detected_anomalies"].append("volume_spike")
-                anomalies["recommendations"].append("Unusual volume spike detected - reduce position size")
+                anomalies["recommendations"].append(
+                    "Unusual volume spike detected - reduce position size"
+                )
 
         # 2. Timing Anomaly Detection
         timestamp = trade_data.get("timestamp")
@@ -1359,11 +1392,14 @@ class MarketMakerRiskManager:
             pass
 
         # 4. Frequency Anomaly Detection
-        recent_trades = len([
-            pos for pos in self.active_positions.values()
-            if pos.get("wallet_address") == wallet_address and
-            pos.get("entry_time", datetime.min) > datetime.now() - timedelta(hours=1)
-        ])
+        recent_trades = len(
+            [
+                pos
+                for pos in self.active_positions.values()
+                if pos.get("wallet_address") == wallet_address
+                and pos.get("entry_time", datetime.min) > datetime.now() - timedelta(hours=1)
+            ]
+        )
 
         max_hourly = self.wallet_type_configs.get(wallet_type, {}).get("max_trades_per_hour", 10)
         if recent_trades >= max_hourly:
@@ -1387,7 +1423,7 @@ class MarketMakerRiskManager:
         position_size: float,
         entry_price: float,
         market_volatility: float,
-        time_held_hours: float = 0
+        time_held_hours: float = 0,
     ) -> Dict[str, Any]:
         """
         Calculate adaptive take profit levels based on wallet type and conditions.
@@ -1395,7 +1431,9 @@ class MarketMakerRiskManager:
         Returns take profit configuration with multiple targets.
         """
 
-        config = self.wallet_type_configs.get(wallet_type, self.wallet_type_configs["directional_trader"])
+        config = self.wallet_type_configs.get(
+            wallet_type, self.wallet_type_configs["directional_trader"]
+        )
         base_take_profit_pct = config["take_profit_pct"]
 
         # Time-based adjustment (longer holding = higher targets for some types)
@@ -1407,9 +1445,13 @@ class MarketMakerRiskManager:
         # Volatility adjustment (higher volatility = higher targets for MMs)
         volatility_multiplier = 1.0
         if wallet_type == "market_maker":
-            volatility_multiplier = 1.0 + (market_volatility - 1.0) * 0.3  # +30% per unit volatility
+            volatility_multiplier = (
+                1.0 + (market_volatility - 1.0) * 0.3
+            )  # +30% per unit volatility
         else:
-            volatility_multiplier = max(0.8, 2.0 - market_volatility)  # Lower targets in high volatility
+            volatility_multiplier = max(
+                0.8, 2.0 - market_volatility
+            )  # Lower targets in high volatility
 
         # Calculate final take profit percentage
         adjusted_tp_pct = base_take_profit_pct * time_multiplier * volatility_multiplier
@@ -1427,13 +1469,11 @@ class MarketMakerRiskManager:
             "profit_targets": profit_targets,
             "time_based_exit": config["max_position_age_hours"],
             "trailing_stop_enabled": wallet_type in ["market_maker", "high_frequency_trader"],
-            "scaling_strategy": "scale_out" if len(profit_targets) > 1 else "all_out"
+            "scaling_strategy": "scale_out" if len(profit_targets) > 1 else "all_out",
         }
 
     def _calculate_scaled_profit_targets(
-        self,
-        position_size: float,
-        target_pct: float
+        self, position_size: float, target_pct: float
     ) -> List[Dict[str, Any]]:
         """
         Calculate scaled profit targets for partial position exits.
@@ -1443,38 +1483,27 @@ class MarketMakerRiskManager:
 
         # For smaller positions, use single target
         if position_size < 10:  # $10 threshold
-            return [{
-                "percentage": 100.0,
-                "amount": position_size,
-                "target_price_pct": target_pct
-            }]
+            return [{"percentage": 100.0, "amount": position_size, "target_price_pct": target_pct}]
 
         # Scale out strategy: 25% at 40% target, 25% at 60% target, 50% at 100% target
         targets = [
             {
                 "percentage": 25.0,
                 "amount": position_size * 0.25,
-                "target_price_pct": target_pct * 0.4
+                "target_price_pct": target_pct * 0.4,
             },
             {
                 "percentage": 25.0,
                 "amount": position_size * 0.25,
-                "target_price_pct": target_pct * 0.6
+                "target_price_pct": target_pct * 0.6,
             },
-            {
-                "percentage": 50.0,
-                "amount": position_size * 0.5,
-                "target_price_pct": target_pct
-            }
+            {"percentage": 50.0, "amount": position_size * 0.5, "target_price_pct": target_pct},
         ]
 
         return targets
 
     def implement_trailing_stop_logic(
-        self,
-        position_data: Dict[str, Any],
-        current_price: float,
-        highest_price: float
+        self, position_data: Dict[str, Any], current_price: float, highest_price: float
     ) -> Dict[str, Any]:
         """
         Implement trailing stop logic for profit protection.
@@ -1483,13 +1512,15 @@ class MarketMakerRiskManager:
         """
 
         wallet_type = position_data.get("wallet_type", "directional_trader")
-        config = self.wallet_type_configs.get(wallet_type, self.wallet_type_configs["directional_trader"])
+        config = self.wallet_type_configs.get(
+            wallet_type, self.wallet_type_configs["directional_trader"]
+        )
 
         decision = {
             "adjust_trailing_stop": False,
             "new_stop_price": position_data.get("trailing_stop_price", 0),
             "reason": "",
-            "exit_signal": False
+            "exit_signal": False,
         }
 
         entry_price = position_data.get("entry_price", current_price)
@@ -1512,20 +1543,24 @@ class MarketMakerRiskManager:
                 new_stop_price = current_price * (1 - trailing_pct / 100)
                 # Move stop up if price has moved higher
                 if new_stop_price > decision["new_stop_price"]:
-                    decision.update({
-                        "adjust_trailing_stop": True,
-                        "new_stop_price": new_stop_price,
-                        "reason": ".2f"
-                    })
+                    decision.update(
+                        {
+                            "adjust_trailing_stop": True,
+                            "new_stop_price": new_stop_price,
+                            "reason": ".2f",
+                        }
+                    )
             else:  # SELL position
                 new_stop_price = current_price * (1 + trailing_pct / 100)
                 # Move stop down if price has moved lower
                 if new_stop_price < decision["new_stop_price"] or decision["new_stop_price"] == 0:
-                    decision.update({
-                        "adjust_trailing_stop": True,
-                        "new_stop_price": new_stop_price,
-                        "reason": ".2f"
-                    })
+                    decision.update(
+                        {
+                            "adjust_trailing_stop": True,
+                            "new_stop_price": new_stop_price,
+                            "reason": ".2f",
+                        }
+                    )
 
         # Check for exit signal
         current_stop = decision["new_stop_price"]
@@ -1540,10 +1575,7 @@ class MarketMakerRiskManager:
         return decision
 
     def calculate_time_based_exit_probability(
-        self,
-        wallet_type: str,
-        time_held_hours: float,
-        position_profit_pct: float
+        self, wallet_type: str, time_held_hours: float, position_profit_pct: float
     ) -> float:
         """
         Calculate probability of time-based exit based on wallet behavior.
@@ -1551,7 +1583,9 @@ class MarketMakerRiskManager:
         Market makers tend to exit positions quickly, while directional traders hold longer.
         """
 
-        config = self.wallet_type_configs.get(wallet_type, self.wallet_type_configs["directional_trader"])
+        config = self.wallet_type_configs.get(
+            wallet_type, self.wallet_type_configs["directional_trader"]
+        )
         max_age_hours = config["max_position_age_hours"]
 
         # Base probability increases with time held

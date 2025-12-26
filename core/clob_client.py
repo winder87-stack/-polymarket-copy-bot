@@ -1,13 +1,14 @@
+"""Polymarket CLOB client with comprehensive error handling and rate limiting."""
+
 # Standard library imports
 import asyncio
 import heapq
 import logging
-import sys
 import time  # For timestamp generation and time-based operations
-from collections import defaultdict
+from decimal import Decimal
 
 # Third-party imports
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Optional
 
 import aiohttp
 from eth_account import Account
@@ -26,7 +27,12 @@ from web3.exceptions import BadFunctionCallOutput, ContractLogicError, Web3Valid
 
 # Local imports
 from config.settings import settings
-from utils.helpers import normalize_address, usdc_to_wei, wei_to_usdc
+from core.exceptions import (
+    APIError,
+    PolymarketAPIError,
+)
+from utils.helpers import wei_to_usdc
+from utils.rate_limited_client import RateLimitedPolymarketClient
 from utils.security import secure_log
 from utils.validation import InputValidator, ValidationError
 
@@ -34,21 +40,28 @@ logger = logging.getLogger(__name__)
 
 
 class EfficientTTLCache:
-    """Efficient TTL cache with O(1) operations using heap for expiration tracking"""
+    """Efficient TTL cache with O(1) operations using heap for expiration tracking."""
 
-    def __init__(self, ttl_seconds: int = 300, max_memory_mb: int = 50):
+    def __init__(self, ttl_seconds: int = 300, max_memory_mb: int = 50) -> None:
+        """
+        Initialize the efficient TTL cache.
+
+        Args:
+            ttl_seconds: Time-to-live in seconds for cache entries
+            max_memory_mb: Maximum memory usage in MB before eviction
+        """
         self.ttl_seconds = ttl_seconds
         self.max_memory_mb = max_memory_mb
-        self._cache = {}  # key -> (value, timestamp, heap_index)
-        self._expiration_heap = []  # [(timestamp, counter, key), ...]
-        self._counter = 0  # For handling duplicate timestamps
-        self._cleanup_task = None
-        self._lock = asyncio.Lock()
+        self._cache: dict[str, tuple[Any, float, int]] = {}  # key -> (value, timestamp, heap_index)
+        self._expiration_heap: list[tuple[float, int, str]] = []  # [(timestamp, counter, key), ...]
+        self._counter: int = 0  # For handling duplicate timestamps
+        self._cleanup_task: Optional[asyncio.Task[None]] = None
+        self._lock: asyncio.Lock = asyncio.Lock()
 
         # Statistics
-        self._hits = 0
-        self._misses = 0
-        self._evictions = 0
+        self._hits: int = 0
+        self._misses: int = 0
+        self._evictions: int = 0
 
     async def start_background_cleanup(self):
         """Start background cleanup task"""
@@ -70,7 +83,15 @@ class EfficientTTLCache:
             logger.info("🧹 Stopped background cache cleanup task")
 
     async def get(self, key: str) -> Optional[Any]:
-        """Get value from cache with O(1) access"""
+        """
+        Get value from cache with O(1) access.
+
+        Args:
+            key: Cache key to look up
+
+        Returns:
+            Cached value if found and not expired, None otherwise
+        """
         async with self._lock:
             if key in self._cache:
                 value, timestamp, _ = self._cache[key]
@@ -246,33 +267,15 @@ class PolymarketClient:
         >>> client = PolymarketClient()
         >>> balance = await client.get_balance()
         >>> print(f"Current balance: ${balance:.2f}")
-
-    Attributes:
-        settings (Settings): Application configuration settings
-        private_key (str): Wallet private key (masked in logs)
-        account (eth_account.account.Account): Ethereum account object
-        wallet_address (str): Checksummed wallet address
-        client (py_clob_client.client.ClobClient): Underlying CLOB client
-        web3 (web3.Web3): Web3 provider for blockchain interactions
-        usdc_contract_address (str): USDC contract address on Polygon
-        _market_cache (EfficientTTLCache): Cache for market data
-
-    Args:
-        settings (Optional[Settings]): Configuration settings. If None,
-            uses the global settings singleton.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initialize the Polymarket client.
 
         Sets up all required components including the CLOB client, Web3
         provider, and caching systems. Validates configuration and
         establishes necessary connections.
-
-        Args:
-            settings (Optional[Settings]): Configuration settings. If None,
-                uses the global settings singleton from config.settings.
 
         Raises:
             ValueError: If private key is invalid or missing
@@ -319,6 +322,11 @@ class PolymarketClient:
             ttl_seconds=300, max_memory_mb=50  # 5 minutes  # 50MB limit
         )
 
+        # Initialize rate-limited Polymarket client
+        self.rate_limited_client = RateLimitedPolymarketClient(
+            host=self.settings.network.clob_host, private_key=self.private_key
+        )
+
     def _initialize_client(self) -> ClobClient:
         """Initialize the CLOB client with proper authentication"""
         try:
@@ -346,7 +354,7 @@ class PolymarketClient:
         before=before_log(logger, logging.INFO),
         after=after_log(logger, logging.ERROR),
     )
-    async def get_balance(self) -> Optional[float]:
+    async def get_balance(self) -> Optional[Decimal]:
         """
         Get current USDC balance for the trading wallet.
 
@@ -364,7 +372,7 @@ class PolymarketClient:
             ...     print("Could not retrieve balance")
 
         Returns:
-            Optional[float]: Current USDC balance as a float, or None if
+            Optional[Decimal]: Current USDC balance as a Decimal, or None if
             the API call fails. The balance is returned in USDC units (not
             wei), with 6 decimal places of precision.
 
@@ -383,52 +391,16 @@ class PolymarketClient:
             - Balance is validated before return
         """
         try:
-            balance = self.client.get_balance()
-            logger.info(f"💰 Current USDC balance: ${balance:,.2f}")
-            return float(balance)
-        except (ConnectionError, TimeoutError, aiohttp.ClientError) as e:
-            logger.error(f"❌ Network error getting balance: {str(e)[:100]}")
-            return None
-        except (ValueError, TypeError, KeyError) as e:
-            logger.error(f"❌ Data validation error in get_balance: {str(e)[:100]}")
-            return None
+            balance = await self.rate_limited_client.make_request("get_balance")
+            balance_decimal = Decimal(str(balance))
+            logger.info(
+                f"💰 Current USDC balance: ${balance_decimal:,.2f}",
+                extra={"wallet": self.wallet_address, "balance": str(balance_decimal)},
+            )
+            return balance_decimal
         except Exception as e:
-            logger.critical(f"❌ Unexpected error in get_balance: {str(e)}", exc_info=True)
-            return None
-
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=4, max=10),
-        retry=retry_if_exception_type((ConnectionError, TimeoutError)),
-        before=before_log(logger, logging.INFO),
-        after=after_log(logger, logging.ERROR),
-    )
-    async def get_market(self, condition_id: str) -> Optional[Dict[str, Any]]:
-        """Get market details by condition ID with caching"""
-        try:
-            # Check cache first
-            cached_data = await self._market_cache.get(condition_id)
-            if cached_data is not None:
-                logger.debug(f"📊 Using cached market data for {condition_id}")
-                return cached_data
-
-            # Get fresh data
-            market = self.client.get_market(condition_id)
-
-            # Update cache
-            await self._market_cache.put(condition_id, market)
-            logger.debug(f"📊 Retrieved fresh market data for {condition_id}")
-
-            return market
-        except (ConnectionError, TimeoutError, aiohttp.ClientError) as e:
-            logger.error(f"❌ Network error getting market {condition_id}: {str(e)[:100]}")
-            return None
-        except (ValueError, TypeError, KeyError) as e:
-            logger.error(f"❌ Data validation error getting market {condition_id}: {str(e)[:100]}")
-            return None
-        except Exception as e:
-            logger.critical(
-                f"❌ Unexpected error getting market {condition_id}: {str(e)}", exc_info=True
+            logger.exception(
+                f"❌ Error getting balance: {e}", extra={"wallet": self.wallet_address}
             )
             return None
 
@@ -439,20 +411,44 @@ class PolymarketClient:
         before=before_log(logger, logging.INFO),
         after=after_log(logger, logging.ERROR),
     )
-    async def get_markets(self) -> List[Dict[str, Any]]:
+    async def get_market(self, condition_id: str) -> Optional[dict[str, Any]]:
+        """Get market details by condition ID with caching"""
+        try:
+            # Check cache first
+            cached_data = await self._market_cache.get(condition_id)
+            if cached_data is not None:
+                logger.debug(f"📊 Using cached market data for {condition_id}")
+                return cached_data
+
+            # Get fresh data
+            market = await self.rate_limited_client.make_request(
+                "get_market", condition_id=condition_id
+            )
+
+            # Update cache
+            await self._market_cache.put(condition_id, market)
+            logger.debug(f"📊 Retrieved fresh market data for {condition_id}")
+
+            return market
+        except Exception as e:
+            logger.exception(f"❌ Error getting market {condition_id}: {e}")
+            return None
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=4, max=10),
+        retry=retry_if_exception_type((ConnectionError, TimeoutError)),
+        before=before_log(logger, logging.INFO),
+        after=after_log(logger, logging.ERROR),
+    )
+    async def get_markets(self) -> list[dict[str, Any]]:
         """Get all active markets"""
         try:
-            markets = self.client.get_markets()
+            markets = await self.rate_limited_client.make_request("get_markets")
             logger.info(f"📈 Retrieved {len(markets)} active markets")
             return markets
-        except (ConnectionError, TimeoutError, aiohttp.ClientError) as e:
-            logger.error(f"❌ Network error getting markets: {str(e)[:100]}")
-            return []
-        except (ValueError, TypeError, KeyError) as e:
-            logger.error(f"❌ Data validation error in get_markets: {str(e)[:100]}")
-            return []
         except Exception as e:
-            logger.critical(f"❌ Unexpected error in get_markets: {str(e)}", exc_info=True)
+            logger.exception(f"❌ Error getting markets: {e}")
             return []
 
     async def get_token_balance(self, token_address: str) -> float:
@@ -483,13 +479,13 @@ class PolymarketClient:
 
             return wei_to_usdc(balance)
         except (ConnectionError, TimeoutError) as e:
-            logger.error(f"❌ Network error getting token balance: {str(e)[:100]}")
-            return 0.0
+            logger.error(f"❌ Network error getting token balance: {e}")
+            raise APIError(f"Blockchain network error: {e}")
         except (Web3ValidationError, BadFunctionCallOutput, ValueError) as e:
-            logger.error(f"❌ Contract error getting token balance: {str(e)[:100]}")
+            logger.error(f"❌ Contract error getting token balance: {e}")
             return 0.0
         except Exception as e:
-            logger.critical(f"❌ Unexpected error in get_token_balance: {str(e)}", exc_info=True)
+            logger.exception(f"❌ Unexpected error in get_token_balance: {e}")
             return 0.0
 
     @retry(
@@ -500,8 +496,8 @@ class PolymarketClient:
         after=after_log(logger, logging.ERROR),
     )
     async def place_order(
-        self, condition_id: str, side: str, amount: float, price: float, token_id: str
-    ) -> Optional[Dict[str, Any]]:
+        self, condition_id: str, side: str, amount: Decimal, price: Decimal, token_id: str
+    ) -> Optional[dict[str, Any]]:
         """Place a trade order with comprehensive input validation"""
         try:
             # Validate all inputs using comprehensive validation
@@ -511,12 +507,14 @@ class PolymarketClient:
                 raise ValidationError(f"Invalid side: {side}")
 
             validated_amount = InputValidator.validate_trade_amount(
-                amount,
+                float(amount),
                 min_amount=self.settings.risk.min_trade_amount,
                 max_amount=self.settings.risk.max_position_size,
             )
 
-            validated_price = InputValidator.validate_price(price, min_price=0.01, max_price=0.99)
+            validated_price = InputValidator.validate_price(
+                float(price), min_price=0.01, max_price=0.99
+            )
 
             # Validate token_id format if it looks like an address
             if token_id.startswith("0x"):
@@ -558,33 +556,40 @@ class PolymarketClient:
             )
 
             # Post order
-            result = self.client.post_order(order)
+            result = await self.rate_limited_client.make_request("post_order", order=order)
 
             if result and "orderID" in result:
-                logger.info(f"✅ Order placed successfully: {result['orderID']}")
                 logger.info(
-                    f"   {validated_side} {validated_amount:.4f} shares at ${adjusted_price:.4f} per share"
+                    f"✅ Order placed successfully: {result['orderID']}",
+                    extra={
+                        "order_id": result["orderID"],
+                        "wallet": self.wallet_address,
+                        "side": validated_side,
+                        "amount": str(validated_amount),
+                        "price": str(adjusted_price),
+                        "market_id": condition_id,
+                    },
                 )
                 return result
             else:
-                logger.error(f"❌ Order failed: {result}")
+                logger.error(
+                    f"❌ Order failed: {result}",
+                    extra={
+                        "wallet": self.wallet_address,
+                        "side": validated_side,
+                        "amount": str(validated_amount),
+                        "price": str(adjusted_price),
+                        "market_id": condition_id,
+                    },
+                )
                 return None
 
         except ValidationError as e:
             logger.error(f"❌ Input validation failed: {e}")
             # Don't send alerts for validation failures as they indicate client-side issues
             return None
-        except ContractLogicError as e:
-            logger.error(f"❌ Smart contract error placing order: {str(e)[:100]}")
-            return None
-        except (ConnectionError, TimeoutError, aiohttp.ClientError) as e:
-            logger.error(f"❌ Network error placing order: {str(e)[:100]}")
-            return None
-        except (ValueError, TypeError, KeyError) as e:
-            logger.error(f"❌ Data validation error in place_order: {str(e)[:100]}")
-            return None
         except Exception as e:
-            logger.critical(f"❌ Unexpected error in place_order: {str(e)}", exc_info=True)
+            logger.exception(f"❌ Error placing order: {e}")
             return None
 
     def _apply_slippage_protection(self, price: float, side: str) -> float:
@@ -616,19 +621,13 @@ class PolymarketClient:
             )
             return int(optimal_gas_price)
         except (ConnectionError, TimeoutError) as e:
-            logger.warning(
-                f"⚠️ Network error getting gas price: {str(e)[:100]}. Using default {self.settings.trading.max_gas_price} gwei"
-            )
+            logger.warning(f"⚠️ Network error getting gas price: {e}")
             return self.settings.trading.max_gas_price
         except (Web3ValidationError, ValueError, TypeError) as e:
-            logger.warning(
-                f"⚠️ Data error getting gas price: {str(e)[:100]}. Using default {self.settings.trading.max_gas_price} gwei"
-            )
+            logger.warning(f"⚠️ Data error getting gas price: {e}")
             return self.settings.trading.max_gas_price
         except Exception as e:
-            logger.warning(
-                f"⚠️ Unexpected error getting gas price: {str(e)}. Using default {self.settings.trading.max_gas_price} gwei"
-            )
+            logger.exception(f"⚠️ Unexpected error getting gas price: {e}")
             return self.settings.trading.max_gas_price
 
     @retry(
@@ -641,17 +640,11 @@ class PolymarketClient:
     async def get_active_orders(self) -> List[Dict[str, Any]]:
         """Get active orders"""
         try:
-            orders = self.client.get_orders()
+            orders = await self.rate_limited_client.make_request("get_orders")
             logger.info(f"📋 Retrieved {len(orders)} active orders")
             return orders
-        except (ConnectionError, TimeoutError, aiohttp.ClientError) as e:
-            logger.error(f"❌ Network error getting active orders: {str(e)[:100]}")
-            return []
-        except (ValueError, TypeError, KeyError) as e:
-            logger.error(f"❌ Data validation error in get_active_orders: {str(e)[:100]}")
-            return []
         except Exception as e:
-            logger.critical(f"❌ Unexpected error in get_active_orders: {str(e)}", exc_info=True)
+            logger.exception(f"❌ Error getting active orders: {e}")
             return []
 
     @retry(
@@ -664,23 +657,15 @@ class PolymarketClient:
     async def cancel_order(self, order_id: str) -> bool:
         """Cancel a specific order"""
         try:
-            result = self.client.cancel(order_id)
+            result = await self.rate_limited_client.make_request("cancel_order", order_id=order_id)
             if result:
                 logger.info(f"🚫 Order cancelled successfully: {order_id}")
                 return True
             else:
                 logger.error(f"❌ Failed to cancel order: {order_id}")
                 return False
-        except (ConnectionError, TimeoutError, aiohttp.ClientError) as e:
-            logger.error(f"❌ Network error cancelling order {order_id}: {str(e)[:100]}")
-            return False
-        except (ValueError, TypeError, KeyError) as e:
-            logger.error(f"❌ Data validation error cancelling order {order_id}: {str(e)[:100]}")
-            return False
         except Exception as e:
-            logger.critical(
-                f"❌ Unexpected error cancelling order {order_id}: {str(e)}", exc_info=True
-            )
+            logger.exception(f"❌ Error cancelling order {order_id}: {e}")
             return False
 
     @retry(
@@ -693,17 +678,11 @@ class PolymarketClient:
     async def get_trade_history(self, market_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get trade history"""
         try:
-            trades = self.client.get_trades(market_id=market_id)
+            trades = await self.rate_limited_client.make_request("get_trades", market_id=market_id)
             logger.info(f"📋 Retrieved {len(trades)} trades from history")
             return trades
-        except (ConnectionError, TimeoutError, aiohttp.ClientError) as e:
-            logger.error(f"❌ Network error getting trade history: {str(e)[:100]}")
-            return []
-        except (ValueError, TypeError, KeyError) as e:
-            logger.error(f"❌ Data validation error in get_trade_history: {str(e)[:100]}")
-            return []
         except Exception as e:
-            logger.critical(f"❌ Unexpected error in get_trade_history: {str(e)}", exc_info=True)
+            logger.exception(f"❌ Error getting trade history: {e}")
             return []
 
     @retry(
@@ -716,22 +695,13 @@ class PolymarketClient:
     async def get_order_book(self, condition_id: str) -> Dict[str, Any]:
         """Get order book for a market"""
         try:
-            order_book = self.client.get_order_book(condition_id)
+            order_book = await self.rate_limited_client.make_request(
+                "get_order_book", condition_id=condition_id
+            )
             logger.debug(f"📖 Retrieved order book for market {condition_id}")
             return order_book
-        except (ConnectionError, TimeoutError, aiohttp.ClientError) as e:
-            logger.error(f"❌ Network error getting order book for {condition_id}: {str(e)[:100]}")
-            return {}
-        except (ValueError, TypeError, KeyError) as e:
-            logger.error(
-                f"❌ Data validation error getting order book for {condition_id}: {str(e)[:100]}"
-            )
-            return {}
         except Exception as e:
-            logger.critical(
-                f"❌ Unexpected error getting order book for {condition_id}: {str(e)}",
-                exc_info=True,
-            )
+            logger.exception(f"❌ Error getting order book for {condition_id}: {e}")
             return {}
 
     async def get_current_price(self, condition_id: str) -> Optional[float]:
@@ -745,20 +715,13 @@ class PolymarketClient:
                     return (best_bid + best_ask) / 2
             return None
         except (ConnectionError, TimeoutError, aiohttp.ClientError) as e:
-            logger.error(
-                f"❌ Network error getting current price for {condition_id}: {str(e)[:100]}"
-            )
-            return None
+            logger.error(f"❌ Network error getting current price for {condition_id}: {e}")
+            raise PolymarketAPIError(f"Failed to get current price for {condition_id}: {e}")
         except (ValueError, TypeError, KeyError, IndexError) as e:
-            logger.error(
-                f"❌ Data processing error getting current price for {condition_id}: {str(e)[:100]}"
-            )
+            logger.error(f"❌ Data processing error getting current price for {condition_id}: {e}")
             return None
         except Exception as e:
-            logger.critical(
-                f"❌ Unexpected error getting current price for {condition_id}: {str(e)}",
-                exc_info=True,
-            )
+            logger.exception(f"❌ Unexpected error getting current price for {condition_id}: {e}")
             return None
 
     async def start_cache_cleanup(self) -> None:
@@ -806,12 +769,6 @@ class PolymarketClient:
 
             logger.info(f"✅ Health check passed. Balance: ${balance:.2f}, Gas: {gas_price} gwei")
             return True
-        except (ConnectionError, TimeoutError, aiohttp.ClientError) as e:
-            logger.error(f"❌ Network error during health check: {str(e)[:100]}")
-            return False
-        except (ValueError, TypeError, KeyError) as e:
-            logger.error(f"❌ Data validation error during health check: {str(e)[:100]}")
-            return False
         except Exception as e:
-            logger.critical(f"❌ Unexpected error during health check: {str(e)}", exc_info=True)
+            logger.exception(f"❌ Error during health check: {e}")
             return False

@@ -13,19 +13,19 @@ Performs comprehensive security scans including:
 Runs daily and generates security reports.
 """
 
-import os
-import json
-import subprocess
 import asyncio
-from pathlib import Path
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional, Tuple
+import json
 import logging
+import os
 import re
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List
 
 from monitoring.monitoring_config import monitoring_config
 
 logger = logging.getLogger(__name__)
+
 
 class SecurityScanner:
     """Automated security scanner for the trading bot"""
@@ -78,7 +78,7 @@ class SecurityScanner:
             "results": results,
             "summary": self._generate_summary(results),
             "alerts": self.alerts,
-            "recommendations": self._generate_recommendations(results)
+            "recommendations": self._generate_recommendations(results),
         }
 
         # Save report
@@ -95,17 +95,14 @@ class SecurityScanner:
             "high_count": 0,
             "medium_count": 0,
             "low_count": 0,
-            "status": "completed"
+            "status": "completed",
         }
 
         try:
             # Run safety check
             cmd = ["safety", "check", "--json"]
             process = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                cwd="."
+                *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, cwd="."
             )
             stdout, stderr = await process.communicate()
 
@@ -134,12 +131,14 @@ class SecurityScanner:
 
                     # Generate alerts for critical issues
                     if result["critical_count"] > self.config.critical_vulnerabilities_threshold:
-                        self.alerts.append({
-                            "level": "critical",
-                            "title": "Critical Dependency Vulnerabilities",
-                            "message": f"Found {result['critical_count']} critical dependency vulnerabilities",
-                            "details": vulnerabilities
-                        })
+                        self.alerts.append(
+                            {
+                                "level": "critical",
+                                "title": "Critical Dependency Vulnerabilities",
+                                "message": f"Found {result['critical_count']} critical dependency vulnerabilities",
+                                "details": vulnerabilities,
+                            }
+                        )
 
                 except json.JSONDecodeError:
                     logger.error("Failed to parse safety output")
@@ -154,11 +153,7 @@ class SecurityScanner:
 
     async def _scan_secrets(self) -> Dict[str, Any]:
         """Scan for exposed secrets and sensitive data"""
-        result = {
-            "secrets_found": [],
-            "files_scanned": 0,
-            "status": "completed"
-        }
+        result = {"secrets_found": [], "files_scanned": 0, "status": "completed"}
 
         try:
             # Patterns to search for
@@ -179,7 +174,7 @@ class SecurityScanner:
                 "*.pyc",
                 "*.log",
                 ".env*",
-                "monitoring/security/secrets_scan.log"
+                "monitoring/security/secrets_scan.log",
             ]
 
             secrets_found = []
@@ -201,12 +196,14 @@ class SecurityScanner:
                         if matches:
                             for match in matches:
                                 # Don't log actual secrets in alerts
-                                secrets_found.append({
-                                    "file": str(py_file),
-                                    "pattern": pattern,
-                                    "line_count": len(matches),
-                                    "masked_secret": "***SECRET_FOUND***"
-                                })
+                                secrets_found.append(
+                                    {
+                                        "file": str(py_file),
+                                        "pattern": pattern,
+                                        "line_count": len(matches),
+                                        "masked_secret": "***SECRET_FOUND***",
+                                    }
+                                )
 
                 except Exception as e:
                     logger.debug(f"Could not scan {py_file}: {e}")
@@ -218,12 +215,16 @@ class SecurityScanner:
                 logger.warning(f"⚠️ Found potential secrets in {len(secrets_found)} locations")
 
                 if len(secrets_found) > self.config.secrets_found_threshold:
-                    self.alerts.append({
-                        "level": "high",
-                        "title": "Potential Secrets Exposed",
-                        "message": f"Found {len(secrets_found)} potential secrets in codebase",
-                        "details": [{"file": s["file"], "pattern": s["pattern"]} for s in secrets_found]
-                    })
+                    self.alerts.append(
+                        {
+                            "level": "high",
+                            "title": "Potential Secrets Exposed",
+                            "message": f"Found {len(secrets_found)} potential secrets in codebase",
+                            "details": [
+                                {"file": s["file"], "pattern": s["pattern"]} for s in secrets_found
+                            ],
+                        }
+                    )
 
         except Exception as e:
             logger.error(f"Error during secrets scan: {e}")
@@ -234,11 +235,7 @@ class SecurityScanner:
 
     async def _scan_configuration(self) -> Dict[str, Any]:
         """Scan configuration files for security issues"""
-        result = {
-            "issues": [],
-            "files_checked": [],
-            "status": "completed"
-        }
+        result = {"issues": [], "files_checked": [], "status": "completed"}
 
         # Configuration files to check
         config_files = [
@@ -247,7 +244,7 @@ class SecurityScanner:
             "config/settings.py",
             "config/settings_staging.py",
             "config/wallets.json",
-            "config/wallets_staging.json"
+            "config/wallets_staging.json",
         ]
 
         issues = []
@@ -263,28 +260,32 @@ class SecurityScanner:
 
                     # Alert on overly permissive files
                     if config_file.startswith((".env", "config/")) and permissions != "600":
-                        issues.append({
-                            "file": config_file,
-                            "issue": "insecure_permissions",
-                            "severity": "high",
-                            "description": f"File has permissions {permissions}, should be 600",
-                            "recommendation": "Run: chmod 600 {config_file}"
-                        })
+                        issues.append(
+                            {
+                                "file": config_file,
+                                "issue": "insecure_permissions",
+                                "severity": "high",
+                                "description": f"File has permissions {permissions}, should be 600",
+                                "recommendation": "Run: chmod 600 {config_file}",
+                            }
+                        )
 
                     # Check for hardcoded secrets in config files
                     if config_file.endswith((".py", ".json")):
-                        with open(config_file, 'r') as f:
+                        with open(config_file, "r") as f:
                             content = f.read()
 
                         # Look for potential secrets
                         if re.search(r"0x[a-fA-F0-9]{64}", content):  # Private keys
-                            issues.append({
-                                "file": config_file,
-                                "issue": "hardcoded_private_key",
-                                "severity": "critical",
-                                "description": "Potential hardcoded private key found",
-                                "recommendation": "Move private keys to environment variables"
-                            })
+                            issues.append(
+                                {
+                                    "file": config_file,
+                                    "issue": "hardcoded_private_key",
+                                    "severity": "critical",
+                                    "description": "Potential hardcoded private key found",
+                                    "recommendation": "Move private keys to environment variables",
+                                }
+                            )
 
                 except Exception as e:
                     logger.debug(f"Could not check {config_file}: {e}")
@@ -294,22 +295,20 @@ class SecurityScanner:
         if issues:
             critical_issues = [i for i in issues if i["severity"] == "critical"]
             if critical_issues:
-                self.alerts.append({
-                    "level": "critical",
-                    "title": "Critical Configuration Security Issues",
-                    "message": f"Found {len(critical_issues)} critical configuration security issues",
-                    "details": critical_issues
-                })
+                self.alerts.append(
+                    {
+                        "level": "critical",
+                        "title": "Critical Configuration Security Issues",
+                        "message": f"Found {len(critical_issues)} critical configuration security issues",
+                        "details": critical_issues,
+                    }
+                )
 
         return result
 
     async def _scan_code(self) -> Dict[str, Any]:
         """Perform static code security analysis"""
-        result = {
-            "issues": [],
-            "files_analyzed": 0,
-            "status": "completed"
-        }
+        result = {"issues": [], "files_analyzed": 0, "status": "completed"}
 
         try:
             # Run Bandit security linter
@@ -320,10 +319,7 @@ class SecurityScanner:
                 cmd.extend(["--exclude", exclude_dir])
 
             process = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                cwd="."
+                *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, cwd="."
             )
             stdout, stderr = await process.communicate()
 
@@ -362,7 +358,7 @@ class SecurityScanner:
             "total_issues": 0,
             "critical_issues": 0,
             "high_issues": 0,
-            "scan_components": len(results)
+            "scan_components": len(results),
         }
 
         # Aggregate issues from all scans
@@ -421,13 +417,17 @@ class SecurityScanner:
         # Secrets recommendations
         secrets_result = results.get("secrets_scan", {})
         if secrets_result.get("secrets_found", []):
-            recommendations.append("🔐 Remove exposed secrets from codebase and rotate compromised credentials")
+            recommendations.append(
+                "🔐 Remove exposed secrets from codebase and rotate compromised credentials"
+            )
 
         # Configuration recommendations
         config_result = results.get("config_scan", {})
         config_issues = config_result.get("issues", [])
         if config_issues:
-            recommendations.append("🔒 Fix configuration security issues (permissions, hardcoded secrets)")
+            recommendations.append(
+                "🔒 Fix configuration security issues (permissions, hardcoded secrets)"
+            )
 
         # Code recommendations
         code_result = results.get("code_scan", {})
@@ -449,15 +449,16 @@ class SecurityScanner:
         # Ensure directory exists
         Path("monitoring/security").mkdir(parents=True, exist_ok=True)
 
-        with open(report_file, 'w') as f:
+        with open(report_file, "w") as f:
             json.dump(report, f, indent=2, default=str)
 
         logger.info(f"💾 Security scan report saved to {report_file}")
 
         # Also save latest report
         latest_file = "monitoring/security/latest_security_scan.json"
-        with open(latest_file, 'w') as f:
+        with open(latest_file, "w") as f:
             json.dump(report, f, indent=2, default=str)
+
 
 async def run_daily_security_scan() -> Dict[str, Any]:
     """Run the daily security scan"""
@@ -472,6 +473,7 @@ async def run_daily_security_scan() -> Dict[str, Any]:
     logger.info(f"   High: {summary.get('high_issues', 0)}")
 
     return report
+
 
 if __name__ == "__main__":
     # Run security scan

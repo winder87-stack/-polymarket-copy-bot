@@ -12,11 +12,12 @@ Tests cover:
 
 import asyncio
 import time
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
-from core.trade_executor import TradeExecutor
+import pytest
+
 from config.settings import Settings
+from core.trade_executor import TradeExecutor
 
 
 @pytest.fixture
@@ -95,13 +96,13 @@ class TestCircuitBreakerActivation:
 
     def test_activate_circuit_breaker_logs_critical(self, trade_executor, caplog):
         """Test circuit breaker activation logs critical message"""
-        with caplog.at_level('CRITICAL'):
+        with caplog.at_level("CRITICAL"):
             trade_executor.activate_circuit_breaker("Test activation")
 
         assert "CIRCUIT BREAKER ACTIVATED" in caplog.text
         assert "Test activation" in caplog.text
 
-    @patch('core.trade_executor.send_telegram_alert')
+    @patch("core.trade_executor.send_telegram_alert")
     def test_activate_circuit_breaker_sends_alert(self, mock_alert, trade_executor):
         """Test circuit breaker activation sends telegram alert"""
         trade_executor.activate_circuit_breaker("Test reason")
@@ -159,7 +160,7 @@ class TestCircuitBreakerDeactivation:
         """Test circuit breaker reset logs info message"""
         trade_executor.activate_circuit_breaker("Original reason")
 
-        with caplog.at_level('INFO'):
+        with caplog.at_level("INFO"):
             trade_executor.reset_circuit_breaker()
 
         assert "Circuit breaker reset" in caplog.text
@@ -308,6 +309,7 @@ class TestCircuitBreakerConcurrency:
     @pytest.mark.asyncio
     async def test_concurrent_activation_and_checks(self, trade_executor):
         """Test concurrent activation and trade checks"""
+
         async def activate_and_check(index):
             # Some tasks activate circuit breaker
             if index % 3 == 0:
@@ -324,3 +326,133 @@ class TestCircuitBreakerConcurrency:
         # Most results should be blocked (some might slip through before activation)
         blocked_count = sum(1 for r in results if r is not None and r["status"] == "skipped")
         assert blocked_count > 10  # At least most trades should be blocked
+
+
+class TestCircuitBreakerEdgeCases:
+    """Test circuit breaker edge cases and boundary conditions"""
+
+    def test_circuit_breaker_zero_loss_limit(self, trade_executor):
+        """Test circuit breaker with zero loss limit"""
+        trade_executor.settings.risk.max_daily_loss = 0.0
+        trade_executor.daily_loss = 0.01  # Any loss should trigger
+
+        trade_executor._check_circuit_breaker_conditions()
+        assert trade_executor.circuit_breaker_active
+
+    def test_circuit_breaker_extreme_failure_rate(self, trade_executor):
+        """Test circuit breaker with extreme failure rates"""
+        trade_executor.total_trades = 10
+        trade_executor.failed_trades = 10  # 100% failure rate
+
+        trade_executor._check_circuit_breaker_conditions()
+        assert trade_executor.circuit_breaker_active
+        assert "High failure rate" in trade_executor.circuit_breaker_reason
+
+    def test_circuit_breaker_boundary_failure_rate(self, trade_executor):
+        """Test circuit breaker at boundary failure rate (49%)"""
+        trade_executor.total_trades = 100
+        trade_executor.failed_trades = 49  # 49% failure rate (below threshold)
+
+        trade_executor._check_circuit_breaker_conditions()
+        assert not trade_executor.circuit_breaker_active
+
+    def test_circuit_breaker_just_over_failure_threshold(self, trade_executor):
+        """Test circuit breaker just over failure threshold (51%)"""
+        trade_executor.total_trades = 100
+        trade_executor.failed_trades = 51  # 51% failure rate
+
+        trade_executor._check_circuit_breaker_conditions()
+        assert trade_executor.circuit_breaker_active
+
+    def test_circuit_breaker_loss_boundary(self, trade_executor):
+        """Test circuit breaker at exact loss limit boundary"""
+        trade_executor.daily_loss = 100.0  # Exactly at limit
+
+        trade_executor._check_circuit_breaker_conditions()
+        assert trade_executor.circuit_breaker_active
+
+    def test_circuit_breaker_loss_just_under_limit(self, trade_executor):
+        """Test circuit breaker just under loss limit"""
+        trade_executor.daily_loss = 99.99  # Just under limit
+
+        trade_executor._check_circuit_breaker_conditions()
+        assert not trade_executor.circuit_breaker_active
+
+    def test_circuit_breaker_negative_loss_values(self, trade_executor):
+        """Test circuit breaker with negative loss values"""
+        trade_executor.daily_loss = -100.0  # Negative (profits)
+
+        trade_executor._check_circuit_breaker_conditions()
+        assert not trade_executor.circuit_breaker_active
+
+    def test_circuit_breaker_zero_trades(self, trade_executor):
+        """Test circuit breaker with zero total trades"""
+        trade_executor.total_trades = 0
+        trade_executor.failed_trades = 0
+
+        trade_executor._check_circuit_breaker_conditions()
+        # Should not activate due to division by zero issues
+        assert not trade_executor.circuit_breaker_active
+
+    def test_circuit_breaker_extreme_time_values(self, trade_executor):
+        """Test circuit breaker with extreme time values"""
+        # Test with activation time far in the past
+        trade_executor.activate_circuit_breaker("Test")
+        trade_executor.circuit_breaker_time = 0  # Epoch time
+
+        remaining = trade_executor._get_circuit_breaker_remaining_time()
+        assert remaining == 0.0  # Should be expired
+
+    def test_circuit_breaker_concurrent_activations(self, trade_executor):
+        """Test multiple concurrent circuit breaker activations"""
+        # Activate multiple times rapidly
+        for i in range(5):
+            trade_executor.activate_circuit_breaker(f"Activation {i}")
+
+        # Should only have one active circuit breaker
+        assert trade_executor.circuit_breaker_active
+
+        # Reset should work
+        trade_executor.reset_circuit_breaker()
+        assert not trade_executor.circuit_breaker_active
+
+    def test_circuit_breaker_state_after_reset_and_reactivation(self, trade_executor):
+        """Test circuit breaker state after reset and immediate reactivation"""
+        # Initial activation
+        trade_executor.activate_circuit_breaker("First")
+        assert trade_executor.circuit_breaker_active
+        first_time = trade_executor.circuit_breaker_time
+
+        # Reset
+        trade_executor.reset_circuit_breaker()
+        assert not trade_executor.circuit_breaker_active
+
+        # Immediate reactivation
+        trade_executor.activate_circuit_breaker("Second")
+        assert trade_executor.circuit_breaker_active
+        second_time = trade_executor.circuit_breaker_time
+
+        # Should have new timestamp
+        assert second_time > first_time
+
+    def test_circuit_breaker_reason_persistence(self, trade_executor):
+        """Test that circuit breaker reason persists correctly"""
+        original_reason = "Original activation reason"
+        trade_executor.activate_circuit_breaker(original_reason)
+
+        # Reason should persist
+        assert trade_executor.circuit_breaker_reason == original_reason
+
+        # Multiple activations should update reason
+        new_reason = "Updated activation reason"
+        trade_executor.activate_circuit_breaker(new_reason)
+        assert trade_executor.circuit_breaker_reason == new_reason
+
+    def test_circuit_breaker_with_none_settings(self, trade_executor):
+        """Test circuit breaker when settings are None"""
+        trade_executor.settings = None
+
+        # Should handle gracefully without crashing
+        trade_executor._check_circuit_breaker_conditions()
+        # Should not activate since settings are None
+        assert not trade_executor.circuit_breaker_active

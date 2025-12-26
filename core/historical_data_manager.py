@@ -13,19 +13,14 @@ Features:
 - Performance benchmarking data preparation
 """
 
-import asyncio
 import json
 import logging
-import time
-from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List
 
 import numpy as np
-import pandas as pd
 from scipy import stats
-from scipy.interpolate import interp1d
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 
@@ -47,20 +42,20 @@ class HistoricalDataManager:
                 "api_endpoint": "https://api.polygonscan.com/api",
                 "rate_limit": 5,  # requests per second
                 "timeout": 30,
-                "retries": 3
+                "retries": 3,
             },
             "market_data": {
                 "api_endpoint": "https://api.example.com/market-data",
                 "rate_limit": 10,
                 "timeout": 15,
-                "retries": 2
+                "retries": 2,
             },
             "gas_oracle": {
                 "api_endpoint": "https://api.etherscan.io/api",
                 "rate_limit": 5,
                 "timeout": 20,
-                "retries": 3
-            }
+                "retries": 3,
+            },
         }
 
         # Data quality parameters
@@ -70,7 +65,7 @@ class HistoricalDataManager:
             "outlier_threshold_std": 3.0,
             "completeness_threshold": 0.95,
             "consistency_check_window": 50,
-            "validation_sample_size": 1000
+            "validation_sample_size": 1000,
         }
 
         # Market regime classification parameters
@@ -79,7 +74,7 @@ class HistoricalDataManager:
             "trend_lookback_days": 20,
             "liquidity_percentile_threshold": 25,
             "regime_stability_window": 5,
-            "min_regime_duration_hours": 12
+            "min_regime_duration_hours": 12,
         }
 
         # Data storage
@@ -89,12 +84,16 @@ class HistoricalDataManager:
         # Synthetic data generation parameters
         self.synthetic_params = {
             "edge_case_scenarios": [
-                "flash_crash", "high_volatility", "low_liquidity",
-                "gas_spike", "market_manipulation", "extreme_drawdown"
+                "flash_crash",
+                "high_volatility",
+                "low_liquidity",
+                "gas_spike",
+                "market_manipulation",
+                "extreme_drawdown",
             ],
             "synthetic_data_ratio": 0.2,  # 20% synthetic data for augmentation
             "noise_level": 0.05,  # 5% noise for realism
-            "correlation_preservation": True
+            "correlation_preservation": True,
         }
 
         logger.info("📊 Historical data manager initialized")
@@ -104,7 +103,7 @@ class HistoricalDataManager:
         wallet_addresses: List[str],
         start_date: datetime,
         end_date: datetime,
-        data_types: List[str] = None
+        data_types: List[str] = None,
     ) -> Dict[str, Any]:
         """
         Collect comprehensive historical dataset for backtesting.
@@ -127,14 +126,14 @@ class HistoricalDataManager:
                 "wallet_count": len(wallet_addresses),
                 "date_range": f"{start_date.isoformat()} to {end_date.isoformat()}",
                 "data_types": data_types,
-                "collection_timestamp": datetime.now().isoformat()
+                "collection_timestamp": datetime.now().isoformat(),
             },
             "wallet_data": {},
             "market_data": {},
             "gas_data": {},
             "regime_data": {},
             "validation_reports": {},
-            "data_quality_summary": {}
+            "data_quality_summary": {},
         }
 
         try:
@@ -183,7 +182,9 @@ class HistoricalDataManager:
             # Generate data quality summary
             dataset["data_quality_summary"] = self._generate_data_quality_summary(dataset)
 
-            logger.info(f"✅ Comprehensive dataset collected: {len(wallet_addresses)} wallets, {len(data_types)} data types")
+            logger.info(
+                f"✅ Comprehensive dataset collected: {len(wallet_addresses)} wallets, {len(data_types)} data types"
+            )
 
         except Exception as e:
             logger.error(f"Error collecting comprehensive dataset: {e}")
@@ -192,10 +193,7 @@ class HistoricalDataManager:
         return dataset
 
     async def _collect_wallet_trade_history(
-        self,
-        wallet_addresses: List[str],
-        start_date: datetime,
-        end_date: datetime
+        self, wallet_addresses: List[str], start_date: datetime, end_date: datetime
     ) -> Dict[str, Any]:
         """Collect complete trade history for all wallets."""
 
@@ -219,7 +217,7 @@ class HistoricalDataManager:
                     "trade_count": len(enriched_trades),
                     "date_range": f"{start_date.isoformat()} to {end_date.isoformat()}",
                     "trades": enriched_trades,
-                    "summary_stats": self._calculate_wallet_summary_stats(enriched_trades)
+                    "summary_stats": self._calculate_wallet_summary_stats(enriched_trades),
                 }
 
                 logger.debug(f"Collected {len(enriched_trades)} trades for {wallet_address[:8]}...")
@@ -230,16 +228,13 @@ class HistoricalDataManager:
                     "address": wallet_address,
                     "error": str(e),
                     "trade_count": 0,
-                    "trades": []
+                    "trades": [],
                 }
 
         return wallet_data
 
     async def _fetch_polygonscan_transactions(
-        self,
-        wallet_address: str,
-        start_date: datetime,
-        end_date: datetime
+        self, wallet_address: str, start_date: datetime, end_date: datetime
     ) -> List[Dict[str, Any]]:
         """Fetch transaction data from Polygonscan API."""
 
@@ -253,7 +248,9 @@ class HistoricalDataManager:
 
         return transactions
 
-    async def _filter_polymarket_trades(self, transactions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    async def _filter_polymarket_trades(
+        self, transactions: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """Filter transactions to include only Polymarket-related trades."""
 
         polymarket_trades = []
@@ -266,8 +263,10 @@ class HistoricalDataManager:
 
         for tx in transactions:
             # Check if transaction interacts with Polymarket contracts
-            if any(contract in str(tx.get("to", "")) or contract in str(tx.get("input", ""))
-                   for contract in polymarket_contracts):
+            if any(
+                contract in str(tx.get("to", "")) or contract in str(tx.get("input", ""))
+                for contract in polymarket_contracts
+            ):
                 polymarket_trades.append(tx)
 
         return polymarket_trades
@@ -309,14 +308,14 @@ class HistoricalDataManager:
             "market_id": "0x123...",  # Market identifier
             "condition_id": "0x456...",  # Condition identifier
             "outcome_index": 0,  # Outcome index
-            "timestamp": trade.get("timestamp", datetime.now().isoformat())
+            "timestamp": trade.get("timestamp", datetime.now().isoformat()),
         }
 
     async def _calculate_trade_pnl(self, trade: Dict[str, Any]) -> Dict[str, Any]:
         """Calculate profit and loss for a trade."""
 
         # Simplified PNL calculation
-        trade_details = await self._parse_trade_details(trade)
+        await self._parse_trade_details(trade)
 
         # For Polymarket, PNL depends on market outcome and position
         # This is a simplified calculation
@@ -327,7 +326,7 @@ class HistoricalDataManager:
             "gas_cost": trade.get("gas_used", 0) * trade.get("gas_price", 0),
             "fee_cost": 0.0,
             "realized_pnl": 0.0,
-            "unrealized_pnl": 0.0
+            "unrealized_pnl": 0.0,
         }
 
         return pnl_calculation
@@ -340,7 +339,7 @@ class HistoricalDataManager:
             "market_liquidity": 0.6,
             "market_trend": 0.0,
             "order_book_depth": 1000,
-            "spread_bps": 50
+            "spread_bps": 50,
         }
 
     async def _calculate_execution_quality(self, trade: Dict[str, Any]) -> Dict[str, Any]:
@@ -351,7 +350,7 @@ class HistoricalDataManager:
             "market_impact_bps": 10,
             "execution_time_ms": 150,
             "price_improvement_bps": 5,
-            "fill_rate": 1.0
+            "fill_rate": 1.0,
         }
 
     def _calculate_wallet_summary_stats(self, trades: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -364,7 +363,9 @@ class HistoricalDataManager:
         pnl_values = [t.get("pnl_calculation", {}).get("net_pnl", 0) for t in trades]
         trade_sizes = [t.get("parsed_trade", {}).get("amount", 0) for t in trades]
 
-        timestamps = [datetime.fromisoformat(t.get("timestamp", datetime.now().isoformat())) for t in trades]
+        timestamps = [
+            datetime.fromisoformat(t.get("timestamp", datetime.now().isoformat())) for t in trades
+        ]
 
         summary = {
             "total_trades": len(trades),
@@ -374,7 +375,9 @@ class HistoricalDataManager:
             "average_trade_size": np.mean(trade_sizes) if trade_sizes else 0,
             "date_range": f"{min(timestamps).isoformat()} to {max(timestamps).isoformat()}",
             "trading_days": len(set(t.date() for t in timestamps)),
-            "average_daily_trades": len(trades) / len(set(t.date() for t in timestamps)) if trades else 0
+            "average_daily_trades": (
+                len(trades) / len(set(t.date() for t in timestamps)) if trades else 0
+            ),
         }
 
         # Calculate win rate
@@ -384,11 +387,15 @@ class HistoricalDataManager:
         # Calculate profit factor
         gross_profits = sum(pnl for pnl in pnl_values if pnl > 0)
         gross_losses = abs(sum(pnl for pnl in pnl_values if pnl < 0))
-        summary["profit_factor"] = gross_profits / gross_losses if gross_losses > 0 else float('inf')
+        summary["profit_factor"] = (
+            gross_profits / gross_losses if gross_losses > 0 else float("inf")
+        )
 
         return summary
 
-    async def _collect_market_data(self, start_date: datetime, end_date: datetime) -> Dict[str, Any]:
+    async def _collect_market_data(
+        self, start_date: datetime, end_date: datetime
+    ) -> Dict[str, Any]:
         """Collect comprehensive market data for backtesting period."""
 
         market_data = {
@@ -396,7 +403,7 @@ class HistoricalDataManager:
             "order_book_data": {},
             "liquidity_data": {},
             "volatility_data": {},
-            "correlation_data": {}
+            "correlation_data": {},
         }
 
         # Collect price data for major markets
@@ -413,7 +420,7 @@ class HistoricalDataManager:
                 market_data["volatility_data"][market_id] = {
                     "daily_volatility": np.std(returns) if returns else 0,
                     "annualized_volatility": volatility,
-                    "max_drawdown": self._calculate_max_drawdown(price_series)
+                    "max_drawdown": self._calculate_max_drawdown(price_series),
                 }
 
         # Collect order book snapshots
@@ -422,15 +429,14 @@ class HistoricalDataManager:
         )
 
         # Calculate market correlations
-        market_data["correlation_data"] = self._calculate_market_correlations(market_data["price_data"])
+        market_data["correlation_data"] = self._calculate_market_correlations(
+            market_data["price_data"]
+        )
 
         return market_data
 
     async def _fetch_market_price_series(
-        self,
-        market_id: str,
-        start_date: datetime,
-        end_date: datetime
+        self, market_id: str, start_date: datetime, end_date: datetime
     ) -> List[Dict[str, Any]]:
         """Fetch price time series for a market."""
 
@@ -441,12 +447,14 @@ class HistoricalDataManager:
         current_date = start_date
 
         while current_date <= end_date:
-            price_series.append({
-                "timestamp": current_date.isoformat(),
-                "price": 0.5 + 0.1 * np.random.normal(),  # Random walk around 0.5
-                "volume": 1000 + 500 * np.random.normal(),
-                "market_id": market_id
-            })
+            price_series.append(
+                {
+                    "timestamp": current_date.isoformat(),
+                    "price": 0.5 + 0.1 * np.random.normal(),  # Random walk around 0.5
+                    "volume": 1000 + 500 * np.random.normal(),
+                    "market_id": market_id,
+                }
+            )
             current_date += timedelta(hours=1)
 
         return price_series
@@ -461,7 +469,7 @@ class HistoricalDataManager:
         returns = []
 
         for i in range(1, len(prices)):
-            ret = (prices[i] - prices[i-1]) / prices[i-1]
+            ret = (prices[i] - prices[i - 1]) / prices[i - 1]
             returns.append(ret)
 
         return returns
@@ -485,10 +493,7 @@ class HistoricalDataManager:
         return max_drawdown
 
     async def _collect_order_book_snapshots(
-        self,
-        market_ids: List[str],
-        start_date: datetime,
-        end_date: datetime
+        self, market_ids: List[str], start_date: datetime, end_date: datetime
     ) -> Dict[str, Any]:
         """Collect order book snapshots for analysis."""
 
@@ -503,15 +508,15 @@ class HistoricalDataManager:
                 snapshot = {
                     "timestamp": current_time.isoformat(),
                     "bids": [
-                        {"price": 0.48 - i*0.01, "size": 100 + np.random.normal()*20}
+                        {"price": 0.48 - i * 0.01, "size": 100 + np.random.normal() * 20}
                         for i in range(5)
                     ],
                     "asks": [
-                        {"price": 0.52 + i*0.01, "size": 100 + np.random.normal()*20}
+                        {"price": 0.52 + i * 0.01, "size": 100 + np.random.normal() * 20}
                         for i in range(5)
                     ],
                     "spread_bps": 80,
-                    "market_id": market_id
+                    "market_id": market_id,
                 }
                 snapshots.append(snapshot)
                 current_time += timedelta(hours=1)
@@ -520,7 +525,9 @@ class HistoricalDataManager:
 
         return order_book_data
 
-    def _calculate_market_correlations(self, price_data: Dict[str, List[Dict[str, Any]]]) -> Dict[str, float]:
+    def _calculate_market_correlations(
+        self, price_data: Dict[str, List[Dict[str, Any]]]
+    ) -> Dict[str, float]:
         """Calculate correlations between markets."""
 
         correlations = {}
@@ -537,7 +544,7 @@ class HistoricalDataManager:
         market_ids = list(market_prices.keys())
 
         for i in range(len(market_ids)):
-            for j in range(i+1, len(market_ids)):
+            for j in range(i + 1, len(market_ids)):
                 market1 = market_ids[i]
                 market2 = market_ids[j]
 
@@ -555,14 +562,16 @@ class HistoricalDataManager:
 
         return correlations
 
-    async def _collect_gas_price_history(self, start_date: datetime, end_date: datetime) -> Dict[str, Any]:
+    async def _collect_gas_price_history(
+        self, start_date: datetime, end_date: datetime
+    ) -> Dict[str, Any]:
         """Collect historical gas price data."""
 
         gas_data = {
             "gas_price_series": [],
             "gas_limit_series": [],
             "network_congestion": [],
-            "gas_cost_analysis": {}
+            "gas_cost_analysis": {},
         }
 
         # Collect gas price data at regular intervals
@@ -572,10 +581,12 @@ class HistoricalDataManager:
         while current_time <= end_date:
             gas_price = {
                 "timestamp": current_time.isoformat(),
-                "gas_price_gwei": 50 + 20 * np.sin(current_time.timestamp() / 86400) + np.random.normal() * 10,
+                "gas_price_gwei": 50
+                + 20 * np.sin(current_time.timestamp() / 86400)
+                + np.random.normal() * 10,
                 "gas_limit": 21000,
                 "network_base_fee": 40 + 15 * np.sin(current_time.timestamp() / 86400),
-                "priority_fee": 5 + np.random.normal() * 2
+                "priority_fee": 5 + np.random.normal() * 2,
             }
             gas_prices.append(gas_price)
             current_time += timedelta(minutes=15)  # 15-minute intervals
@@ -591,17 +602,14 @@ class HistoricalDataManager:
                 "25": np.percentile([g["gas_price_gwei"] for g in gas_prices], 25),
                 "50": np.percentile([g["gas_price_gwei"] for g in gas_prices], 50),
                 "75": np.percentile([g["gas_price_gwei"] for g in gas_prices], 75),
-                "95": np.percentile([g["gas_price_gwei"] for g in gas_prices], 95)
-            }
+                "95": np.percentile([g["gas_price_gwei"] for g in gas_prices], 95),
+            },
         }
 
         return gas_data
 
     async def _classify_market_regimes(
-        self,
-        market_data: Dict[str, Any],
-        start_date: datetime,
-        end_date: datetime
+        self, market_data: Dict[str, Any], start_date: datetime, end_date: datetime
     ) -> Dict[str, Any]:
         """Classify market regimes based on volatility, trend, and liquidity."""
 
@@ -609,12 +617,12 @@ class HistoricalDataManager:
             "regime_series": [],
             "regime_transitions": [],
             "regime_statistics": {},
-            "regime_duration_analysis": {}
+            "regime_duration_analysis": {},
         }
 
         # Extract market metrics
         price_data = market_data.get("price_data", {})
-        volatility_data = market_data.get("volatility_data", {})
+        market_data.get("volatility_data", {})
 
         # Create time series of regime indicators
         current_time = start_date
@@ -626,12 +634,14 @@ class HistoricalDataManager:
             trend = self._calculate_current_trend(price_data, current_time)
             liquidity = self._calculate_current_liquidity(market_data, current_time)
 
-            regime_indicators.append({
-                "timestamp": current_time.isoformat(),
-                "volatility": volatility,
-                "trend_strength": trend,
-                "liquidity_score": liquidity
-            })
+            regime_indicators.append(
+                {
+                    "timestamp": current_time.isoformat(),
+                    "volatility": volatility,
+                    "trend_strength": trend,
+                    "liquidity_score": liquidity,
+                }
+            )
 
             current_time += timedelta(hours=1)
 
@@ -640,11 +650,13 @@ class HistoricalDataManager:
 
         # Create regime time series
         for i, indicator in enumerate(regime_indicators):
-            regime_data["regime_series"].append({
-                "timestamp": indicator["timestamp"],
-                "regime": regime_labels[i],
-                "indicators": indicator
-            })
+            regime_data["regime_series"].append(
+                {
+                    "timestamp": indicator["timestamp"],
+                    "regime": regime_labels[i],
+                    "indicators": indicator,
+                }
+            )
 
         # Analyze regime transitions
         regime_data["regime_transitions"] = self._analyze_regime_transitions(regime_labels)
@@ -660,9 +672,7 @@ class HistoricalDataManager:
         return regime_data
 
     def _calculate_current_volatility(
-        self,
-        price_data: Dict[str, List[Dict[str, Any]]],
-        current_time: datetime
+        self, price_data: Dict[str, List[Dict[str, Any]]], current_time: datetime
     ) -> float:
         """Calculate current market volatility."""
 
@@ -673,9 +683,11 @@ class HistoricalDataManager:
         for market_prices in price_data.values():
             # Get recent prices
             recent_prices = [
-                p["price"] for p in market_prices
-                if datetime.fromisoformat(p["timestamp"]) <= current_time and
-                (current_time - datetime.fromisoformat(p["timestamp"])).total_seconds() <= lookback_hours * 3600
+                p["price"]
+                for p in market_prices
+                if datetime.fromisoformat(p["timestamp"]) <= current_time
+                and (current_time - datetime.fromisoformat(p["timestamp"])).total_seconds()
+                <= lookback_hours * 3600
             ]
 
             if len(recent_prices) >= 2:
@@ -687,9 +699,7 @@ class HistoricalDataManager:
         return np.mean(volatilities) if volatilities else 0.2
 
     def _calculate_current_trend(
-        self,
-        price_data: Dict[str, List[Dict[str, Any]]],
-        current_time: datetime
+        self, price_data: Dict[str, List[Dict[str, Any]]], current_time: datetime
     ) -> float:
         """Calculate current market trend strength."""
 
@@ -698,9 +708,11 @@ class HistoricalDataManager:
         trends = []
         for market_prices in price_data.values():
             recent_prices = [
-                p for p in market_prices
-                if datetime.fromisoformat(p["timestamp"]) <= current_time and
-                (current_time - datetime.fromisoformat(p["timestamp"])).total_seconds() <= lookback_hours * 3600
+                p
+                for p in market_prices
+                if datetime.fromisoformat(p["timestamp"]) <= current_time
+                and (current_time - datetime.fromisoformat(p["timestamp"])).total_seconds()
+                <= lookback_hours * 3600
             ]
 
             if len(recent_prices) >= 5:
@@ -714,9 +726,7 @@ class HistoricalDataManager:
         return np.mean(trends) if trends else 0
 
     def _calculate_current_liquidity(
-        self,
-        market_data: Dict[str, Any],
-        current_time: datetime
+        self, market_data: Dict[str, Any], current_time: datetime
     ) -> float:
         """Calculate current market liquidity score."""
 
@@ -727,7 +737,7 @@ class HistoricalDataManager:
         for market_snapshots in order_book_data.values():
             # Find closest snapshot to current time
             closest_snapshot = None
-            min_time_diff = float('inf')
+            min_time_diff = float("inf")
 
             for snapshot in market_snapshots:
                 snapshot_time = datetime.fromisoformat(snapshot["timestamp"])
@@ -759,11 +769,9 @@ class HistoricalDataManager:
         # Extract features for clustering
         features = []
         for indicator in regime_indicators:
-            features.append([
-                indicator["volatility"],
-                indicator["trend_strength"],
-                indicator["liquidity_score"]
-            ])
+            features.append(
+                [indicator["volatility"], indicator["trend_strength"], indicator["liquidity_score"]]
+            )
 
         # Standardize features
         scaler = StandardScaler()
@@ -794,17 +802,23 @@ class HistoricalDataManager:
         transitions = []
 
         for i in range(1, len(regime_labels)):
-            if regime_labels[i] != regime_labels[i-1]:
-                transitions.append({
-                    "from_regime": regime_labels[i-1],
-                    "to_regime": regime_labels[i],
-                    "transition_point": i,
-                    "duration_previous": self._count_consecutive_regime(regime_labels, i-1, -1)
-                })
+            if regime_labels[i] != regime_labels[i - 1]:
+                transitions.append(
+                    {
+                        "from_regime": regime_labels[i - 1],
+                        "to_regime": regime_labels[i],
+                        "transition_point": i,
+                        "duration_previous": self._count_consecutive_regime(
+                            regime_labels, i - 1, -1
+                        ),
+                    }
+                )
 
         return transitions
 
-    def _count_consecutive_regime(self, regime_labels: List[str], start_idx: int, direction: int) -> int:
+    def _count_consecutive_regime(
+        self, regime_labels: List[str], start_idx: int, direction: int
+    ) -> int:
         """Count consecutive occurrences of the same regime."""
 
         count = 1
@@ -818,9 +832,7 @@ class HistoricalDataManager:
         return count
 
     def _calculate_regime_statistics(
-        self,
-        regime_labels: List[str],
-        regime_indicators: List[Dict[str, Any]]
+        self, regime_labels: List[str], regime_indicators: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
         """Calculate statistics for each market regime."""
 
@@ -840,8 +852,8 @@ class HistoricalDataManager:
                 "avg_liquidity": np.mean([d["liquidity_score"] for d in regime_data]),
                 "volatility_range": [
                     min([d["volatility"] for d in regime_data]),
-                    max([d["volatility"] for d in regime_data])
-                ]
+                    max([d["volatility"] for d in regime_data]),
+                ],
             }
 
         return regime_stats
@@ -860,18 +872,12 @@ class HistoricalDataManager:
             if regime == current_regime:
                 current_duration += 1
             else:
-                durations.append({
-                    "regime": current_regime,
-                    "duration_hours": current_duration
-                })
+                durations.append({"regime": current_regime, "duration_hours": current_duration})
                 current_regime = regime
                 current_duration = 1
 
         # Add final regime
-        durations.append({
-            "regime": current_regime,
-            "duration_hours": current_duration
-        })
+        durations.append({"regime": current_regime, "duration_hours": current_duration})
 
         # Analyze by regime
         for regime in set(regime_labels):
@@ -883,7 +889,7 @@ class HistoricalDataManager:
                     "min_duration": min(regime_durations),
                     "max_duration": max(regime_durations),
                     "median_duration": np.median(regime_durations),
-                    "total_periods": len(regime_durations)
+                    "total_periods": len(regime_durations),
                 }
 
         return duration_analysis
@@ -895,7 +901,7 @@ class HistoricalDataManager:
             "overall_quality_score": 0.0,
             "component_reports": {},
             "quality_issues": [],
-            "recommendations": []
+            "recommendations": [],
         }
 
         # Validate wallet data
@@ -912,7 +918,8 @@ class HistoricalDataManager:
 
         # Calculate overall quality score
         component_scores = [
-            report["quality_score"] for report in validation_reports["component_reports"].values()
+            report["quality_score"]
+            for report in validation_reports["component_reports"].values()
             if "quality_score" in report
         ]
 
@@ -923,7 +930,9 @@ class HistoricalDataManager:
         validation_reports["quality_issues"] = self._identify_quality_issues(validation_reports)
 
         # Generate recommendations
-        validation_reports["recommendations"] = self._generate_quality_recommendations(validation_reports)
+        validation_reports["recommendations"] = self._generate_quality_recommendations(
+            validation_reports
+        )
 
         return validation_reports
 
@@ -936,7 +945,7 @@ class HistoricalDataManager:
             "wallets_with_data": 0,
             "average_trades_per_wallet": 0,
             "data_completeness": 0.0,
-            "issues": []
+            "issues": [],
         }
 
         total_trades = 0
@@ -958,11 +967,16 @@ class HistoricalDataManager:
 
         # Calculate data completeness
         expected_wallets = len(wallet_data)
-        validation["data_completeness"] = wallets_with_data / expected_wallets if expected_wallets > 0 else 0
+        validation["data_completeness"] = (
+            wallets_with_data / expected_wallets if expected_wallets > 0 else 0
+        )
 
         # Calculate quality score
         completeness_score = validation["data_completeness"]
-        coverage_score = min(1.0, total_trades / (expected_wallets * self.quality_params["min_data_points_per_wallet"]))
+        coverage_score = min(
+            1.0,
+            total_trades / (expected_wallets * self.quality_params["min_data_points_per_wallet"]),
+        )
 
         validation["quality_score"] = (completeness_score + coverage_score) / 2
 
@@ -976,7 +990,7 @@ class HistoricalDataManager:
             "markets_with_data": 0,
             "total_price_points": 0,
             "average_data_density": 0.0,
-            "issues": []
+            "issues": [],
         }
 
         price_data = market_data.get("price_data", {})
@@ -1004,7 +1018,7 @@ class HistoricalDataManager:
             "quality_score": 0.0,
             "data_points": 0,
             "time_coverage_hours": 0,
-            "issues": []
+            "issues": [],
         }
 
         gas_series = gas_data.get("gas_price_series", [])
@@ -1017,7 +1031,9 @@ class HistoricalDataManager:
 
         # Quality score based on coverage and density
         coverage_score = min(1.0, validation["time_coverage_hours"] / 720)  # Expect 30 days
-        density_score = min(1.0, validation["data_points"] / 2880)  # Expect 15-min intervals for 30 days
+        density_score = min(
+            1.0, validation["data_points"] / 2880
+        )  # Expect 15-min intervals for 30 days
 
         validation["quality_score"] = (coverage_score + density_score) / 2
 
@@ -1038,11 +1054,15 @@ class HistoricalDataManager:
             # Component-specific checks
             if component == "wallet_data":
                 if report.get("data_completeness", 1.0) < 0.8:
-                    issues.append(f"Wallet data completeness is low: {report['data_completeness']:.1%}")
+                    issues.append(
+                        f"Wallet data completeness is low: {report['data_completeness']:.1%}"
+                    )
 
             elif component == "market_data":
                 if report.get("total_price_points", 0) < 1000:
-                    issues.append(f"Insufficient market data points: {report['total_price_points']}")
+                    issues.append(
+                        f"Insufficient market data points: {report['total_price_points']}"
+                    )
 
         return issues
 
@@ -1059,15 +1079,21 @@ class HistoricalDataManager:
         # Component-specific recommendations
         wallet_report = validation_reports["component_reports"].get("wallet_data", {})
         if wallet_report.get("data_completeness", 1.0) < 0.9:
-            recommendations.append("Focus on wallets with missing trade data - may need alternative data sources")
+            recommendations.append(
+                "Focus on wallets with missing trade data - may need alternative data sources"
+            )
 
         market_report = validation_reports["component_reports"].get("market_data", {})
         if market_report.get("total_price_points", 10000) < 5000:
-            recommendations.append("Increase market data collection frequency or extend time period")
+            recommendations.append(
+                "Increase market data collection frequency or extend time period"
+            )
 
         gas_report = validation_reports["component_reports"].get("gas_data", {})
         if gas_report.get("data_points", 3000) < 1000:
-            recommendations.append("Gas price data is sparse - consider using multiple gas estimation services")
+            recommendations.append(
+                "Gas price data is sparse - consider using multiple gas estimation services"
+            )
 
         return recommendations
 
@@ -1119,14 +1145,16 @@ class HistoricalDataManager:
 
         return dataset
 
-    def _identify_data_gaps(self, data_points: List[Dict[str, Any]], timestamp_field: str) -> List[Dict[str, Any]]:
+    def _identify_data_gaps(
+        self, data_points: List[Dict[str, Any]], timestamp_field: str
+    ) -> List[Dict[str, Any]]:
         """Identify gaps in time series data."""
 
         gaps = []
 
         for i in range(1, len(data_points)):
             current_time = datetime.fromisoformat(data_points[i][timestamp_field])
-            previous_time = datetime.fromisoformat(data_points[i-1][timestamp_field])
+            previous_time = datetime.fromisoformat(data_points[i - 1][timestamp_field])
 
             time_diff = (current_time - previous_time).total_seconds()
 
@@ -1134,20 +1162,20 @@ class HistoricalDataManager:
             gap_threshold = 7200  # 2 hours
 
             if time_diff > gap_threshold:
-                gaps.append({
-                    "start_index": i-1,
-                    "end_index": i,
-                    "gap_duration_seconds": time_diff,
-                    "start_time": data_points[i-1][timestamp_field],
-                    "end_time": data_points[i][timestamp_field]
-                })
+                gaps.append(
+                    {
+                        "start_index": i - 1,
+                        "end_index": i,
+                        "gap_duration_seconds": time_diff,
+                        "start_time": data_points[i - 1][timestamp_field],
+                        "end_time": data_points[i][timestamp_field],
+                    }
+                )
 
         return gaps
 
     def _interpolate_trade_gaps(
-        self,
-        trades: List[Dict[str, Any]],
-        gaps: List[Dict[str, Any]]
+        self, trades: List[Dict[str, Any]], gaps: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
         """Interpolate missing trade data in gaps."""
 
@@ -1162,7 +1190,7 @@ class HistoricalDataManager:
                 "timestamp": gap["start_time"],
                 "gap_marker": True,
                 "gap_duration_seconds": gap["gap_duration_seconds"],
-                "interpolated": False
+                "interpolated": False,
             }
             filled_trades.append(gap_marker)
 
@@ -1171,9 +1199,7 @@ class HistoricalDataManager:
         return filled_trades
 
     def _interpolate_price_gaps(
-        self,
-        prices: List[Dict[str, Any]],
-        gaps: List[Dict[str, Any]]
+        self, prices: List[Dict[str, Any]], gaps: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
         """Interpolate missing price data."""
 
@@ -1199,22 +1225,24 @@ class HistoricalDataManager:
                         interp_time = start_time + timedelta(hours=i)
                         interp_price = price_interpolation[i]
 
-                        filled_prices.append({
-                            "timestamp": interp_time.isoformat(),
-                            "price": interp_price,
-                            "volume": np.mean([prices[start_idx]["volume"], prices[end_idx]["volume"]]),
-                            "market_id": prices[start_idx]["market_id"],
-                            "interpolated": True
-                        })
+                        filled_prices.append(
+                            {
+                                "timestamp": interp_time.isoformat(),
+                                "price": interp_price,
+                                "volume": np.mean(
+                                    [prices[start_idx]["volume"], prices[end_idx]["volume"]]
+                                ),
+                                "market_id": prices[start_idx]["market_id"],
+                                "interpolated": True,
+                            }
+                        )
 
         filled_prices.sort(key=lambda x: x.get("timestamp", ""))
 
         return filled_prices
 
     def _interpolate_gas_gaps(
-        self,
-        gas_series: List[Dict[str, Any]],
-        gaps: List[Dict[str, Any]]
+        self, gas_series: List[Dict[str, Any]], gaps: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
         """Interpolate missing gas price data."""
 
@@ -1234,15 +1262,17 @@ class HistoricalDataManager:
                     start_time = datetime.fromisoformat(gas_series[start_idx]["timestamp"])
 
                     for i in range(1, gap_steps):
-                        interp_time = start_time + timedelta(minutes=15*i)
+                        interp_time = start_time + timedelta(minutes=15 * i)
                         interp_gas = gas_interpolation[i]
 
-                        filled_gas.append({
-                            "timestamp": interp_time.isoformat(),
-                            "gas_price_gwei": interp_gas,
-                            "gas_limit": gas_series[start_idx]["gas_limit"],  # Assume constant
-                            "interpolated": True
-                        })
+                        filled_gas.append(
+                            {
+                                "timestamp": interp_time.isoformat(),
+                                "gas_price_gwei": interp_gas,
+                                "gas_limit": gas_series[start_idx]["gas_limit"],  # Assume constant
+                                "interpolated": True,
+                            }
+                        )
 
         filled_gas.sort(key=lambda x: x.get("timestamp", ""))
 
@@ -1308,14 +1338,14 @@ class HistoricalDataManager:
             price = crash_bottom + (peak_price - crash_bottom) * recovery_progress
             # Add overshoot and stabilization
             if recovery_progress < 0.7:
-                price *= (1 + 0.05 * np.sin(recovery_progress * 10))  # Oscillations
+                price *= 1 + 0.05 * np.sin(recovery_progress * 10)  # Oscillations
             crash_prices.append(price)
 
         return {
             "price_series": crash_prices,
             "duration_minutes": 50,
             "max_drawdown": 0.2,
-            "recovery_time_minutes": 30
+            "recovery_time_minutes": 30,
         }
 
     def _generate_high_volatility_scenario(self, dataset: Dict[str, Any]) -> Dict[str, Any]:
@@ -1334,14 +1364,14 @@ class HistoricalDataManager:
             new_price = max(0.01, min(2.0, new_price))  # Reasonable bounds
             prices.append(new_price)
 
-        returns = [prices[i+1] / prices[i] - 1 for i in range(len(prices)-1)]
+        returns = [prices[i + 1] / prices[i] - 1 for i in range(len(prices) - 1)]
 
         return {
             "price_series": prices,
             "return_series": returns,
             "volatility": np.std(returns) * np.sqrt(252),  # Annualized
             "duration_days": len(prices) / 24,  # Assuming hourly data
-            "max_drawdown": self._calculate_max_drawdown([{"price": p} for p in prices])
+            "max_drawdown": self._calculate_max_drawdown([{"price": p} for p in prices]),
         }
 
     def _generate_low_liquidity_scenario(self, dataset: Dict[str, Any]) -> Dict[str, Any]:
@@ -1366,7 +1396,7 @@ class HistoricalDataManager:
             "spread_bps": 200,  # 2% spread (very wide)
             "average_volume": 50,  # Low volume
             "gap_frequency": 0.2,  # 20% of periods have gaps
-            "liquidity_score": 0.1  # Very low liquidity
+            "liquidity_score": 0.1,  # Very low liquidity
         }
 
     def _generate_gas_spike_scenario(self, dataset: Dict[str, Any]) -> Dict[str, Any]:
@@ -1381,7 +1411,6 @@ class HistoricalDataManager:
             normal_variation = np.random.normal(0, 5)
 
             # Occasional spikes (network congestion)
-            spike_probability = 0.05  # 5% chance of spike
             spike_multiplier = np.random.choice([1, 3, 5], p=[0.95, 0.04, 0.01])
 
             gas_price = base_gas + normal_variation
@@ -1394,7 +1423,7 @@ class HistoricalDataManager:
             "average_gas_price": np.mean(gas_prices),
             "max_gas_price": max(gas_prices),
             "spike_frequency": sum(1 for g in gas_prices if g > base_gas * 2) / len(gas_prices),
-            "network_congestion_events": sum(1 for g in gas_prices if g > base_gas * 3)
+            "network_congestion_events": sum(1 for g in gas_prices if g > base_gas * 3),
         }
 
     def _generate_extreme_drawdown_scenario(self, dataset: Dict[str, Any]) -> Dict[str, Any]:
@@ -1428,10 +1457,10 @@ class HistoricalDataManager:
             recovery_target = prices[-1] * 1.3  # 30% recovery
             price = prices[-1] + (recovery_target - prices[-1]) * recovery_progress
             noise = np.random.normal(0, 0.005)  # Lower volatility during recovery
-            price *= (1 + noise)
+            price *= 1 + noise
             prices.append(price)
 
-        returns = [prices[i+1] / prices[i] - 1 for i in range(len(prices)-1)]
+        returns = [prices[i + 1] / prices[i] - 1 for i in range(len(prices) - 1)]
 
         return {
             "price_series": prices,
@@ -1441,7 +1470,7 @@ class HistoricalDataManager:
             "decline_duration_days": decline_periods / 24,
             "recovery_duration_days": recovery_periods / 24,
             "volatility_during_decline": np.std(returns[:decline_periods]),
-            "volatility_during_recovery": np.std(returns[-recovery_periods:])
+            "volatility_during_recovery": np.std(returns[-recovery_periods:]),
         }
 
     def _generate_data_quality_summary(self, dataset: Dict[str, Any]) -> Dict[str, Any]:
@@ -1453,7 +1482,7 @@ class HistoricalDataManager:
             "data_accuracy": {},
             "data_consistency": {},
             "gap_analysis": {},
-            "synthetic_data_usage": {}
+            "synthetic_data_usage": {},
         }
 
         # Calculate overall data quality
@@ -1463,15 +1492,19 @@ class HistoricalDataManager:
 
         # Data completeness by component
         wallet_data = dataset.get("wallet_data", {})
-        summary["data_completeness"]["wallets"] = sum(
-            1 for w in wallet_data.values() if w.get("trade_count", 0) > 0
-        ) / len(wallet_data) if wallet_data else 0
+        summary["data_completeness"]["wallets"] = (
+            sum(1 for w in wallet_data.values() if w.get("trade_count", 0) > 0) / len(wallet_data)
+            if wallet_data
+            else 0
+        )
 
         market_data = dataset.get("market_data", {}).get("price_data", {})
         summary["data_completeness"]["markets"] = len(market_data)
 
         gas_data = dataset.get("gas_data", {}).get("gas_price_series", [])
-        summary["data_completeness"]["gas_data"] = len(gas_data) / 2880  # Expected points for 30 days
+        summary["data_completeness"]["gas_data"] = (
+            len(gas_data) / 2880
+        )  # Expected points for 30 days
 
         # Gap analysis
         summary["gap_analysis"] = self._analyze_data_gaps_summary(dataset)
@@ -1492,7 +1525,7 @@ class HistoricalDataManager:
             "total_gaps": 0,
             "average_gap_duration_hours": 0,
             "max_gap_duration_hours": 0,
-            "gap_frequency": 0
+            "gap_frequency": 0,
         }
 
         # Analyze wallet data gaps
@@ -1523,7 +1556,7 @@ class HistoricalDataManager:
             # Convert datetime objects to strings for JSON serialization
             serializable_dataset = self._make_dataset_serializable(dataset)
 
-            with open(filepath, 'w') as f:
+            with open(filepath, "w") as f:
                 json.dump(serializable_dataset, f, indent=2, default=str)
 
             logger.info(f"💾 Dataset saved to {filepath}")
@@ -1538,7 +1571,7 @@ class HistoricalDataManager:
             data_dir = Path("data/backtesting")
             filepath = data_dir / f"{filename}.json"
 
-            with open(filepath, 'r') as f:
+            with open(filepath, "r") as f:
                 dataset = json.load(f)
 
             logger.info(f"📊 Dataset loaded from {filepath}")
@@ -1562,5 +1595,5 @@ class HistoricalDataManager:
             "data_sources_configured": len(self.data_sources),
             "quality_validation_active": True,
             "synthetic_data_enabled": self.synthetic_params["synthetic_data_ratio"] > 0,
-            "gap_handling_active": True
+            "gap_handling_active": True,
         }

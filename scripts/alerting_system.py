@@ -9,32 +9,32 @@ Provides comprehensive alerting capabilities including:
 - Alert severity classification and escalation
 """
 
+import json
+import logging
 import os
 import sys
-import json
-import smtplib
-import asyncio
 import threading
-import logging
+from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional, Callable
-from dataclasses import dataclass, asdict
-from pathlib import Path
-from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class Alert:
     """Alert data structure"""
+
     id: str
     timestamp: datetime
     severity: str  # CRITICAL, HIGH, MEDIUM, LOW, INFO
     category: str  # SYSTEM, APPLICATION, SECURITY, BUSINESS
-    source: str    # Component that generated the alert
+    source: str  # Component that generated the alert
     title: str
     message: str
     metrics: Dict[str, Any]
@@ -47,9 +47,11 @@ class Alert:
         if self.notification_channels is None:
             self.notification_channels = []
 
+
 @dataclass
 class AlertRule:
     """Alert rule configuration"""
+
     name: str
     category: str
     severity: str
@@ -62,6 +64,7 @@ class AlertRule:
     def __post_init__(self):
         if self.notification_channels is None:
             self.notification_channels = ["log"]
+
 
 class AlertingSystem:
     """Comprehensive alerting system"""
@@ -83,7 +86,7 @@ class AlertingSystem:
             "email": self._send_email_notification,
             "telegram": self._send_telegram_notification,
             "sms": self._send_sms_notification,
-            "log": self._send_log_notification
+            "log": self._send_log_notification,
         }
 
         # Alert deduplication
@@ -124,17 +127,19 @@ class AlertingSystem:
                         timestamp=datetime.now(),
                         severity=rule.severity,
                         category=rule.category,
-                        source=metrics_data.get('source', 'unknown'),
+                        source=metrics_data.get("source", "unknown"),
                         title=f"{rule.severity}: {rule.name}",
                         message=message,
                         metrics=metrics_data,
-                        notification_channels=rule.notification_channels.copy()
+                        notification_channels=rule.notification_channels.copy(),
                     )
 
                     new_alerts.append(alert)
 
                     # Set cooldown
-                    self.alert_cooldowns[alert_key] = datetime.now() + timedelta(minutes=rule.cooldown_minutes)
+                    self.alert_cooldowns[alert_key] = datetime.now() + timedelta(
+                        minutes=rule.cooldown_minutes
+                    )
 
             except Exception as e:
                 logger.error(f"Error checking alert rule {rule.name}: {e}")
@@ -149,7 +154,7 @@ class AlertingSystem:
 
         # Maintain history size
         if len(self.alert_history) > self.max_history:
-            self.alert_history = self.alert_history[-self.max_history:]
+            self.alert_history = self.alert_history[-self.max_history :]
 
         logger.warning(f"ALERT GENERATED: {alert.title} - {alert.message}")
 
@@ -180,7 +185,7 @@ class AlertingSystem:
                 message=f"Alert resolved: {resolution_message}",
                 metrics={},
                 resolved=True,
-                notification_channels=["log"]  # Only log resolutions by default
+                notification_channels=["log"],  # Only log resolutions by default
             )
 
             self._send_notifications(resolution_alert)
@@ -188,7 +193,9 @@ class AlertingSystem:
 
         return False
 
-    def get_active_alerts(self, category: Optional[str] = None, severity: Optional[str] = None) -> List[Alert]:
+    def get_active_alerts(
+        self, category: Optional[str] = None, severity: Optional[str] = None
+    ) -> List[Alert]:
         """Get active alerts with optional filtering"""
         alerts = list(self.active_alerts.values())
 
@@ -209,123 +216,135 @@ class AlertingSystem:
         """Load default alert rules"""
 
         # System resource alerts
-        self.alert_rules.extend([
-            AlertRule(
-                name="High CPU Usage",
-                category="SYSTEM",
-                severity="HIGH",
-                condition=lambda m: m.get('cpu_percent', 0) > 90,
-                message_template="CPU usage at {cpu_percent:.1f}% (threshold: 90%)",
-                cooldown_minutes=5,
-                notification_channels=["log", "email"]
-            ),
-            AlertRule(
-                name="Critical Memory Usage",
-                category="SYSTEM",
-                severity="CRITICAL",
-                condition=lambda m: m.get('memory_percent', 0) > 95,
-                message_template="Memory usage at {memory_percent:.1f}% (threshold: 95%)",
-                cooldown_minutes=2,
-                notification_channels=["log", "email", "telegram"]
-            ),
-            AlertRule(
-                name="Disk Space Critical",
-                category="SYSTEM",
-                severity="CRITICAL",
-                condition=lambda m: m.get('disk_usage_percent', 0) > 95,
-                message_template="Disk usage at {disk_usage_percent:.1f}% (threshold: 95%)",
-                cooldown_minutes=10,
-                notification_channels=["log", "email", "telegram"]
-            )
-        ])
+        self.alert_rules.extend(
+            [
+                AlertRule(
+                    name="High CPU Usage",
+                    category="SYSTEM",
+                    severity="HIGH",
+                    condition=lambda m: m.get("cpu_percent", 0) > 90,
+                    message_template="CPU usage at {cpu_percent:.1f}% (threshold: 90%)",
+                    cooldown_minutes=5,
+                    notification_channels=["log", "email"],
+                ),
+                AlertRule(
+                    name="Critical Memory Usage",
+                    category="SYSTEM",
+                    severity="CRITICAL",
+                    condition=lambda m: m.get("memory_percent", 0) > 95,
+                    message_template="Memory usage at {memory_percent:.1f}% (threshold: 95%)",
+                    cooldown_minutes=2,
+                    notification_channels=["log", "email", "telegram"],
+                ),
+                AlertRule(
+                    name="Disk Space Critical",
+                    category="SYSTEM",
+                    severity="CRITICAL",
+                    condition=lambda m: m.get("disk_usage_percent", 0) > 95,
+                    message_template="Disk usage at {disk_usage_percent:.1f}% (threshold: 95%)",
+                    cooldown_minutes=10,
+                    notification_channels=["log", "email", "telegram"],
+                ),
+            ]
+        )
 
         # Application performance alerts
-        self.alert_rules.extend([
-            AlertRule(
-                name="Low Trade Success Rate",
-                category="APPLICATION",
-                severity="HIGH",
-                condition=lambda m: m.get('success_rate_percent', 100) < 80,
-                message_template="Trade success rate at {success_rate_percent:.1f}% (threshold: 80%)",
-                cooldown_minutes=5,
-                notification_channels=["log", "telegram"]
-            ),
-            AlertRule(
-                name="High Trade Latency",
-                category="APPLICATION",
-                severity="MEDIUM",
-                condition=lambda m: m.get('average_latency_ms', 0) > 10000,
-                message_template="Average trade latency {average_latency_ms:.0f}ms (threshold: 10000ms)",
-                cooldown_minutes=10,
-                notification_channels=["log"]
-            ),
-            AlertRule(
-                name="API Rate Limit Critical",
-                category="APPLICATION",
-                severity="HIGH",
-                condition=lambda m: m.get('current_rate_limit_usage', 0) > 90,
-                message_template="API rate limit usage at {current_rate_limit_usage}% (threshold: 90%)",
-                cooldown_minutes=2,
-                notification_channels=["log", "telegram"]
-            )
-        ])
+        self.alert_rules.extend(
+            [
+                AlertRule(
+                    name="Low Trade Success Rate",
+                    category="APPLICATION",
+                    severity="HIGH",
+                    condition=lambda m: m.get("success_rate_percent", 100) < 80,
+                    message_template="Trade success rate at {success_rate_percent:.1f}% (threshold: 80%)",
+                    cooldown_minutes=5,
+                    notification_channels=["log", "telegram"],
+                ),
+                AlertRule(
+                    name="High Trade Latency",
+                    category="APPLICATION",
+                    severity="MEDIUM",
+                    condition=lambda m: m.get("average_latency_ms", 0) > 10000,
+                    message_template="Average trade latency {average_latency_ms:.0f}ms (threshold: 10000ms)",
+                    cooldown_minutes=10,
+                    notification_channels=["log"],
+                ),
+                AlertRule(
+                    name="API Rate Limit Critical",
+                    category="APPLICATION",
+                    severity="HIGH",
+                    condition=lambda m: m.get("current_rate_limit_usage", 0) > 90,
+                    message_template="API rate limit usage at {current_rate_limit_usage}% (threshold: 90%)",
+                    cooldown_minutes=2,
+                    notification_channels=["log", "telegram"],
+                ),
+            ]
+        )
 
         # Security alerts
-        self.alert_rules.extend([
-            AlertRule(
-                name="Circuit Breaker Active",
-                category="SECURITY",
-                severity="CRITICAL",
-                condition=lambda m: m.get('circuit_breaker_active', False) == True,
-                message_template="Circuit breaker has been activated due to system instability",
-                cooldown_minutes=1,
-                notification_channels=["log", "email", "telegram"]
-            ),
-            AlertRule(
-                name="File Integrity Violation",
-                category="SECURITY",
-                severity="CRITICAL",
-                condition=lambda m: m.get('integrity_violations', 0) > 0,
-                message_template="File integrity violations detected: {integrity_violations} files compromised",
-                cooldown_minutes=1,
-                notification_channels=["log", "email", "telegram"]
-            )
-        ])
+        self.alert_rules.extend(
+            [
+                AlertRule(
+                    name="Circuit Breaker Active",
+                    category="SECURITY",
+                    severity="CRITICAL",
+                    condition=lambda m: m.get("circuit_breaker_active", False) == True,
+                    message_template="Circuit breaker has been activated due to system instability",
+                    cooldown_minutes=1,
+                    notification_channels=["log", "email", "telegram"],
+                ),
+                AlertRule(
+                    name="File Integrity Violation",
+                    category="SECURITY",
+                    severity="CRITICAL",
+                    condition=lambda m: m.get("integrity_violations", 0) > 0,
+                    message_template="File integrity violations detected: {integrity_violations} files compromised",
+                    cooldown_minutes=1,
+                    notification_channels=["log", "email", "telegram"],
+                ),
+            ]
+        )
 
         # Business logic alerts
-        self.alert_rules.extend([
-            AlertRule(
-                name="Wallet Balance Low",
-                category="BUSINESS",
-                severity="MEDIUM",
-                condition=lambda m: m.get('balance_matic', 1.0) < 0.1,
-                message_template="Wallet MATIC balance low: {balance_matic:.4f} (threshold: 0.1)",
-                cooldown_minutes=30,
-                notification_channels=["log", "telegram"]
-            ),
-            AlertRule(
-                name="High Transaction Failure Rate",
-                category="BUSINESS",
-                severity="HIGH",
-                condition=lambda m: m.get('failed_transaction_rate', 0) > 10,
-                message_template="Transaction failure rate at {failed_transaction_rate:.1f}% (threshold: 10%)",
-                cooldown_minutes=10,
-                notification_channels=["log", "telegram"]
-            )
-        ])
+        self.alert_rules.extend(
+            [
+                AlertRule(
+                    name="Wallet Balance Low",
+                    category="BUSINESS",
+                    severity="MEDIUM",
+                    condition=lambda m: m.get("balance_matic", 1.0) < 0.1,
+                    message_template="Wallet MATIC balance low: {balance_matic:.4f} (threshold: 0.1)",
+                    cooldown_minutes=30,
+                    notification_channels=["log", "telegram"],
+                ),
+                AlertRule(
+                    name="High Transaction Failure Rate",
+                    category="BUSINESS",
+                    severity="HIGH",
+                    condition=lambda m: m.get("failed_transaction_rate", 0) > 10,
+                    message_template="Transaction failure rate at {failed_transaction_rate:.1f}% (threshold: 10%)",
+                    cooldown_minutes=10,
+                    notification_channels=["log", "telegram"],
+                ),
+            ]
+        )
 
     def _check_escalation(self, alert: Alert) -> None:
         """Check if alert needs escalation"""
         # Count similar active alerts
-        similar_alerts = len([
-            a for a in self.active_alerts.values()
-            if a.category == alert.category and
-               a.severity == alert.severity and
-               not a.resolved
-        ])
+        similar_alerts = len(
+            [
+                a
+                for a in self.active_alerts.values()
+                if a.category == alert.category and a.severity == alert.severity and not a.resolved
+            ]
+        )
 
         # Find the alert rule
-        rule = next((r for r in self.alert_rules if r.category == alert.category and r.name in alert.title), None)
+        rule = next(
+            (r for r in self.alert_rules if r.category == alert.category and r.name in alert.title),
+            None,
+        )
 
         if rule and similar_alerts >= rule.escalation_threshold:
             alert.escalation_level += 1
@@ -354,16 +373,16 @@ class AlertingSystem:
         """Send email notification"""
         try:
             # Email configuration (would be loaded from config)
-            smtp_server = os.getenv("SMTP_SERVER", "localhost")
-            smtp_port = int(os.getenv("SMTP_PORT", "587"))
+            os.getenv("SMTP_SERVER", "localhost")
+            int(os.getenv("SMTP_PORT", "587"))
             smtp_user = os.getenv("SMTP_USER", "")
-            smtp_pass = os.getenv("SMTP_PASS", "")
+            os.getenv("SMTP_PASS", "")
             to_email = os.getenv("ALERT_EMAIL", "admin@localhost")
 
             msg = MIMEMultipart()
-            msg['From'] = smtp_user
-            msg['To'] = to_email
-            msg['Subject'] = f"[{alert.severity}] {alert.title}"
+            msg["From"] = smtp_user
+            msg["To"] = to_email
+            msg["Subject"] = f"[{alert.severity}] {alert.title}"
 
             body = f"""
 Polymarket Copy Bot Alert
@@ -380,7 +399,7 @@ Metrics:
 
 This is an automated alert from the Polymarket Copy Bot monitoring system.
 """
-            msg.attach(MIMEText(body, 'plain'))
+            msg.attach(MIMEText(body, "plain"))
 
             # Send email (simplified - would need proper SMTP setup)
             logger.info(f"EMAIL ALERT: Would send to {to_email}: {alert.title}")
@@ -398,18 +417,6 @@ This is an automated alert from the Polymarket Copy Bot monitoring system.
             if not bot_token or not chat_id:
                 logger.warning("Telegram credentials not configured")
                 return
-
-            message = f"""🚨 *{alert.severity} Alert*
-
-*{alert.title}*
-
-{alert.message}
-
-_Category: {alert.category}_
-_Source: {alert.source}_
-_Time: {alert.timestamp}_
-
-This is an automated alert from the Polymarket Copy Bot monitoring system."""
 
             # Send message (simplified - would use requests library)
             logger.info(f"TELEGRAM ALERT: Would send: {alert.title}")
@@ -429,7 +436,7 @@ This is an automated alert from the Polymarket Copy Bot monitoring system."""
                 logger.warning("SMS credentials not configured")
                 return
 
-            message = f"{alert.severity}: {alert.title} - {alert.message[:100]}..."
+            f"{alert.severity}: {alert.title} - {alert.message[:100]}..."
 
             # Send SMS (simplified - would use appropriate SMS API)
             logger.info(f"SMS ALERT: Would send to {sms_phone}: {alert.title}")
@@ -442,12 +449,15 @@ This is an automated alert from the Polymarket Copy Bot monitoring system."""
         log_level = logging.WARNING if alert.severity in ["CRITICAL", "HIGH"] else logging.INFO
         logger.log(log_level, f"ALERT: {alert.title} - {alert.message}")
 
+
 def main():
     """CLI interface for alerting system"""
     import argparse
 
     parser = argparse.ArgumentParser(description="Alerting System for Polymarket Copy Bot")
-    parser.add_argument("action", choices=["check", "list-active", "list-history", "resolve", "test"])
+    parser.add_argument(
+        "action", choices=["check", "list-active", "list-history", "resolve", "test"]
+    )
     parser.add_argument("--category", help="Filter by category")
     parser.add_argument("--severity", help="Filter by severity")
     parser.add_argument("--alert-id", help="Alert ID for resolution")
@@ -464,7 +474,7 @@ def main():
             "cpu_percent": 85.5,
             "memory_percent": 92.3,
             "disk_usage_percent": 87.1,
-            "source": "system_monitor"
+            "source": "system_monitor",
         }
 
         alerts = alerting.check_alerts(test_metrics)
@@ -519,12 +529,13 @@ def main():
             title="Test Alert",
             message="This is a test alert to verify notification channels",
             metrics={"test": True},
-            notification_channels=["log", "email", "telegram"]
+            notification_channels=["log", "email", "telegram"],
         )
 
         print("Testing notification channels...")
         alerting._send_notifications(test_alert)
         print("Test notifications sent (check logs)")
+
 
 if __name__ == "__main__":
     main()

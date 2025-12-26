@@ -1,14 +1,14 @@
 """
 Mock PolygonScan API server for testing.
 """
-import json
+
 import asyncio
-from typing import Dict, List, Any, Optional
+import logging
 from datetime import datetime, timedelta
-import hashlib
+from typing import Any, Dict, List
+
 import aiohttp
 from aiohttp import web
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class PolygonScanMockServer:
     """Mock PolygonScan API server for testing."""
 
-    def __init__(self, host: str = 'localhost', port: int = 8080):
+    def __init__(self, host: str = "localhost", port: int = 8080):
         self.host = host
         self.port = port
         self.server = None
@@ -36,141 +36,120 @@ class PolygonScanMockServer:
         # Add some default transactions for testing
         self.transactions["0x742d35Cc6634C0532925a3b844Bc454e4438f44e"] = [
             {
-                'hash': '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
-                'from': '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-                'to': '0x42f5d81136d8b8c6e2e5f5abd46a5f9be4457b3a',
-                'value': '0',
-                'gasUsed': '150000',
-                'gasPrice': '50000000000',
-                'timeStamp': str(int((datetime.now() - timedelta(seconds=30)).timestamp())),
-                'input': '0x1234567890abcdef',
-                'blockNumber': '50000000'
+                "hash": "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+                "from": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+                "to": "0x42f5d81136d8b8c6e2e5f5abd46a5f9be4457b3a",
+                "value": "0",
+                "gasUsed": "150000",
+                "gasPrice": "50000000000",
+                "timeStamp": str(int((datetime.now() - timedelta(seconds=30)).timestamp())),
+                "input": "0x1234567890abcdef",
+                "blockNumber": "50000000",
             },
             {
-                'hash': '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-                'from': '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-                'to': '0x8c16f85a4d5f8f23d29e9c7e3d4a3a5a6e4f2b2e',
-                'value': '1000000000000000000',  # 1 ETH
-                'gasUsed': '21000',
-                'gasPrice': '30000000000',
-                'timeStamp': str(int((datetime.now() - timedelta(minutes=5)).timestamp())),
-                'input': '0x',
-                'blockNumber': '50000001'
-            }
+                "hash": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+                "from": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+                "to": "0x8c16f85a4d5f8f23d29e9c7e3d4a3a5a6e4f2b2e",
+                "value": "1000000000000000000",  # 1 ETH
+                "gasUsed": "21000",
+                "gasPrice": "30000000000",
+                "timeStamp": str(int((datetime.now() - timedelta(minutes=5)).timestamp())),
+                "input": "0x",
+                "blockNumber": "50000001",
+            },
         ]
 
         # Add default contract data
         self.contracts["0x42f5d81136d8b8c6e2e5f5abd46a5f9be4457b3a"] = {
-            'address': '0x42f5d81136d8b8c6e2e5f5abd46a5f9be4457b3a',
-            'name': 'Polymarket AMM',
-            'abi': []  # Simplified ABI
+            "address": "0x42f5d81136d8b8c6e2e5f5abd46a5f9be4457b3a",
+            "name": "Polymarket AMM",
+            "abi": [],  # Simplified ABI
         }
 
     async def handle_txlist(self, request: web.Request) -> web.Response:
         """Handle txlist API calls."""
         params = dict(request.query)
 
-        address = params.get('address')
-        startblock = int(params.get('startblock', 0))
-        endblock = int(params.get('endblock', 99999999))
+        address = params.get("address")
+        startblock = int(params.get("startblock", 0))
+        endblock = int(params.get("endblock", 99999999))
 
         if not address:
-            return web.json_response({
-                'status': '0',
-                'message': 'Missing address parameter',
-                'result': []
-            })
+            return web.json_response(
+                {"status": "0", "message": "Missing address parameter", "result": []}
+            )
 
         # Get transactions for this address
         address_txs = self.transactions.get(address.lower(), [])
 
         # Filter by block range
         filtered_txs = [
-            tx for tx in address_txs
-            if startblock <= int(tx['blockNumber']) <= endblock
+            tx for tx in address_txs if startblock <= int(tx["blockNumber"]) <= endblock
         ]
 
         # Sort by block number descending (as PolygonScan does)
-        filtered_txs.sort(key=lambda x: int(x['blockNumber']), reverse=True)
+        filtered_txs.sort(key=lambda x: int(x["blockNumber"]), reverse=True)
 
-        return web.json_response({
-            'status': '1',
-            'message': 'OK',
-            'result': filtered_txs
-        })
+        return web.json_response({"status": "1", "message": "OK", "result": filtered_txs})
 
     async def handle_tokentx(self, request: web.Request) -> web.Response:
         """Handle tokentx API calls."""
         params = dict(request.query)
-        address = params.get('address')
+        address = params.get("address")
 
         if not address:
-            return web.json_response({
-                'status': '0',
-                'message': 'Missing address parameter',
-                'result': []
-            })
+            return web.json_response(
+                {"status": "0", "message": "Missing address parameter", "result": []}
+            )
 
         # Return mock token transactions
         token_txs = [
             {
-                'hash': '0xtoken1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
-                'from': '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-                'to': address,
-                'value': '1000000000000000000',  # 1 token (assuming 18 decimals)
-                'contractAddress': '0x2791bca1f2de4661ed88a30c99a7a9449aa84174',
-                'timeStamp': str(int((datetime.now() - timedelta(hours=1)).timestamp())),
-                'blockNumber': '50000002'
+                "hash": "0xtoken1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+                "from": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+                "to": address,
+                "value": "1000000000000000000",  # 1 token (assuming 18 decimals)
+                "contractAddress": "0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
+                "timeStamp": str(int((datetime.now() - timedelta(hours=1)).timestamp())),
+                "blockNumber": "50000002",
             }
         ]
 
-        return web.json_response({
-            'status': '1',
-            'message': 'OK',
-            'result': token_txs
-        })
+        return web.json_response({"status": "1", "message": "OK", "result": token_txs})
 
     async def handle_get_logs(self, request: web.Request) -> web.Response:
         """Handle getLogs API calls."""
         # Return mock event logs
         logs = [
             {
-                'address': '0x42f5d81136d8b8c6e2e5f5abd46a5f9be4457b3a',
-                'topics': ['0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'],
-                'data': '0x000000000000000000000000742d35Cc6634C0532925a3b844Bc454e4438f44e0000000000000000000000000000000000000000000000000000000000000001',
-                'blockNumber': '0x2faf080',
-                'timeStamp': str(int((datetime.now() - timedelta(hours=2)).timestamp())),
-                'gasPrice': '0xb2d05e00',
-                'gasUsed': '0x24a86',
-                'logIndex': '0x0',
-                'transactionHash': '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
-                'transactionIndex': '0x0'
+                "address": "0x42f5d81136d8b8c6e2e5f5abd46a5f9be4457b3a",
+                "topics": ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"],
+                "data": "0x000000000000000000000000742d35Cc6634C0532925a3b844Bc454e4438f44e0000000000000000000000000000000000000000000000000000000000000001",
+                "blockNumber": "0x2faf080",
+                "timeStamp": str(int((datetime.now() - timedelta(hours=2)).timestamp())),
+                "gasPrice": "0xb2d05e00",
+                "gasUsed": "0x24a86",
+                "logIndex": "0x0",
+                "transactionHash": "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+                "transactionIndex": "0x0",
             }
         ]
 
-        return web.json_response({
-            'status': '1',
-            'message': 'OK',
-            'result': logs
-        })
+        return web.json_response({"status": "1", "message": "OK", "result": logs})
 
     async def handle_error_response(self, request: web.Request) -> web.Response:
         """Handle error responses for testing."""
-        return web.json_response({
-            'status': '0',
-            'message': 'Rate limit exceeded',
-            'result': []
-        })
+        return web.json_response({"status": "0", "message": "Rate limit exceeded", "result": []})
 
     async def create_app(self) -> web.Application:
         """Create the web application."""
         app = web.Application()
 
         # Route handlers
-        app.router.add_get('/api', self.handle_txlist)
-        app.router.add_get('/api/tokentx', self.handle_tokentx)
-        app.router.add_get('/api/logs', self.handle_get_logs)
-        app.router.add_get('/api/error', self.handle_error_response)
+        app.router.add_get("/api", self.handle_txlist)
+        app.router.add_get("/api/tokentx", self.handle_tokentx)
+        app.router.add_get("/api/logs", self.handle_get_logs)
+        app.router.add_get("/api/error", self.handle_error_response)
 
         return app
 
@@ -236,24 +215,25 @@ class AsyncPolygonScanClient:
         if self.session:
             await self.session.close()
 
-    async def get_transactions(self, address: str, api_key: str = "test",
-                             start_block: int = 0, end_block: int = 99999999) -> List[Dict[str, Any]]:
+    async def get_transactions(
+        self, address: str, api_key: str = "test", start_block: int = 0, end_block: int = 99999999
+    ) -> List[Dict[str, Any]]:
         """Get transactions for an address."""
         params = {
-            'module': 'account',
-            'action': 'txlist',
-            'address': address,
-            'startblock': start_block,
-            'endblock': end_block,
-            'sort': 'desc',
-            'apikey': api_key
+            "module": "account",
+            "action": "txlist",
+            "address": address,
+            "startblock": start_block,
+            "endblock": end_block,
+            "sort": "desc",
+            "apikey": api_key,
         }
 
         async with self.session.get(f"{self.base_url}/api", params=params) as response:
             data = await response.json()
 
-            if data.get('status') == '1':
-                return data.get('result', [])
+            if data.get("status") == "1":
+                return data.get("result", [])
             else:
                 raise Exception(f"PolygonScan API error: {data.get('message')}")
 

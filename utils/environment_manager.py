@@ -9,26 +9,17 @@ This module provides comprehensive virtual environment management including:
 - Health checks and automatic repair
 """
 
-import os
-import sys
 import json
-import hashlib
-import subprocess
-import platform
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass, asdict
-from datetime import datetime, timedelta
 import logging
+import subprocess
+import sys
+from dataclasses import asdict, dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 # Third-party imports (will be available in virtual environment)
-try:
-    import requests
-    from packaging import version
-    import pkg_resources
-except ImportError:
-    print("⚠️  Environment dependencies not available. Run setup first.")
-    pass
+# No imports needed for basic environment checking
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +27,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class EnvironmentConfig:
     """Configuration for environment management"""
+
     name: str
     python_version: str
     venv_path: Path
@@ -50,6 +42,7 @@ class EnvironmentConfig:
 @dataclass
 class DependencyInfo:
     """Information about a Python dependency"""
+
     name: str
     version: str
     required_version: str
@@ -65,6 +58,7 @@ class DependencyInfo:
 @dataclass
 class EnvironmentHealth:
     """Health status of an environment"""
+
     environment_name: str
     is_healthy: bool
     issues: List[str]
@@ -101,7 +95,7 @@ class EnvironmentManager:
         logging.basicConfig(
             filename=log_dir / "environment_manager.log",
             level=logging.INFO,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         )
 
     def _load_environment_configs(self) -> Dict[str, EnvironmentConfig]:
@@ -117,7 +111,7 @@ class EnvironmentManager:
             environment_file=self.project_root / ".env",
             service_name="polymarket-bot",
             is_production=True,
-            auto_update=False
+            auto_update=False,
         )
 
         # Staging environment
@@ -129,7 +123,7 @@ class EnvironmentManager:
             environment_file=self.project_root / ".env.staging",
             service_name="polymarket-bot-staging",
             is_production=False,
-            auto_update=True
+            auto_update=True,
         )
 
         # Development environment
@@ -141,7 +135,7 @@ class EnvironmentManager:
             environment_file=self.project_root / ".env.development",
             service_name="polymarket-bot-dev",
             is_production=False,
-            auto_update=True
+            auto_update=True,
         )
 
         return configs
@@ -162,13 +156,16 @@ class EnvironmentManager:
             # Remove existing environment if force is True
             if force and config.venv_path.exists():
                 import shutil
+
                 shutil.rmtree(config.venv_path)
                 logger.info(f"Removed existing environment: {config.venv_path}")
 
             # Create virtual environment
-            result = subprocess.run([
-                sys.executable, "-m", "venv", str(config.venv_path)
-            ], capture_output=True, text=True)
+            result = subprocess.run(
+                [sys.executable, "-m", "venv", str(config.venv_path)],
+                capture_output=True,
+                text=True,
+            )
 
             if result.returncode != 0:
                 logger.error(f"Failed to create virtual environment: {result.stderr}")
@@ -176,9 +173,9 @@ class EnvironmentManager:
 
             # Upgrade pip
             pip_path = config.venv_path / "bin" / "pip"
-            result = subprocess.run([
-                str(pip_path), "install", "--upgrade", "pip"
-            ], capture_output=True, text=True)
+            result = subprocess.run(
+                [str(pip_path), "install", "--upgrade", "pip"], capture_output=True, text=True
+            )
 
             if result.returncode != 0:
                 logger.warning(f"Failed to upgrade pip: {result.stderr}")
@@ -254,7 +251,7 @@ class EnvironmentManager:
                 python_version_ok=False,
                 dependencies_ok=False,
                 security_ok=False,
-                configuration_ok=False
+                configuration_ok=False,
             )
 
         config = self.environments[env_name]
@@ -295,10 +292,12 @@ class EnvironmentManager:
             python_version_ok=python_ok,
             dependencies_ok=deps_ok,
             security_ok=security_ok,
-            configuration_ok=config_ok
+            configuration_ok=config_ok,
         )
 
-        logger.info(f"Environment {env_name} health check: {'HEALTHY' if is_healthy else 'UNHEALTHY'}")
+        logger.info(
+            f"Environment {env_name} health check: {'HEALTHY' if is_healthy else 'UNHEALTHY'}"
+        )
         if issues:
             logger.warning(f"Issues found: {issues}")
 
@@ -311,15 +310,21 @@ class EnvironmentManager:
             if not python_path.exists():
                 return False
 
-            result = subprocess.run([
-                str(python_path), "-c", "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"
-            ], capture_output=True, text=True)
+            result = subprocess.run(
+                [
+                    str(python_path),
+                    "-c",
+                    "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')",
+                ],
+                capture_output=True,
+                text=True,
+            )
 
             if result.returncode != 0:
                 return False
 
             version_str = result.stdout.strip()
-            version_parts = version_str.split('.')
+            version_parts = version_str.split(".")
             major, minor = int(version_parts[0]), int(version_parts[1])
 
             # Check if version is >= 3.9 and < 3.12
@@ -340,9 +345,9 @@ class EnvironmentManager:
             critical_deps = ["web3", "pydantic", "tenacity", "cryptography"]
 
             for dep in critical_deps:
-                result = subprocess.run([
-                    str(python_path), "-c", f"import {dep}"
-                ], capture_output=True, text=True)
+                result = subprocess.run(
+                    [str(python_path), "-c", f"import {dep}"], capture_output=True, text=True
+                )
 
                 if result.returncode != 0:
                     logger.warning(f"Missing dependency: {dep}")
@@ -362,7 +367,7 @@ class EnvironmentManager:
 
         # Basic checks - more detailed validation would be in settings validation
         try:
-            with open(config.environment_file, 'r') as f:
+            with open(config.environment_file, "r") as f:
                 content = f.read()
 
             # Check for required environment variables
@@ -398,8 +403,8 @@ class EnvironmentManager:
             "paths": {
                 "venv": str(config.venv_path),
                 "requirements": str(config.requirements_file),
-                "environment": str(config.environment_file)
-            }
+                "environment": str(config.environment_file),
+            },
         }
 
     def list_environments(self) -> List[str]:
@@ -421,9 +426,10 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="Environment Manager for Polymarket Copy Bot")
-    parser.add_argument("action", choices=[
-        "create", "validate", "install-deps", "activate", "info", "list", "health-check"
-    ])
+    parser.add_argument(
+        "action",
+        choices=["create", "validate", "install-deps", "activate", "info", "list", "health-check"],
+    )
     parser.add_argument("--env", default="production", help="Environment name")
     parser.add_argument("--force", action="store_true", help="Force operation")
 
@@ -433,7 +439,11 @@ def main():
 
     if args.action == "create":
         success = manager.create_environment(args.env, args.force)
-        print(f"✅ Created environment {args.env}" if success else f"❌ Failed to create environment {args.env}")
+        print(
+            f"✅ Created environment {args.env}"
+            if success
+            else f"❌ Failed to create environment {args.env}"
+        )
 
     elif args.action == "validate":
         health = manager.validate_environment(args.env)
@@ -445,7 +455,11 @@ def main():
 
     elif args.action == "install-deps":
         success = manager.install_dependencies(args.env)
-        print(f"✅ Installed dependencies for {args.env}" if success else f"❌ Failed to install dependencies")
+        print(
+            f"✅ Installed dependencies for {args.env}"
+            if success
+            else "❌ Failed to install dependencies"
+        )
 
     elif args.action == "activate":
         script = manager.activate_environment(args.env)

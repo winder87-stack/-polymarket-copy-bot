@@ -1,23 +1,21 @@
 """
 Unit tests for config/settings.py - Configuration validation and loading.
 """
-import pytest
-import os
+
 import json
-import tempfile
-from unittest.mock import patch, Mock, MagicMock
-from datetime import datetime
-from pathlib import Path
+import os
+from unittest.mock import Mock, patch
+
+import pytest
 
 from config.settings import (
-    Settings,
-    RiskManagementConfig,
-    NetworkConfig,
-    TradingConfig,
-    MonitoringConfig,
     AlertingConfig,
     LoggingConfig,
-    settings
+    MonitoringConfig,
+    NetworkConfig,
+    RiskManagementConfig,
+    Settings,
+    TradingConfig,
 )
 
 
@@ -33,7 +31,7 @@ class TestRiskManagementConfig:
             max_concurrent_positions=10,
             stop_loss_percentage=0.15,
             take_profit_percentage=0.25,
-            max_slippage=0.02
+            max_slippage=0.02,
         )
         assert config.max_position_size == 50.0
         assert config.max_daily_loss == 100.0
@@ -90,7 +88,7 @@ class TestNetworkConfig:
             clob_host="https://clob.polymarket.com",
             chain_id=137,
             polygon_rpc_url="https://polygon-rpc.com",
-            polygonscan_api_key="test-key"
+            polygonscan_api_key="test-key",
         )
         assert config.clob_host == "https://clob.polymarket.com"
         assert config.chain_id == 137
@@ -111,7 +109,7 @@ class TestTradingConfig:
             wallet_address="0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
             gas_limit=300000,
             max_gas_price=100,
-            gas_price_multiplier=1.1
+            gas_price_multiplier=1.1,
         )
         assert config.private_key.startswith("0x")
         assert config.gas_limit == 300000
@@ -124,14 +122,16 @@ class TestTradingConfig:
     def test_private_key_without_prefix(self):
         """Test private key without 0x prefix."""
         with pytest.raises(ValueError):
-            TradingConfig(private_key="1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
+            TradingConfig(
+                private_key="1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+            )
 
     def test_invalid_gas_limit(self):
         """Test invalid gas limit."""
         with pytest.raises(ValueError):
             TradingConfig(
                 private_key="0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-                gas_limit=10000  # Below minimum
+                gas_limit=10000,  # Below minimum
             )
 
     def test_invalid_gas_price_multiplier(self):
@@ -139,13 +139,13 @@ class TestTradingConfig:
         with pytest.raises(ValueError):
             TradingConfig(
                 private_key="0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-                gas_price_multiplier=0.5  # Below minimum
+                gas_price_multiplier=0.5,  # Below minimum
             )
 
         with pytest.raises(ValueError):
             TradingConfig(
                 private_key="0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-                gas_price_multiplier=2.5  # Above maximum
+                gas_price_multiplier=2.5,  # Above maximum
             )
 
 
@@ -158,7 +158,7 @@ class TestMonitoringConfig:
             monitor_interval=15,
             wallets_file="config/wallets.json",
             target_wallets=["0x742d35Cc6634C0532925a3b844Bc454e4438f44e"],
-            min_confidence_score=0.7
+            min_confidence_score=0.7,
         )
         assert config.monitor_interval == 15
         assert config.min_confidence_score == 0.7
@@ -190,7 +190,7 @@ class TestAlertingConfig:
             telegram_chat_id="123456789",
             alert_on_trade=True,
             alert_on_error=True,
-            alert_on_circuit_breaker=True
+            alert_on_circuit_breaker=True,
         )
         assert config.telegram_bot_token is not None
         assert config.alert_on_trade is True
@@ -204,7 +204,7 @@ class TestLoggingConfig:
         config = LoggingConfig(
             log_level="INFO",
             log_file="logs/polymarket_bot.log",
-            log_format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+            log_format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         )
         assert config.log_level == "INFO"
         assert config.log_file.endswith(".log")
@@ -230,7 +230,10 @@ class TestSettings:
         assert settings_instance.risk.max_daily_loss == 100.0
         assert settings_instance.risk.max_position_size == 50.0
         assert settings_instance.monitoring.monitor_interval == 15
-        assert settings_instance.trading.private_key == "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+        assert (
+            settings_instance.trading.private_key
+            == "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+        )
 
     def test_env_variable_type_conversion(self, mock_env_vars):
         """Test type conversion for environment variables."""
@@ -249,15 +252,17 @@ class TestSettings:
 
     def test_wallet_loading_from_file(self, temp_config_file, mock_env_vars):
         """Test loading wallets from configuration file."""
-        with patch('config.settings.os.path.exists', return_value=True):
-            with patch('config.settings.open') as mock_open:
-                mock_open.return_value.__enter__.return_value.read.return_value = json.dumps({
-                    'target_wallets': [
-                        "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
-                        "0x742d35Cc6634C0532925a3b844Bc454e4438f44f"
-                    ],
-                    'min_confidence_score': 0.8
-                })
+        with patch("config.settings.os.path.exists", return_value=True):
+            with patch("config.settings.open") as mock_open:
+                mock_open.return_value.__enter__.return_value.read.return_value = json.dumps(
+                    {
+                        "target_wallets": [
+                            "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+                            "0x742d35Cc6634C0532925a3b844Bc454e4438f44f",
+                        ],
+                        "min_confidence_score": 0.8,
+                    }
+                )
 
                 settings_instance = Settings()
                 assert len(settings_instance.monitoring.target_wallets) == 2
@@ -265,20 +270,20 @@ class TestSettings:
 
     def test_wallet_loading_file_not_found(self, mock_env_vars):
         """Test behavior when wallets file is not found."""
-        with patch('config.settings.os.path.exists', return_value=False):
+        with patch("config.settings.os.path.exists", return_value=False):
             settings_instance = Settings()
             assert settings_instance.monitoring.target_wallets == []
 
     def test_wallet_loading_invalid_json(self, mock_env_vars):
         """Test behavior when wallets file contains invalid JSON."""
-        with patch('config.settings.os.path.exists', return_value=True):
-            with patch('config.settings.open') as mock_open:
+        with patch("config.settings.os.path.exists", return_value=True):
+            with patch("config.settings.open") as mock_open:
                 mock_open.return_value.__enter__.return_value.read.return_value = "invalid json"
 
                 settings_instance = Settings()
                 assert settings_instance.monitoring.target_wallets == []
 
-    @patch('config.settings.Web3')
+    @patch("config.settings.Web3")
     def test_validate_critical_settings_valid(self, mock_web3_class, mock_env_vars):
         """Test critical settings validation with valid settings."""
         mock_web3_instance = Mock()
@@ -289,7 +294,7 @@ class TestSettings:
         # Should not raise an exception
         settings_instance.validate_critical_settings()
 
-    @patch('config.settings.Web3')
+    @patch("config.settings.Web3")
     def test_validate_critical_settings_invalid_private_key(self, mock_web3_class):
         """Test critical settings validation with invalid private key."""
         settings_instance = Settings()
@@ -298,7 +303,7 @@ class TestSettings:
         with pytest.raises(ValueError, match="Private key must start with '0x'"):
             settings_instance.validate_critical_settings()
 
-    @patch('config.settings.Web3')
+    @patch("config.settings.Web3")
     def test_validate_critical_settings_short_private_key(self, mock_web3_class):
         """Test critical settings validation with too short private key."""
         settings_instance = Settings()
@@ -307,7 +312,7 @@ class TestSettings:
         with pytest.raises(ValueError, match="Invalid private key length"):
             settings_instance.validate_critical_settings()
 
-    @patch('config.settings.Web3')
+    @patch("config.settings.Web3")
     def test_validate_critical_settings_zero_daily_loss(self, mock_web3_class):
         """Test critical settings validation with zero daily loss."""
         settings_instance = Settings()
@@ -316,7 +321,7 @@ class TestSettings:
         with pytest.raises(ValueError, match="MAX_DAILY_LOSS must be greater than 0"):
             settings_instance.validate_critical_settings()
 
-    @patch('config.settings.Web3')
+    @patch("config.settings.Web3")
     def test_validate_critical_settings_zero_position_size(self, mock_web3_class):
         """Test critical settings validation with zero position size."""
         settings_instance = Settings()
@@ -325,7 +330,7 @@ class TestSettings:
         with pytest.raises(ValueError, match="MAX_POSITION_SIZE must be greater than 0"):
             settings_instance.validate_critical_settings()
 
-    @patch('config.settings.Web3')
+    @patch("config.settings.Web3")
     def test_validate_critical_settings_invalid_rpc_url(self, mock_web3_class):
         """Test critical settings validation with invalid RPC URL."""
         settings_instance = Settings()
@@ -334,7 +339,7 @@ class TestSettings:
         with pytest.raises(ValueError, match="POLYGON_RPC_URL must be a valid HTTP/HTTPS URL"):
             settings_instance.validate_critical_settings()
 
-    @patch('config.settings.Web3')
+    @patch("config.settings.Web3")
     def test_validate_critical_settings_web3_connection_failure(self, mock_web3_class):
         """Test critical settings validation when Web3 connection fails."""
         mock_web3_instance = Mock()
@@ -349,50 +354,52 @@ class TestSettings:
     def test_env_mappings_completeness(self, test_settings):
         """Test that all settings have environment variable mappings."""
         expected_mappings = {
-            'network.clob_host': 'CLOB_HOST',
-            'network.polygon_rpc_url': 'POLYGON_RPC_URL',
-            'network.polygonscan_api_key': 'POLYGONSCAN_API_KEY',
-            'risk.max_slippage': 'MAX_SLIPPAGE',
-            'risk.max_position_size': 'MAX_POSITION_SIZE',
-            'risk.max_daily_loss': 'MAX_DAILY_LOSS',
-            'risk.min_trade_amount': 'MIN_TRADE_AMOUNT',
-            'monitoring.monitor_interval': 'MONITOR_INTERVAL',
-            'trading.max_gas_price': 'MAX_GAS_PRICE',
-            'trading.gas_limit': 'DEFAULT_GAS_LIMIT',
-            'risk.max_concurrent_positions': 'MAX_CONCURRENT_POSITIONS',
-            'risk.stop_loss_percentage': 'STOP_LOSS_PERCENTAGE',
-            'risk.take_profit_percentage': 'TAKE_PROFIT_PERCENTAGE',
-            'logging.log_level': 'LOG_LEVEL',
-            'logging.log_file': 'LOG_FILE',
-            'alerts.telegram_bot_token': 'TELEGRAM_BOT_TOKEN',
-            'alerts.telegram_chat_id': 'TELEGRAM_CHAT_ID',
-            'trading.private_key': 'PRIVATE_KEY',
-            'trading.wallet_address': 'WALLET_ADDRESS',
-            'monitoring.min_confidence_score': 'MIN_CONFIDENCE_SCORE'
+            "network.clob_host": "CLOB_HOST",
+            "network.polygon_rpc_url": "POLYGON_RPC_URL",
+            "network.polygonscan_api_key": "POLYGONSCAN_API_KEY",
+            "risk.max_slippage": "MAX_SLIPPAGE",
+            "risk.max_position_size": "MAX_POSITION_SIZE",
+            "risk.max_daily_loss": "MAX_DAILY_LOSS",
+            "risk.min_trade_amount": "MIN_TRADE_AMOUNT",
+            "monitoring.monitor_interval": "MONITOR_INTERVAL",
+            "trading.max_gas_price": "MAX_GAS_PRICE",
+            "trading.gas_limit": "DEFAULT_GAS_LIMIT",
+            "risk.max_concurrent_positions": "MAX_CONCURRENT_POSITIONS",
+            "risk.stop_loss_percentage": "STOP_LOSS_PERCENTAGE",
+            "risk.take_profit_percentage": "TAKE_PROFIT_PERCENTAGE",
+            "logging.log_level": "LOG_LEVEL",
+            "logging.log_file": "LOG_FILE",
+            "alerts.telegram_bot_token": "TELEGRAM_BOT_TOKEN",
+            "alerts.telegram_chat_id": "TELEGRAM_CHAT_ID",
+            "trading.private_key": "PRIVATE_KEY",
+            "trading.wallet_address": "WALLET_ADDRESS",
+            "monitoring.min_confidence_score": "MIN_CONFIDENCE_SCORE",
         }
 
         assert test_settings.env_mappings == expected_mappings
 
     def test_nested_env_variable_loading(self, mock_env_vars):
         """Test loading nested configuration from environment variables."""
-        with patch.dict(os.environ, {
-            'MAX_SLIPPAGE': '0.03',
-            'MAX_CONCURRENT_POSITIONS': '15',
-            'LOG_LEVEL': 'DEBUG'
-        }):
+        with patch.dict(
+            os.environ,
+            {"MAX_SLIPPAGE": "0.03", "MAX_CONCURRENT_POSITIONS": "15", "LOG_LEVEL": "DEBUG"},
+        ):
             settings_instance = Settings()
 
             assert settings_instance.risk.max_slippage == 0.03
             assert settings_instance.risk.max_concurrent_positions == 15
-            assert settings_instance.logging.log_level == 'DEBUG'
+            assert settings_instance.logging.log_level == "DEBUG"
 
     def test_invalid_env_variable_values(self):
         """Test handling of invalid environment variable values."""
-        with patch.dict(os.environ, {
-            'MAX_DAILY_LOSS': 'invalid',
-            'MONITOR_INTERVAL': 'not-a-number',
-            'ALERT_ON_TRADE': 'maybe'
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "MAX_DAILY_LOSS": "invalid",
+                "MONITOR_INTERVAL": "not-a-number",
+                "ALERT_ON_TRADE": "maybe",
+            },
+        ):
             settings_instance = Settings()
 
             # Should keep default values for invalid conversions
@@ -406,9 +413,11 @@ class TestSettingsIntegration:
 
     def test_full_configuration_loading(self, mock_env_vars, temp_config_file):
         """Test loading full configuration from multiple sources."""
-        with patch('config.settings.os.path.exists', return_value=True), \
-             patch('config.settings.open') as mock_open, \
-             patch('config.settings.Web3') as mock_web3_class:
+        with (
+            patch("config.settings.os.path.exists", return_value=True),
+            patch("config.settings.open") as mock_open,
+            patch("config.settings.Web3") as mock_web3_class,
+        ):
 
             # Mock Web3 connection
             mock_web3_instance = Mock()
@@ -416,15 +425,20 @@ class TestSettingsIntegration:
             mock_web3_class.return_value = mock_web3_instance
 
             # Mock file reading
-            mock_open.return_value.__enter__.return_value.read.return_value = json.dumps({
-                'target_wallets': ["0x742d35Cc6634C0532925a3b844Bc454e4438f44e"],
-                'min_confidence_score': 0.75
-            })
+            mock_open.return_value.__enter__.return_value.read.return_value = json.dumps(
+                {
+                    "target_wallets": ["0x742d35Cc6634C0532925a3b844Bc454e4438f44e"],
+                    "min_confidence_score": 0.75,
+                }
+            )
 
             settings_instance = Settings()
 
             # Validate all settings are loaded correctly
-            assert settings_instance.trading.private_key == "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+            assert (
+                settings_instance.trading.private_key
+                == "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+            )
             assert settings_instance.risk.max_daily_loss == 100.0
             assert settings_instance.monitoring.monitor_interval == 15
             assert len(settings_instance.monitoring.target_wallets) == 1

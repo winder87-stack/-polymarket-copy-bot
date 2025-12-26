@@ -10,25 +10,22 @@ Provides web-based monitoring interface with:
 - Configuration status display
 """
 
-import os
-import sys
 import json
-import time
-import threading
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional
-from pathlib import Path
 import logging
+import sys
+import threading
+import time
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 # Flask and related imports
 try:
-    from flask import Flask, render_template, jsonify, request, Response
-    from flask_cors import CORS
-    import plotly
-    import plotly.graph_objects as go
-    from plotly.subplots import make_subplots
-    import plotly.express as px
     import pandas as pd
+    import plotly.graph_objects as go
+    from flask import Flask, Response, jsonify, render_template, request
+    from flask_cors import CORS
+    from plotly.subplots import make_subplots
 except ImportError as e:
     print(f"Missing required packages: {e}")
     print("Install with: pip install flask flask-cors plotly pandas")
@@ -38,15 +35,18 @@ except ImportError as e:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class WebDashboard:
     """Web-based monitoring dashboard"""
 
     def __init__(self, project_root: Optional[Path] = None, port: int = 8080):
         self.project_root = project_root or Path(__file__).parent.parent
         self.port = port
-        self.app = Flask(__name__,
-                        template_folder=str(self.project_root / "templates"),
-                        static_folder=str(self.project_root / "static"))
+        self.app = Flask(
+            __name__,
+            template_folder=str(self.project_root / "templates"),
+            static_folder=str(self.project_root / "static"),
+        )
         CORS(self.app)
 
         # Data storage
@@ -64,20 +64,20 @@ class WebDashboard:
     def _setup_routes(self) -> None:
         """Setup Flask routes"""
 
-        @self.app.route('/')
+        @self.app.route("/")
         def index():
-            return render_template('dashboard.html')
+            return render_template("dashboard.html")
 
-        @self.app.route('/api/metrics/current')
+        @self.app.route("/api/metrics/current")
         def get_current_metrics():
             """Get current metrics snapshot"""
             return jsonify(self._get_current_metrics())
 
-        @self.app.route('/api/metrics/history')
+        @self.app.route("/api/metrics/history")
         def get_metrics_history():
             """Get metrics history"""
             try:
-                hours_str = request.args.get('hours', '1')
+                hours_str = request.args.get("hours", "1")
                 hours = int(hours_str)
                 # Validate reasonable bounds for hours
                 if not (1 <= hours <= 168):  # 1 hour to 1 week
@@ -86,29 +86,29 @@ class WebDashboard:
             except (ValueError, TypeError):
                 return jsonify({"error": "Invalid hours parameter"}), 400
 
-        @self.app.route('/api/alerts')
+        @self.app.route("/api/alerts")
         def get_alerts():
             """Get alerts data"""
-            active_only = request.args.get('active_only', 'true').lower() == 'true'
+            active_only = request.args.get("active_only", "true").lower() == "true"
             return jsonify(self._get_alerts_data(active_only))
 
-        @self.app.route('/api/logs')
+        @self.app.route("/api/logs")
         def get_logs():
             """Get log data"""
             try:
-                lines_str = request.args.get('lines', '100')
+                lines_str = request.args.get("lines", "100")
                 lines = int(lines_str)
                 # Validate reasonable bounds for lines
                 if not (10 <= lines <= 1000):
                     lines = 100
 
-                level = request.args.get('level', 'ALL')
+                level = request.args.get("level", "ALL")
                 # Validate log level
-                valid_levels = ['ALL', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
+                valid_levels = ["ALL", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
                 if level.upper() not in valid_levels:
-                    level = 'ALL'
+                    level = "ALL"
 
-                search = request.args.get('search', '')
+                search = request.args.get("search", "")
                 # Basic sanitization for search terms
                 if len(search) > 100:  # Reasonable limit
                     search = search[:100]
@@ -117,11 +117,11 @@ class WebDashboard:
             except (ValueError, TypeError):
                 return jsonify({"error": "Invalid parameters"}), 400
 
-        @self.app.route('/api/charts/<chart_type>')
+        @self.app.route("/api/charts/<chart_type>")
         def get_chart(chart_type: str):
             """Get chart data"""
             try:
-                hours_str = request.args.get('hours', '24')
+                hours_str = request.args.get("hours", "24")
                 hours = int(hours_str)
                 # Validate reasonable bounds for hours
                 if not (1 <= hours <= 168):  # 1 hour to 1 week
@@ -129,8 +129,13 @@ class WebDashboard:
 
                 # Validate chart type
                 valid_chart_types = [
-                    'performance', 'trades', 'api_usage', 'alerts_timeline',
-                    'system_status', 'memory_usage', 'network_latency'
+                    "performance",
+                    "trades",
+                    "api_usage",
+                    "alerts_timeline",
+                    "system_status",
+                    "memory_usage",
+                    "network_latency",
                 ]
                 if chart_type not in valid_chart_types:
                     return jsonify({"error": "Invalid chart type"}), 400
@@ -140,15 +145,15 @@ class WebDashboard:
             except (ValueError, TypeError):
                 return jsonify({"error": "Invalid hours parameter"}), 400
 
-        @self.app.route('/api/system/status')
+        @self.app.route("/api/system/status")
         def get_system_status():
             """Get overall system status"""
             return jsonify(self._get_system_status())
 
-        @self.app.route('/api/logs/stream')
+        @self.app.route("/api/logs/stream")
         def stream_logs():
             """Stream logs in real-time"""
-            return Response(self._stream_logs(), mimetype='text/plain')
+            return Response(self._stream_logs(), mimetype="text/plain")
 
     def _get_current_metrics(self) -> Dict[str, Any]:
         """Get current metrics snapshot"""
@@ -162,20 +167,16 @@ class WebDashboard:
                     "disk_percent": 72.3,
                     "load_average": 1.25,
                     "network_rx": 2.4,
-                    "network_tx": 1.8
+                    "network_tx": 1.8,
                 },
                 "application": {
                     "total_trades": 1247,
                     "success_rate": 95.4,
                     "avg_latency": 2340,
                     "api_usage": 68,
-                    "circuit_breaker": False
+                    "circuit_breaker": False,
                 },
-                "alerts": {
-                    "active_count": 1,
-                    "critical_count": 0,
-                    "warning_count": 1
-                }
+                "alerts": {"active_count": 1, "critical_count": 0, "warning_count": 1},
             }
         except Exception as e:
             logger.error(f"Error getting current metrics: {e}")
@@ -189,14 +190,14 @@ class WebDashboard:
             start_time = end_time - timedelta(hours=hours)
 
             # Generate mock time series data
-            timestamps = pd.date_range(start=start_time, end=end_time, freq='5min')
+            timestamps = pd.date_range(start=start_time, end=end_time, freq="5min")
 
             data = {
-                "timestamps": timestamps.strftime('%Y-%m-%d %H:%M:%S').tolist(),
+                "timestamps": timestamps.strftime("%Y-%m-%d %H:%M:%S").tolist(),
                 "cpu_percent": [45 + (i % 10) for i in range(len(timestamps))],
                 "memory_percent": [65 + (i % 15) for i in range(len(timestamps))],
                 "trade_success_rate": [95 + (i % 5) - 2 for i in range(len(timestamps))],
-                "api_latency": [2000 + (i % 1000) for i in range(len(timestamps))]
+                "api_latency": [2000 + (i % 1000) for i in range(len(timestamps))],
             }
 
             return data
@@ -216,7 +217,7 @@ class WebDashboard:
                     "title": "High Memory Usage",
                     "message": "Memory usage at 67.8%",
                     "timestamp": (datetime.now() - timedelta(minutes=5)).isoformat(),
-                    "resolved": False
+                    "resolved": False,
                 },
                 {
                     "id": "alert_002",
@@ -225,8 +226,8 @@ class WebDashboard:
                     "title": "Circuit Breaker Activated",
                     "message": "Circuit breaker activated due to consecutive failures",
                     "timestamp": (datetime.now() - timedelta(hours=2)).isoformat(),
-                    "resolved": True
-                }
+                    "resolved": True,
+                },
             ]
 
             if active_only:
@@ -236,7 +237,7 @@ class WebDashboard:
                 "alerts": alerts,
                 "total_count": len(alerts),
                 "critical_count": len([a for a in alerts if a["severity"] == "CRITICAL"]),
-                "warning_count": len([a for a in alerts if a["severity"] == "WARNING"])
+                "warning_count": len([a for a in alerts if a["severity"] == "WARNING"]),
             }
         except Exception as e:
             logger.error(f"Error getting alerts data: {e}")
@@ -249,7 +250,7 @@ class WebDashboard:
             if not log_file.exists():
                 return {"logs": [], "total_lines": 0}
 
-            with open(log_file, 'r') as f:
+            with open(log_file, "r") as f:
                 all_lines = f.readlines()
 
             # Apply filters
@@ -275,7 +276,7 @@ class WebDashboard:
             return {
                 "logs": list(reversed(filtered_lines)),  # Put back in chronological order
                 "total_lines": len(all_lines),
-                "filtered_lines": len(filtered_lines)
+                "filtered_lines": len(filtered_lines),
             }
         except Exception as e:
             logger.error(f"Error getting logs data: {e}")
@@ -301,46 +302,75 @@ class WebDashboard:
     def _create_system_overview_chart(self, hours: int) -> Dict[str, Any]:
         """Create system overview chart"""
         # Mock data for demonstration
-        timestamps = pd.date_range(end=datetime.now(), periods=20, freq='5min')
+        timestamps = pd.date_range(end=datetime.now(), periods=20, freq="5min")
 
         fig = make_subplots(
-            rows=2, cols=2,
-            subplot_titles=('CPU Usage', 'Memory Usage', 'Disk Usage', 'Network I/O'),
-            specs=[[{"secondary_y": False}, {"secondary_y": False}],
-                   [{"secondary_y": False}, {"secondary_y": True}]]
+            rows=2,
+            cols=2,
+            subplot_titles=("CPU Usage", "Memory Usage", "Disk Usage", "Network I/O"),
+            specs=[
+                [{"secondary_y": False}, {"secondary_y": False}],
+                [{"secondary_y": False}, {"secondary_y": True}],
+            ],
         )
 
         # CPU Usage
         fig.add_trace(
-            go.Scatter(x=timestamps, y=[45 + (i % 10) for i in range(20)],
-                      name="CPU %", line=dict(color='red')),
-            row=1, col=1
+            go.Scatter(
+                x=timestamps,
+                y=[45 + (i % 10) for i in range(20)],
+                name="CPU %",
+                line=dict(color="red"),
+            ),
+            row=1,
+            col=1,
         )
 
         # Memory Usage
         fig.add_trace(
-            go.Scatter(x=timestamps, y=[65 + (i % 15) for i in range(20)],
-                      name="Memory %", line=dict(color='blue')),
-            row=1, col=2
+            go.Scatter(
+                x=timestamps,
+                y=[65 + (i % 15) for i in range(20)],
+                name="Memory %",
+                line=dict(color="blue"),
+            ),
+            row=1,
+            col=2,
         )
 
         # Disk Usage
         fig.add_trace(
-            go.Scatter(x=timestamps, y=[70 + (i % 10) for i in range(20)],
-                      name="Disk %", line=dict(color='green')),
-            row=2, col=1
+            go.Scatter(
+                x=timestamps,
+                y=[70 + (i % 10) for i in range(20)],
+                name="Disk %",
+                line=dict(color="green"),
+            ),
+            row=2,
+            col=1,
         )
 
         # Network I/O
         fig.add_trace(
-            go.Scatter(x=timestamps, y=[2.0 + (i % 1) for i in range(20)],
-                      name="RX MB/s", line=dict(color='orange')),
-            row=2, col=2
+            go.Scatter(
+                x=timestamps,
+                y=[2.0 + (i % 1) for i in range(20)],
+                name="RX MB/s",
+                line=dict(color="orange"),
+            ),
+            row=2,
+            col=2,
         )
         fig.add_trace(
-            go.Scatter(x=timestamps, y=[1.5 + (i % 0.5) for i in range(20)],
-                      name="TX MB/s", line=dict(color='purple')),
-            row=2, col=2, secondary_y=False
+            go.Scatter(
+                x=timestamps,
+                y=[1.5 + (i % 0.5) for i in range(20)],
+                name="TX MB/s",
+                line=dict(color="purple"),
+            ),
+            row=2,
+            col=2,
+            secondary_y=False,
         )
 
         fig.update_layout(height=600, title_text="System Resource Overview")
@@ -354,35 +384,58 @@ class WebDashboard:
 
     def _create_trade_performance_chart(self, hours: int) -> Dict[str, Any]:
         """Create trade performance chart"""
-        timestamps = pd.date_range(end=datetime.now(), periods=20, freq='5min')
+        timestamps = pd.date_range(end=datetime.now(), periods=20, freq="5min")
 
         fig = make_subplots(
-            rows=2, cols=1,
-            subplot_titles=('Trade Success Rate', 'Trade Latency'),
-            specs=[[{"secondary_y": False}], [{"secondary_y": False}]]
+            rows=2,
+            cols=1,
+            subplot_titles=("Trade Success Rate", "Trade Latency"),
+            specs=[[{"secondary_y": False}], [{"secondary_y": False}]],
         )
 
         # Success Rate
         fig.add_trace(
-            go.Scatter(x=timestamps, y=[95 + (i % 5) - 2 for i in range(20)],
-                      name="Success Rate %", line=dict(color='green')),
-            row=1, col=1
+            go.Scatter(
+                x=timestamps,
+                y=[95 + (i % 5) - 2 for i in range(20)],
+                name="Success Rate %",
+                line=dict(color="green"),
+            ),
+            row=1,
+            col=1,
         )
 
         # Add threshold line
-        fig.add_hline(y=80, line_dash="dash", line_color="red",
-                     annotation_text="Warning Threshold", row=1, col=1)
+        fig.add_hline(
+            y=80,
+            line_dash="dash",
+            line_color="red",
+            annotation_text="Warning Threshold",
+            row=1,
+            col=1,
+        )
 
         # Latency
         fig.add_trace(
-            go.Scatter(x=timestamps, y=[2000 + (i % 1000) for i in range(20)],
-                      name="Latency (ms)", line=dict(color='orange')),
-            row=2, col=1
+            go.Scatter(
+                x=timestamps,
+                y=[2000 + (i % 1000) for i in range(20)],
+                name="Latency (ms)",
+                line=dict(color="orange"),
+            ),
+            row=2,
+            col=1,
         )
 
         # Add threshold line
-        fig.add_hline(y=5000, line_dash="dash", line_color="red",
-                     annotation_text="Warning Threshold", row=2, col=1)
+        fig.add_hline(
+            y=5000,
+            line_dash="dash",
+            line_color="red",
+            annotation_text="Warning Threshold",
+            row=2,
+            col=1,
+        )
 
         fig.update_layout(height=600, title_text="Trade Performance Metrics")
         fig.update_xaxes(title_text="Time")
@@ -393,29 +446,33 @@ class WebDashboard:
 
     def _create_api_usage_chart(self, hours: int) -> Dict[str, Any]:
         """Create API usage chart"""
-        timestamps = pd.date_range(end=datetime.now(), periods=20, freq='5min')
+        timestamps = pd.date_range(end=datetime.now(), periods=20, freq="5min")
 
         fig = go.Figure()
 
         # API Rate Limit Usage
-        fig.add_trace(go.Scatter(
-            x=timestamps,
-            y=[60 + (i % 20) for i in range(20)],
-            name="Rate Limit Usage %",
-            line=dict(color='blue')
-        ))
+        fig.add_trace(
+            go.Scatter(
+                x=timestamps,
+                y=[60 + (i % 20) for i in range(20)],
+                name="Rate Limit Usage %",
+                line=dict(color="blue"),
+            )
+        )
 
         # Add threshold lines
-        fig.add_hline(y=75, line_dash="dash", line_color="orange",
-                     annotation_text="Warning Threshold")
-        fig.add_hline(y=90, line_dash="dash", line_color="red",
-                     annotation_text="Critical Threshold")
+        fig.add_hline(
+            y=75, line_dash="dash", line_color="orange", annotation_text="Warning Threshold"
+        )
+        fig.add_hline(
+            y=90, line_dash="dash", line_color="red", annotation_text="Critical Threshold"
+        )
 
         fig.update_layout(
             title="API Usage Monitoring",
             xaxis_title="Time",
             yaxis_title="Rate Limit Usage (%)",
-            height=400
+            height=400,
         )
 
         return json.loads(fig.to_json())
@@ -426,25 +483,20 @@ class WebDashboard:
         alert_times = [
             datetime.now() - timedelta(hours=2),
             datetime.now() - timedelta(hours=1, minutes=30),
-            datetime.now() - timedelta(minutes=30)
+            datetime.now() - timedelta(minutes=30),
         ]
 
         alert_counts = [1, 0, 1]  # Critical, Warning, Info counts per time period
 
         fig = go.Figure()
 
-        fig.add_trace(go.Bar(
-            x=alert_times,
-            y=alert_counts,
-            name="Alerts",
-            marker_color='red'
-        ))
+        fig.add_trace(go.Bar(x=alert_times, y=alert_counts, name="Alerts", marker_color="red"))
 
         fig.update_layout(
             title="Alerts Timeline (Last 24 Hours)",
             xaxis_title="Time",
             yaxis_title="Alert Count",
-            height=400
+            height=400,
         )
 
         return json.loads(fig.to_json())
@@ -471,11 +523,7 @@ class WebDashboard:
                 "version": "1.0.0",
                 "active_alerts": alerts_data.get("total_count", 0),
                 "last_backup": (datetime.now() - timedelta(hours=6)).isoformat(),
-                "services": {
-                    "bot": "running",
-                    "monitoring": "running",
-                    "database": "healthy"
-                }
+                "services": {"bot": "running", "monitoring": "running", "database": "healthy"},
             }
         except Exception as e:
             logger.error(f"Error getting system status: {e}")
@@ -491,13 +539,13 @@ class WebDashboard:
                 return
 
             # Read existing lines
-            with open(log_file, 'r') as f:
+            with open(log_file, "r") as f:
                 lines = f.readlines()
                 for line in lines[-50:]:  # Last 50 lines
                     yield f"data: {line.strip()}\n\n"
 
             # Continue monitoring for new lines
-            with open(log_file, 'r') as f:
+            with open(log_file, "r") as f:
                 f.seek(0, 2)  # Seek to end
                 while True:
                     line = f.readline()
@@ -518,7 +566,7 @@ class WebDashboard:
 
                 # Maintain history size
                 if len(self.metrics_history) > self.max_history:
-                    self.metrics_history = self.metrics_history[-self.max_history:]
+                    self.metrics_history = self.metrics_history[-self.max_history :]
 
                 time.sleep(30)  # Update every 30 seconds
 
@@ -529,7 +577,8 @@ class WebDashboard:
     def run(self, debug: bool = False) -> None:
         """Run the web dashboard"""
         logger.info(f"Starting web dashboard on port {self.port}")
-        self.app.run(host='0.0.0.0', port=self.port, debug=debug, threaded=True)
+        self.app.run(host="0.0.0.0", port=self.port, debug=debug, threaded=True)
+
 
 def create_templates_and_static():
     """Create basic templates and static files"""
@@ -796,10 +845,11 @@ def create_templates_and_static():
 </body>
 </html>"""
 
-    with open(templates_dir / "dashboard.html", 'w') as f:
+    with open(templates_dir / "dashboard.html", "w") as f:
         f.write(dashboard_html)
 
     logger.info("Created dashboard template and static directories")
+
 
 def main():
     """Main function"""
@@ -808,7 +858,9 @@ def main():
     parser = argparse.ArgumentParser(description="Web Dashboard for Polymarket Copy Bot")
     parser.add_argument("--port", type=int, default=8080, help="Port to run dashboard on")
     parser.add_argument("--debug", action="store_true", help="Run in debug mode")
-    parser.add_argument("--create-templates", action="store_true", help="Create template files and exit")
+    parser.add_argument(
+        "--create-templates", action="store_true", help="Create template files and exit"
+    )
 
     args = parser.parse_args()
 
@@ -831,6 +883,7 @@ def main():
     except Exception as e:
         print(f"Dashboard error: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

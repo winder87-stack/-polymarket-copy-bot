@@ -15,16 +15,13 @@ Features:
 - Profitability threshold enforcement
 """
 
-import asyncio
 import logging
 import math
-import time
-from collections import defaultdict, deque
+from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List
 
 import numpy as np
-from scipy import stats
 
 logger = logging.getLogger(__name__)
 
@@ -44,52 +41,52 @@ class MarketMakerTactics:
     def __init__(self):
         # Spread capture parameters
         self.spread_capture_params = {
-            "min_spread_capture_pct": 0.05,    # Minimum 0.05% spread to capture
-            "max_spread_capture_pct": 0.50,    # Maximum 0.50% spread to target
-            "spread_convergence_time": 300,    # 5 minutes expected convergence
-            "inventory_skew_threshold": 0.3,   # Inventory imbalance threshold
-            "max_inventory_position": 0.2,     # Max position as % of typical volume
+            "min_spread_capture_pct": 0.05,  # Minimum 0.05% spread to capture
+            "max_spread_capture_pct": 0.50,  # Maximum 0.50% spread to target
+            "spread_convergence_time": 300,  # 5 minutes expected convergence
+            "inventory_skew_threshold": 0.3,  # Inventory imbalance threshold
+            "max_inventory_position": 0.2,  # Max position as % of typical volume
         }
 
         # Latency arbitrage parameters
         self.latency_params = {
-            "min_latency_edge_ms": 50,          # Minimum 50ms latency advantage
-            "max_holding_time_latency": 30,     # Max 30 seconds for latency arb
-            "latency_decay_factor": 0.95,       # Latency edge decay per second
-            "min_profit_latency_pct": 0.02,     # Minimum 0.02% profit for latency arb
+            "min_latency_edge_ms": 50,  # Minimum 50ms latency advantage
+            "max_holding_time_latency": 30,  # Max 30 seconds for latency arb
+            "latency_decay_factor": 0.95,  # Latency edge decay per second
+            "min_profit_latency_pct": 0.02,  # Minimum 0.02% profit for latency arb
         }
 
         # Inventory management parameters
         self.inventory_params = {
-            "target_inventory_ratio": 0.0,      # Target neutral inventory
-            "inventory_rebalance_threshold": 0.2, # Rebalance when 20% off target
-            "max_inventory_holding_time": 1800, # 30 minutes max inventory hold
-            "inventory_cost_pct": 0.001,        # 0.001% per minute inventory cost
+            "target_inventory_ratio": 0.0,  # Target neutral inventory
+            "inventory_rebalance_threshold": 0.2,  # Rebalance when 20% off target
+            "max_inventory_holding_time": 1800,  # 30 minutes max inventory hold
+            "inventory_cost_pct": 0.001,  # 0.001% per minute inventory cost
         }
 
         # Gas optimization parameters
         self.gas_params = {
-            "gas_efficiency_threshold": 0.7,   # Minimum gas efficiency score
-            "gas_price_elasticity": 1.5,       # Gas price sensitivity
-            "min_gas_profit_ratio": 3.0,       # Min profit/gas cost ratio
-            "gas_batch_window_seconds": 60,    # Batch trades within 60 seconds
+            "gas_efficiency_threshold": 0.7,  # Minimum gas efficiency score
+            "gas_price_elasticity": 1.5,  # Gas price sensitivity
+            "min_gas_profit_ratio": 3.0,  # Min profit/gas cost ratio
+            "gas_batch_window_seconds": 60,  # Batch trades within 60 seconds
         }
 
         # Cross-market arbitrage parameters
         self.arbitrage_params = {
             "min_price_discrepancy_pct": 0.1,  # Minimum 0.1% price difference
-            "max_arbitrage_holding_time": 120, # 2 minutes max hold
-            "arbitrage_confidence_threshold": 0.8, # Min confidence score
-            "max_concurrent_arbitrages": 3,    # Max simultaneous arb positions
+            "max_arbitrage_holding_time": 120,  # 2 minutes max hold
+            "arbitrage_confidence_threshold": 0.8,  # Min confidence score
+            "max_concurrent_arbitrages": 3,  # Max simultaneous arb positions
         }
 
         # Time-based management parameters
         self.time_params = {
             "market_open_buffer_minutes": 15,  # Buffer after market open
-            "market_close_buffer_minutes": 30, # Buffer before market close
+            "market_close_buffer_minutes": 30,  # Buffer before market close
             "optimal_trading_hours_start": 9,  # 9 AM UTC
-            "optimal_trading_hours_end": 17,   # 5 PM UTC
-            "weekend_trading_penalty": 0.5,    # 50% penalty on weekends
+            "optimal_trading_hours_end": 17,  # 5 PM UTC
+            "weekend_trading_penalty": 0.5,  # 50% penalty on weekends
         }
 
         # Performance tracking
@@ -103,10 +100,7 @@ class MarketMakerTactics:
         logger.info("🎯 Market maker tactics initialized")
 
     async def evaluate_spread_capture_opportunity(
-        self,
-        wallet_address: str,
-        trade_data: Dict[str, Any],
-        market_data: Dict[str, Any]
+        self, wallet_address: str, trade_data: Dict[str, Any], market_data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Evaluate spread capture opportunity for market maker copying.
@@ -123,7 +117,7 @@ class MarketMakerTactics:
             "recommended_action": "hold",
             "risk_assessment": "low",
             "time_to_convergence": 0,
-            "inventory_impact": 0.0
+            "inventory_impact": 0.0,
         }
 
         try:
@@ -158,15 +152,21 @@ class MarketMakerTactics:
                     evaluation["capture_probability"] = alternation_score
 
                     # Estimate spread capture potential
-                    expected_spread = min(spread_pct, self.spread_capture_params["max_spread_capture_pct"])
+                    expected_spread = min(
+                        spread_pct, self.spread_capture_params["max_spread_capture_pct"]
+                    )
                     evaluation["expected_spread_capture"] = expected_spread
 
                     # Calculate convergence time (how long until spread normalizes)
-                    convergence_time = self._estimate_spread_convergence_time(spread_pct, market_data)
+                    convergence_time = self._estimate_spread_convergence_time(
+                        spread_pct, market_data
+                    )
                     evaluation["time_to_convergence"] = convergence_time
 
                     # Assess inventory impact
-                    inventory_impact = self._calculate_inventory_impact(wallet_address, trade_side, trade_amount)
+                    inventory_impact = self._calculate_inventory_impact(
+                        wallet_address, trade_side, trade_amount
+                    )
                     evaluation["inventory_impact"] = inventory_impact
 
                     # Determine recommended action
@@ -200,15 +200,19 @@ class MarketMakerTactics:
 
         alternations = 0
         for i in range(1, len(trade_sides)):
-            if trade_sides[i] != trade_sides[i-1]:
+            if trade_sides[i] != trade_sides[i - 1]:
                 alternations += 1
 
         max_possible_alternations = len(trade_sides) - 1
-        alternation_score = alternations / max_possible_alternations if max_possible_alternations > 0 else 0
+        alternation_score = (
+            alternations / max_possible_alternations if max_possible_alternations > 0 else 0
+        )
 
         return alternation_score
 
-    def _estimate_spread_convergence_time(self, current_spread_pct: float, market_data: Dict[str, Any]) -> int:
+    def _estimate_spread_convergence_time(
+        self, current_spread_pct: float, market_data: Dict[str, Any]
+    ) -> int:
         """Estimate time for spread to converge to normal levels (in seconds)."""
 
         # Base convergence time
@@ -225,11 +229,15 @@ class MarketMakerTactics:
         volatility = market_data.get("volatility_index", 0.2)
         volatility_multiplier = 1 + volatility * 2
 
-        convergence_time = base_time * spread_multiplier * liquidity_multiplier * volatility_multiplier
+        convergence_time = (
+            base_time * spread_multiplier * liquidity_multiplier * volatility_multiplier
+        )
 
         return min(int(convergence_time), 1800)  # Cap at 30 minutes
 
-    def _calculate_inventory_impact(self, wallet_address: str, trade_side: str, trade_amount: float) -> float:
+    def _calculate_inventory_impact(
+        self, wallet_address: str, trade_side: str, trade_amount: float
+    ) -> float:
         """Calculate inventory impact of the trade (0-1, higher = more impact)."""
 
         # Get current inventory position
@@ -240,7 +248,9 @@ class MarketMakerTactics:
         new_inventory = inventory + (trade_direction * trade_amount)
 
         # Get typical position size for this wallet
-        typical_position = self.inventory_positions.get(wallet_address, {}).get("typical_position", trade_amount)
+        typical_position = self.inventory_positions.get(wallet_address, {}).get(
+            "typical_position", trade_amount
+        )
 
         if typical_position == 0:
             return 0.0
@@ -254,10 +264,7 @@ class MarketMakerTactics:
         return min(inventory_impact, 1.0)
 
     def _calculate_spread_capture_size(
-        self,
-        expected_spread_pct: float,
-        inventory_impact: float,
-        convergence_time_seconds: int
+        self, expected_spread_pct: float, inventory_impact: float, convergence_time_seconds: int
     ) -> float:
         """Calculate optimal position size for spread capture."""
 
@@ -284,10 +291,7 @@ class MarketMakerTactics:
         return position_size_pct
 
     async def detect_latency_arbitrage_opportunity(
-        self,
-        wallet_address: str,
-        trade_data: Dict[str, Any],
-        market_data: Dict[str, Any]
+        self, wallet_address: str, trade_data: Dict[str, Any], market_data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Detect potential latency arbitrage opportunities.
@@ -302,7 +306,7 @@ class MarketMakerTactics:
             "expected_profit_pct": 0.0,
             "holding_time_seconds": 0,
             "risk_assessment": "high",
-            "recommended_action": "avoid"
+            "recommended_action": "avoid",
         }
 
         try:
@@ -318,7 +322,7 @@ class MarketMakerTactics:
             intervals_ms = []
 
             for i in range(1, len(timestamps)):
-                interval = (timestamps[i] - timestamps[i-1]).total_seconds() * 1000
+                interval = (timestamps[i] - timestamps[i - 1]).total_seconds() * 1000
                 intervals_ms.append(interval)
 
             # Look for very short intervals (< 1000ms) indicating high-frequency trading
@@ -342,14 +346,16 @@ class MarketMakerTactics:
                     evaluation["expected_profit_pct"] = profit_estimate_pct
                     evaluation["holding_time_seconds"] = min(
                         self.latency_params["max_holding_time_latency"],
-                        latency_edge_ms / 100  # Shorter latency = shorter hold
+                        latency_edge_ms / 100,  # Shorter latency = shorter hold
                     )
 
                     # Assess risk (latency arb is very high risk)
                     if profit_estimate_pct >= self.latency_params["min_profit_latency_pct"]:
                         evaluation["risk_assessment"] = "very_high"
                         evaluation["recommended_action"] = "consider_latency_arb"
-                        evaluation["warning"] = "Extreme risk - latency arbitrage requires sophisticated infrastructure"
+                        evaluation["warning"] = (
+                            "Extreme risk - latency arbitrage requires sophisticated infrastructure"
+                        )
                     else:
                         evaluation["recommended_action"] = "avoid_insufficient_edge"
 
@@ -360,10 +366,7 @@ class MarketMakerTactics:
         return evaluation
 
     async def simulate_inventory_management(
-        self,
-        wallet_address: str,
-        current_position: float,
-        market_conditions: Dict[str, Any]
+        self, wallet_address: str, current_position: float, market_conditions: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Simulate market maker inventory management decisions.
@@ -378,7 +381,7 @@ class MarketMakerTactics:
             "target_position": 0.0,
             "urgency_level": "low",
             "expected_cost": 0.0,
-            "time_horizon": 0
+            "time_horizon": 0,
         }
 
         try:
@@ -431,12 +434,18 @@ class MarketMakerTactics:
             # Cost includes slippage, gas, and market impact
             slippage_cost = adjustment_size * volatility * 0.001  # 0.1% slippage estimate
             gas_cost = adjustment_size * gas_multiplier * 0.0001  # Gas cost estimate
-            time_cost = adjustment_size * (simulation["time_horizon"] / 3600) * self.inventory_params["inventory_cost_pct"]
+            time_cost = (
+                adjustment_size
+                * (simulation["time_horizon"] / 3600)
+                * self.inventory_params["inventory_cost_pct"]
+            )
 
             simulation["expected_cost"] = slippage_cost + gas_cost + time_cost
 
             # Risk assessment
-            simulation["risk_assessment"] = "medium" if deviation < rebalance_threshold * 2 else "high"
+            simulation["risk_assessment"] = (
+                "medium" if deviation < rebalance_threshold * 2 else "high"
+            )
 
         except Exception as e:
             logger.error(f"Error simulating inventory management for {wallet_address}: {e}")
@@ -445,10 +454,7 @@ class MarketMakerTactics:
         return simulation
 
     async def detect_cross_market_arbitrage(
-        self,
-        wallet_address: str,
-        trade_data: Dict[str, Any],
-        related_markets: List[Dict[str, Any]]
+        self, wallet_address: str, trade_data: Dict[str, Any], related_markets: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
         """
         Detect cross-market arbitrage opportunities.
@@ -464,7 +470,7 @@ class MarketMakerTactics:
             "expected_profit_pct": 0.0,
             "holding_time_seconds": 0,
             "confidence_score": 0.0,
-            "risk_assessment": "high"
+            "risk_assessment": "high",
         }
 
         try:
@@ -481,11 +487,13 @@ class MarketMakerTactics:
                 if market.get("market_id") != current_market:
                     price = market.get("price", 0)
                     if price > 0:
-                        related_prices.append({
-                            "market_id": market["market_id"],
-                            "price": price,
-                            "liquidity": market.get("liquidity_score", 0.5)
-                        })
+                        related_prices.append(
+                            {
+                                "market_id": market["market_id"],
+                                "price": price,
+                                "liquidity": market.get("liquidity_score", 0.5),
+                            }
+                        )
 
             if not related_prices:
                 arbitrage["reason"] = "No valid related market prices"
@@ -500,13 +508,17 @@ class MarketMakerTactics:
 
                 if discrepancy_pct > max_discrepancy:
                     max_discrepancy = discrepancy_pct
-                    direction = "buy_related_sell_current" if related["price"] > current_price else "buy_current_sell_related"
+                    direction = (
+                        "buy_related_sell_current"
+                        if related["price"] > current_price
+                        else "buy_current_sell_related"
+                    )
                     best_opportunity = {
                         "discrepancy_pct": discrepancy_pct,
                         "direction": direction,
                         "related_market": related["market_id"],
                         "price_ratio": related["price"] / current_price,
-                        "liquidity_score": related["liquidity"]
+                        "liquidity_score": related["liquidity"],
                     }
 
             # Check if opportunity meets thresholds
@@ -523,11 +535,15 @@ class MarketMakerTactics:
 
                 # Estimate holding time based on market liquidity
                 liquidity_score = best_opportunity["liquidity_score"]
-                holding_time = int(self.arbitrage_params["max_arbitrage_holding_time"] * (2 - liquidity_score))
+                holding_time = int(
+                    self.arbitrage_params["max_arbitrage_holding_time"] * (2 - liquidity_score)
+                )
                 arbitrage["holding_time_seconds"] = holding_time
 
                 # Calculate confidence score
-                confidence = min(1.0, max_discrepancy / (min_discrepancy * 3))  # Scale with discrepancy size
+                confidence = min(
+                    1.0, max_discrepancy / (min_discrepancy * 3)
+                )  # Scale with discrepancy size
                 confidence *= liquidity_score  # Reduce confidence in illiquid markets
                 arbitrage["confidence_score"] = confidence
 
@@ -549,7 +565,7 @@ class MarketMakerTactics:
         self,
         wallet_address: str,
         pending_trades: List[Dict[str, Any]],
-        gas_conditions: Dict[str, Any]
+        gas_conditions: Dict[str, Any],
     ) -> Dict[str, Any]:
         """
         Optimize trade execution for gas efficiency.
@@ -564,7 +580,7 @@ class MarketMakerTactics:
             "recommended_batch_size": len(pending_trades),
             "estimated_gas_savings_pct": 0.0,
             "optimal_execution_time": None,
-            "alternative_strategies": []
+            "alternative_strategies": [],
         }
 
         try:
@@ -576,7 +592,7 @@ class MarketMakerTactics:
 
             # Calculate base gas cost
             avg_trade_size = np.mean([abs(t.get("amount", 0)) for t in pending_trades])
-            base_gas_cost = avg_trade_size * current_gas_multiplier * 0.00005  # Base gas estimate
+            avg_trade_size * current_gas_multiplier * 0.00005  # Base gas estimate
 
             # Strategy 1: Trade Batching
             batch_window = self.gas_params["gas_batch_window_seconds"]
@@ -620,7 +636,8 @@ class MarketMakerTactics:
 
                 # Alternative strategies
                 optimization["alternative_strategies"] = [
-                    strategy for strategy in ["batching", "time_based", "size_optimization"]
+                    strategy
+                    for strategy in ["batching", "time_based", "size_optimization"]
                     if strategy != optimization["primary_strategy"]
                 ]
 
@@ -646,8 +663,9 @@ class MarketMakerTactics:
             window_end = window_start + timedelta(seconds=batch_window)
 
             # Count trades in this window
-            in_window = sum(1 for t in sorted_trades[i:]
-                          if datetime.fromisoformat(t["timestamp"]) <= window_end)
+            in_window = sum(
+                1 for t in sorted_trades[i:] if datetime.fromisoformat(t["timestamp"]) <= window_end
+            )
 
             batchable_trades = max(batchable_trades, in_window)
 
@@ -695,9 +713,7 @@ class MarketMakerTactics:
         return datetime.now() + timedelta(hours=2)
 
     async def apply_time_based_position_management(
-        self,
-        position_data: Dict[str, Any],
-        market_conditions: Dict[str, Any]
+        self, position_data: Dict[str, Any], market_conditions: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Apply time-based position management rules.
@@ -711,7 +727,7 @@ class MarketMakerTactics:
             "recommended_action": "hold",
             "urgency_level": "low",
             "reason": "",
-            "time_to_expiry": 0
+            "time_to_expiry": 0,
         }
 
         try:
@@ -758,7 +774,9 @@ class MarketMakerTactics:
             current_hour = datetime.now().hour
             market_close_buffer = self.time_params["market_close_buffer_minutes"] / 60
 
-            if current_hour >= (self.time_params["optimal_trading_hours_end"] - market_close_buffer):
+            if current_hour >= (
+                self.time_params["optimal_trading_hours_end"] - market_close_buffer
+            ):
                 if position_age_hours >= 1.0:  # Hold at least 1 hour
                     management["action_required"] = True
                     management["recommended_action"] = "close_before_market_close"
@@ -768,7 +786,7 @@ class MarketMakerTactics:
             # Weekend penalty
             current_day = datetime.now().weekday()
             if current_day >= 5:  # Saturday/Sunday
-                penalty_multiplier = self.time_params["weekend_trading_penalty"]
+                self.time_params["weekend_trading_penalty"]
                 if position_age_hours >= 1.0:
                     management["action_required"] = True
                     management["recommended_action"] = "reduce_weekend_exposure"
@@ -785,12 +803,12 @@ class MarketMakerTactics:
         """Get maximum holding time for wallet type under current conditions."""
 
         base_times = {
-            "market_maker": 2.0,      # 2 hours
+            "market_maker": 2.0,  # 2 hours
             "arbitrage_trader": 1.0,  # 1 hour
             "high_frequency_trader": 0.5,  # 30 minutes
-            "directional_trader": 24.0,    # 24 hours
-            "mixed_trader": 6.0,           # 6 hours
-            "low_activity": 12.0           # 12 hours
+            "directional_trader": 24.0,  # 24 hours
+            "mixed_trader": 6.0,  # 6 hours
+            "low_activity": 12.0,  # 12 hours
         }
 
         base_time = base_times.get(wallet_type, 2.0)
@@ -813,7 +831,7 @@ class MarketMakerTactics:
         self,
         trade_data: Dict[str, Any],
         wallet_info: Dict[str, Any],
-        market_conditions: Dict[str, Any]
+        market_conditions: Dict[str, Any],
     ) -> Dict[str, Any]:
         """
         Enforce minimum profitability thresholds for market maker trades.
@@ -827,7 +845,7 @@ class MarketMakerTactics:
             "estimated_profit_pct": 0.0,
             "gas_cost_pct": 0.0,
             "net_profit_pct": 0.0,
-            "reason": ""
+            "reason": "",
         }
 
         try:
@@ -866,16 +884,18 @@ class MarketMakerTactics:
 
         return enforcement
 
-    def _get_min_profit_threshold(self, wallet_type: str, market_conditions: Dict[str, Any]) -> float:
+    def _get_min_profit_threshold(
+        self, wallet_type: str, market_conditions: Dict[str, Any]
+    ) -> float:
         """Get minimum profit threshold for wallet type."""
 
         base_thresholds = {
-            "market_maker": 0.003,      # 0.3%
+            "market_maker": 0.003,  # 0.3%
             "arbitrage_trader": 0.005,  # 0.5%
             "high_frequency_trader": 0.002,  # 0.2%
-            "directional_trader": 0.02,     # 2.0%
-            "mixed_trader": 0.01,           # 1.0%
-            "low_activity": 0.015          # 1.5%
+            "directional_trader": 0.02,  # 2.0%
+            "mixed_trader": 0.01,  # 1.0%
+            "low_activity": 0.015,  # 1.5%
         }
 
         base_threshold = base_thresholds.get(wallet_type, 0.003)
@@ -898,7 +918,7 @@ class MarketMakerTactics:
         self,
         trade_data: Dict[str, Any],
         wallet_info: Dict[str, Any],
-        market_conditions: Dict[str, Any]
+        market_conditions: Dict[str, Any],
     ) -> float:
         """Estimate profitability of a potential trade."""
 
@@ -909,12 +929,12 @@ class MarketMakerTactics:
 
         # Base profitability estimates by wallet type
         base_estimates = {
-            "market_maker": 0.008,      # 0.8%
+            "market_maker": 0.008,  # 0.8%
             "arbitrage_trader": 0.012,  # 1.2%
             "high_frequency_trader": 0.005,  # 0.5%
-            "directional_trader": 0.035,    # 3.5%
-            "mixed_trader": 0.015,          # 1.5%
-            "low_activity": 0.025          # 2.5%
+            "directional_trader": 0.035,  # 3.5%
+            "mixed_trader": 0.015,  # 1.5%
+            "low_activity": 0.025,  # 2.5%
         }
 
         base_profit = base_estimates.get(wallet_type, 0.008)
@@ -933,7 +953,9 @@ class MarketMakerTactics:
 
         return estimated_profit
 
-    def _estimate_gas_cost_pct(self, trade_data: Dict[str, Any], market_conditions: Dict[str, Any]) -> float:
+    def _estimate_gas_cost_pct(
+        self, trade_data: Dict[str, Any], market_conditions: Dict[str, Any]
+    ) -> float:
         """Estimate gas cost as percentage of trade value."""
 
         trade_amount = abs(float(trade_data.get("amount", 0)))
@@ -946,7 +968,9 @@ class MarketMakerTactics:
 
         return gas_cost_pct
 
-    async def _get_recent_wallet_trades(self, wallet_address: str, minutes_back: int) -> List[Dict[str, Any]]:
+    async def _get_recent_wallet_trades(
+        self, wallet_address: str, minutes_back: int
+    ) -> List[Dict[str, Any]]:
         """Get recent trades for wallet (placeholder - integrate with actual trade data)."""
 
         # This would integrate with the actual trade data storage
@@ -969,7 +993,7 @@ class MarketMakerTactics:
                 "total_profit": 0.0,
                 "avg_profit": 0.0,
                 "win_rate": 0.0,
-                "last_update": datetime.now().isoformat()
+                "last_update": datetime.now().isoformat(),
             }
 
         perf = self.tactic_performance[tactic_name]
@@ -994,28 +1018,35 @@ class MarketMakerTactics:
             "best_performing_tactic": None,
             "worst_performing_tactic": None,
             "overall_win_rate": 0.0,
-            "total_profit_generated": 0.0
+            "total_profit_generated": 0.0,
         }
 
         if not self.tactic_performance:
             return summary
 
-        total_executions = sum(perf["total_executions"] for perf in self.tactic_performance.values())
+        total_executions = sum(
+            perf["total_executions"] for perf in self.tactic_performance.values()
+        )
         total_profit = sum(perf["total_profit"] for perf in self.tactic_performance.values())
 
         if total_executions > 0:
-            summary["overall_win_rate"] = sum(
-                perf["successful_executions"] for perf in self.tactic_performance.values()
-            ) / total_executions
+            summary["overall_win_rate"] = (
+                sum(perf["successful_executions"] for perf in self.tactic_performance.values())
+                / total_executions
+            )
 
         summary["total_profit_generated"] = total_profit
 
         # Find best and worst performing tactics
         if self.tactic_performance:
-            best_tactic = max(self.tactic_performance.keys(),
-                            key=lambda x: self.tactic_performance[x]["avg_profit"])
-            worst_tactic = min(self.tactic_performance.keys(),
-                             key=lambda x: self.tactic_performance[x]["avg_profit"])
+            best_tactic = max(
+                self.tactic_performance.keys(),
+                key=lambda x: self.tactic_performance[x]["avg_profit"],
+            )
+            worst_tactic = min(
+                self.tactic_performance.keys(),
+                key=lambda x: self.tactic_performance[x]["avg_profit"],
+            )
 
             summary["best_performing_tactic"] = best_tactic
             summary["worst_performing_tactic"] = worst_tactic

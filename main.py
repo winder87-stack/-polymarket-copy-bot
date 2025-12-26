@@ -43,17 +43,23 @@ from typing import Any, Dict, Optional
 import aiohttp
 
 # Configure logging first
-from utils.logging_utils import setup_logging
+from utils.logging_config import setup_logging
 
-logger = setup_logging()
+# Initialize logging
+setup_logging(
+    level=os.getenv("LOG_LEVEL", "INFO"),
+    log_dir="logs",
+    json_logging=os.getenv("JSON_LOGGING", "true").lower() == "true",
+)
+
+logger = logging.getLogger(__name__)
 
 # Import after logging is configured
-from config.settings import Settings, settings
+from config.settings import settings
 from core.clob_client import PolymarketClient
 from core.trade_executor import TradeExecutor
 from core.wallet_monitor import WalletMonitor
 from utils.alerts import (
-    alert_manager,
     send_error_alert,
     send_performance_report,
     send_telegram_alert,
@@ -343,7 +349,8 @@ class PolymarketCopyBot:
 
         trade_count = len(detected_trades)
         logger.info(
-            f"🎯 Detected {trade_count} new trades to copy (wallet scan: {wallet_time:.3f}s)"
+            f"🎯 Detected {trade_count} new trades to copy (wallet scan: {wallet_time:.3f}s)",
+            extra={"trade_count": trade_count, "scan_time": wallet_time},
         )
 
         # Execute trades with performance optimizations
@@ -414,7 +421,10 @@ class PolymarketCopyBot:
         error_count = sum(1 for r in results if isinstance(r, Exception))
 
         if success_count > 0:
-            logger.info(f"✅ Successfully copied {success_count}/{trade_count} trades")
+            logger.info(
+                f"✅ Successfully copied {success_count}/{trade_count} trades",
+                extra={"successful_trades": success_count, "total_trades": trade_count},
+            )
         if error_count > 0:
             logger.warning(f"⚠️ {error_count} trades failed during execution")
 

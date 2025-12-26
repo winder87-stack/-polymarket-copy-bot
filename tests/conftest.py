@@ -4,8 +4,9 @@ Pytest configuration and shared fixtures for unit tests
 
 import asyncio
 import os
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 
 
 @pytest.fixture(scope="session")
@@ -29,10 +30,11 @@ def test_settings():
     """Create a test settings instance with proper environment"""
     # Set required environment variables for testing
     old_env = os.environ.copy()
-    os.environ['PRIVATE_KEY'] = '0x1234567890123456789012345678901234567890123456789012345678901234'
+    os.environ["PRIVATE_KEY"] = "0x1234567890123456789012345678901234567890123456789012345678901234"
 
     try:
         from config.settings import Settings
+
         settings = Settings()
         yield settings
     finally:

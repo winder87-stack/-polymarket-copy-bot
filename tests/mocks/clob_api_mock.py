@@ -1,12 +1,10 @@
 """
 Mock CLOB API for testing Polymarket interactions.
 """
-import json
+
 import asyncio
-from typing import Dict, List, Any, Optional, Union
-from datetime import datetime, timedelta
 import logging
-from unittest.mock import Mock
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -34,49 +32,47 @@ class CLOBAPIMock:
         # Default markets
         self.markets = {
             "0x1234567890abcdef1234567890abcdef12345678": {
-                'conditionId': "0x1234567890abcdef1234567890abcdef12345678",
-                'tokens': [
-                    {'tokenId': "0xabcdef1234567890abcdef1234567890abcdef12", 'outcome': 'YES'},
-                    {'tokenId': "0xabcdef1234567890abcdef1234567890abcdef13", 'outcome': 'NO'}
+                "conditionId": "0x1234567890abcdef1234567890abcdef12345678",
+                "tokens": [
+                    {"tokenId": "0xabcdef1234567890abcdef1234567890abcdef12", "outcome": "YES"},
+                    {"tokenId": "0xabcdef1234567890abcdef1234567890abcdef13", "outcome": "NO"},
                 ],
-                'active': True,
-                'closed': False,
-                'question': 'Will ETH reach $5000 by end of 2024?',
-                'description': 'Ethereum price prediction market'
+                "active": True,
+                "closed": False,
+                "question": "Will ETH reach $5000 by end of 2024?",
+                "description": "Ethereum price prediction market",
             },
             "0xabcdef1234567890abcdef1234567890abcdef": {
-                'conditionId': "0xabcdef1234567890abcdef1234567890abcdef",
-                'tokens': [
-                    {'tokenId': "0x1234567890abcdef1234567890abcdef12345678", 'outcome': 'YES'},
-                    {'tokenId': "0x1234567890abcdef1234567890abcdef12345679", 'outcome': 'NO'}
+                "conditionId": "0xabcdef1234567890abcdef1234567890abcdef",
+                "tokens": [
+                    {"tokenId": "0x1234567890abcdef1234567890abcdef12345678", "outcome": "YES"},
+                    {"tokenId": "0x1234567890abcdef1234567890abcdef12345679", "outcome": "NO"},
                 ],
-                'active': True,
-                'closed': False,
-                'question': 'Will BTC reach $100k by end of 2024?',
-                'description': 'Bitcoin price prediction market'
-            }
+                "active": True,
+                "closed": False,
+                "question": "Will BTC reach $100k by end of 2024?",
+                "description": "Bitcoin price prediction market",
+            },
         }
 
         # Default order book
         self.order_books = {
             "0x1234567890abcdef1234567890abcdef12345678": {
-                'bids': [
-                    {'price': '0.65', 'size': '100.0'},
-                    {'price': '0.64', 'size': '50.0'},
-                    {'price': '0.63', 'size': '75.0'}
+                "bids": [
+                    {"price": "0.65", "size": "100.0"},
+                    {"price": "0.64", "size": "50.0"},
+                    {"price": "0.63", "size": "75.0"},
                 ],
-                'asks': [
-                    {'price': '0.66', 'size': '80.0'},
-                    {'price': '0.67', 'size': '60.0'},
-                    {'price': '0.68', 'size': '40.0'}
-                ]
+                "asks": [
+                    {"price": "0.66", "size": "80.0"},
+                    {"price": "0.67", "size": "60.0"},
+                    {"price": "0.68", "size": "40.0"},
+                ],
             }
         }
 
         # Default balance
-        self.balances = {
-            "0x742d35Cc6634C0532925a3b844Bc454e4438f44e": 1000.0
-        }
+        self.balances = {"0x742d35Cc6634C0532925a3b844Bc454e4438f44e": 1000.0}
 
     async def get_balance(self) -> float:
         """Get account balance."""
@@ -124,7 +120,7 @@ class CLOBAPIMock:
         if self.delay_responses:
             await asyncio.sleep(self.response_delay)
 
-        return self.order_books.get(condition_id, {'bids': [], 'asks': []})
+        return self.order_books.get(condition_id, {"bids": [], "asks": []})
 
     async def get_orders(self) -> List[Dict[str, Any]]:
         """Get active orders."""
@@ -149,11 +145,18 @@ class CLOBAPIMock:
             await asyncio.sleep(self.response_delay)
 
         if market_id:
-            return [trade for trade in self.trades if trade.get('market_id') == market_id]
+            return [trade for trade in self.trades if trade.get("market_id") == market_id]
         return self.trades.copy()
 
-    async def create_order(self, market: str, side: str, amount: float,
-                          price: float, token_id: str, gas_price: int = None) -> Dict[str, Any]:
+    async def create_order(
+        self,
+        market: str,
+        side: str,
+        amount: float,
+        price: float,
+        token_id: str,
+        gas_price: int = None,
+    ) -> Dict[str, Any]:
         """Create an order."""
         if self.should_fail:
             if self.fail_with_exception:
@@ -164,13 +167,13 @@ class CLOBAPIMock:
             await asyncio.sleep(self.response_delay)
 
         order = {
-            'market': market,
-            'side': side,
-            'amount': amount,
-            'price': price,
-            'token_id': token_id,
-            'gas_price': gas_price or 50000000000,
-            'orderId': f"order_{len(self.orders) + 1}"
+            "market": market,
+            "side": side,
+            "amount": amount,
+            "price": price,
+            "token_id": token_id,
+            "gas_price": gas_price or 50000000000,
+            "orderId": f"order_{len(self.orders) + 1}",
         }
 
         return order
@@ -188,7 +191,7 @@ class CLOBAPIMock:
         order_id = f"posted_order_{len(self.orders) + 1}"
         self.orders[order_id] = order
 
-        return {'orderID': order_id}
+        return {"orderID": order_id}
 
     async def cancel(self, order_id: str) -> bool:
         """Cancel an order."""
@@ -225,10 +228,11 @@ class CLOBAPIMock:
         """Add a market for testing."""
         self.markets[condition_id] = market_data
 
-    def update_order_book(self, condition_id: str, bids: List[Dict[str, Any]],
-                         asks: List[Dict[str, Any]]):
+    def update_order_book(
+        self, condition_id: str, bids: List[Dict[str, Any]], asks: List[Dict[str, Any]]
+    ):
         """Update order book for testing."""
-        self.order_books[condition_id] = {'bids': bids, 'asks': asks}
+        self.order_books[condition_id] = {"bids": bids, "asks": asks}
 
     def add_trade(self, trade: Dict[str, Any]):
         """Add a trade for testing."""
@@ -250,10 +254,10 @@ class CLOBAPIMock:
     def get_call_stats(self) -> Dict[str, int]:
         """Get call statistics for testing."""
         return {
-            'markets_calls': 0,  # Would need to be tracked in real implementation
-            'orders_calls': 0,
-            'trades_calls': 0,
-            'balance_calls': 0
+            "markets_calls": 0,  # Would need to be tracked in real implementation
+            "orders_calls": 0,
+            "trades_calls": 0,
+            "balance_calls": 0,
         }
 
 
@@ -311,8 +315,15 @@ class MockCLOBClient:
         finally:
             loop.close()
 
-    def create_order(self, market: str, side: str, amount: float,
-                    price: float, token_id: str, gas_price: int = None):
+    def create_order(
+        self,
+        market: str,
+        side: str,
+        amount: float,
+        price: float,
+        token_id: str,
+        gas_price: int = None,
+    ):
         """Synchronous wrapper for create_order."""
         loop = asyncio.new_event_loop()
         try:
@@ -369,8 +380,15 @@ class AsyncCLOBClient:
         """Async get_trades."""
         return await self.api_mock.get_trades(market_id)
 
-    async def create_order(self, market: str, side: str, amount: float,
-                          price: float, token_id: str, gas_price: int = None):
+    async def create_order(
+        self,
+        market: str,
+        side: str,
+        amount: float,
+        price: float,
+        token_id: str,
+        gas_price: int = None,
+    ):
         """Async create_order."""
         return await self.api_mock.create_order(market, side, amount, price, token_id, gas_price)
 
@@ -394,8 +412,9 @@ def create_async_mock_clob_client() -> AsyncCLOBClient:
     return AsyncCLOBClient()
 
 
-def create_clob_api_with_custom_data(markets: Dict[str, Dict] = None,
-                                   order_books: Dict[str, Dict] = None) -> CLOBAPIMock:
+def create_clob_api_with_custom_data(
+    markets: Dict[str, Dict] = None, order_books: Dict[str, Dict] = None
+) -> CLOBAPIMock:
     """Create CLOB API mock with custom data."""
     api = CLOBAPIMock()
 
@@ -421,5 +440,5 @@ if __name__ == "__main__":
     print(f"Markets: {len(markets)}")
 
     if markets:
-        market = client.get_market(markets[0]['conditionId'])
+        market = client.get_market(markets[0]["conditionId"])
         print(f"First market: {market['question']}")

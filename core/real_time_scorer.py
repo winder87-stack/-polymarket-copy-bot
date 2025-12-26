@@ -18,18 +18,14 @@ import json
 import logging
 import time
 from collections import deque
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple, Union
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 import numpy as np
-import pandas as pd
 from scipy import stats
-from scipy.optimize import curve_fit
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.preprocessing import StandardScaler
 
-from core.wallet_quality_scorer import WalletQualityScorer
 from core.behavioral_analyzer import BehaviorPatternTracker
+from core.wallet_quality_scorer import WalletQualityScorer
 
 logger = logging.getLogger(__name__)
 
@@ -48,16 +44,16 @@ class RealTimeScoringEngine:
 
         # Real-time scoring parameters
         self.scoring_params = {
-            "update_interval_seconds": 300,       # 5 minutes between full updates
-            "incremental_update_threshold": 5,    # New trades trigger incremental update
-            "confidence_interval_samples": 100,   # Bootstrap samples for CI calculation
-            "score_stability_window": 20,         # Scores for stability calculation
-            "trend_analysis_window": 50,          # Scores for trend analysis
-            "market_regime_check_interval": 3600, # 1 hour market regime updates
-            "score_decay_factor": 0.95,           # Exponential decay for old scores
-            "prediction_horizon_hours": 24,       # Hours to predict score trends
-            "alert_threshold_change": 0.1,        # 10% score change triggers alert
-            "stability_threshold": 0.15          # Score volatility threshold
+            "update_interval_seconds": 300,  # 5 minutes between full updates
+            "incremental_update_threshold": 5,  # New trades trigger incremental update
+            "confidence_interval_samples": 100,  # Bootstrap samples for CI calculation
+            "score_stability_window": 20,  # Scores for stability calculation
+            "trend_analysis_window": 50,  # Scores for trend analysis
+            "market_regime_check_interval": 3600,  # 1 hour market regime updates
+            "score_decay_factor": 0.95,  # Exponential decay for old scores
+            "prediction_horizon_hours": 24,  # Hours to predict score trends
+            "alert_threshold_change": 0.1,  # 10% score change triggers alert
+            "stability_threshold": 0.15,  # Score volatility threshold
         }
 
         # Real-time state
@@ -80,7 +76,9 @@ class RealTimeScoringEngine:
 
         logger.info("⚡ Real-time scoring engine initialized")
 
-    async def initialize_wallet_stream(self, wallet_address: str, initial_history: List[Dict[str, Any]] = None):
+    async def initialize_wallet_stream(
+        self, wallet_address: str, initial_history: List[Dict[str, Any]] = None
+    ):
         """
         Initialize real-time scoring stream for a wallet.
 
@@ -101,11 +99,13 @@ class RealTimeScoringEngine:
                 "pending_trades": 0,
                 "stability_metrics": {},
                 "trend_analysis": {},
-                "alert_status": "normal"
+                "alert_status": "normal",
             }
 
             # Initialize score stream buffer
-            self.score_streams[wallet_address] = deque(maxlen=self.scoring_params["trend_analysis_window"])
+            self.score_streams[wallet_address] = deque(
+                maxlen=self.scoring_params["trend_analysis_window"]
+            )
 
             # Initialize pending updates buffer
             self.pending_updates[wallet_address] = []
@@ -151,7 +151,9 @@ class RealTimeScoringEngine:
         except Exception as e:
             logger.error(f"Error processing trade update for {wallet_address}: {e}")
 
-    async def get_real_time_score(self, wallet_address: str, market_conditions: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def get_real_time_score(
+        self, wallet_address: str, market_conditions: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """
         Get current real-time quality score for a wallet.
 
@@ -173,7 +175,9 @@ class RealTimeScoringEngine:
             )
 
             # Calculate real-time confidence intervals
-            confidence_intervals = await self._calculate_real_time_confidence_intervals(wallet_address)
+            confidence_intervals = await self._calculate_real_time_confidence_intervals(
+                wallet_address
+            )
 
             # Calculate score stability metrics
             stability_metrics = await self._calculate_score_stability(wallet_address)
@@ -182,7 +186,9 @@ class RealTimeScoringEngine:
             score_prediction = await self._predict_score_trend(wallet_address)
 
             # Check for score alerts
-            alerts = await self._check_score_alerts(wallet_address, regime_adjusted_score, stability_metrics)
+            alerts = await self._check_score_alerts(
+                wallet_address, regime_adjusted_score, stability_metrics
+            )
 
             return {
                 "wallet_address": wallet_address,
@@ -191,16 +197,19 @@ class RealTimeScoringEngine:
                 "stability_metrics": stability_metrics,
                 "score_prediction": score_prediction,
                 "alerts": alerts,
-                "last_update": wallet_state.get("last_incremental_update") or wallet_state.get("last_full_update"),
+                "last_update": wallet_state.get("last_incremental_update")
+                or wallet_state.get("last_full_update"),
                 "trade_count": wallet_state["trade_count"],
-                "data_freshness": self._calculate_data_freshness(wallet_address)
+                "data_freshness": self._calculate_data_freshness(wallet_address),
             }
 
         except Exception as e:
             logger.error(f"Error getting real-time score for {wallet_address}: {e}")
             return {"error": str(e), "wallet_address": wallet_address}
 
-    async def _perform_full_score_update(self, wallet_address: str, trade_history: List[Dict[str, Any]]):
+    async def _perform_full_score_update(
+        self, wallet_address: str, trade_history: List[Dict[str, Any]]
+    ):
         """Perform complete quality score recalculation."""
 
         start_time = time.time()
@@ -225,10 +234,14 @@ class RealTimeScoringEngine:
                 score_entry = {
                     "timestamp": datetime.now().isoformat(),
                     "score": score_result["quality_score"],
-                    "confidence_lower": score_result.get("confidence_intervals", {}).get("lower_bound"),
-                    "confidence_upper": score_result.get("confidence_intervals", {}).get("upper_bound"),
+                    "confidence_lower": score_result.get("confidence_intervals", {}).get(
+                        "lower_bound"
+                    ),
+                    "confidence_upper": score_result.get("confidence_intervals", {}).get(
+                        "upper_bound"
+                    ),
                     "market_regime": score_result.get("market_regime"),
-                    "update_type": "full"
+                    "update_type": "full",
                 }
 
                 self.score_streams[wallet_address].append(score_entry)
@@ -240,7 +253,9 @@ class RealTimeScoringEngine:
             update_time = time.time() - start_time
             self.update_times.append(update_time)
 
-            logger.debug(f"✅ Full score update for {wallet_address}: {score_result.get('quality_score', 'N/A')} ({update_time:.2f}s)")
+            logger.debug(
+                f"✅ Full score update for {wallet_address}: {score_result.get('quality_score', 'N/A')} ({update_time:.2f}s)"
+            )
 
         except Exception as e:
             logger.error(f"Error performing full score update for {wallet_address}: {e}")
@@ -287,7 +302,7 @@ class RealTimeScoringEngine:
                 "incremental_adjustment": score_adjustment,
                 "damping_factor": damping_factor,
                 "update_type": "incremental",
-                "trades_processed": len(pending_trades)
+                "trades_processed": len(pending_trades),
             }
 
             self.score_streams[wallet_address].append(score_entry)
@@ -299,12 +314,16 @@ class RealTimeScoringEngine:
             update_time = time.time() - start_time
             self.update_times.append(update_time)
 
-            logger.debug(f"🔄 Incremental update for {wallet_address}: {current_score:.1f} → {new_score:.1f} ({update_time:.2f}s)")
+            logger.debug(
+                f"🔄 Incremental update for {wallet_address}: {current_score:.1f} → {new_score:.1f} ({update_time:.2f}s)"
+            )
 
         except Exception as e:
             logger.error(f"Error performing incremental update for {wallet_address}: {e}")
 
-    async def _calculate_incremental_score_adjustment(self, wallet_address: str, new_trades: List[Dict[str, Any]]) -> float:
+    async def _calculate_incremental_score_adjustment(
+        self, wallet_address: str, new_trades: List[Dict[str, Any]]
+    ) -> float:
         """Calculate score adjustment based on new trades."""
 
         try:
@@ -316,7 +335,11 @@ class RealTimeScoringEngine:
 
             # Calculate recent performance metrics
             recent_returns = [t.get("pnl_pct", 0) for t in new_trades]
-            recent_win_rate = sum(1 for r in recent_returns if r > 0) / len(recent_returns) if recent_returns else 0
+            recent_win_rate = (
+                sum(1 for r in recent_returns if r > 0) / len(recent_returns)
+                if recent_returns
+                else 0
+            )
 
             # Compare to expected performance (simplified)
             expected_win_rate = 0.55  # Baseline expectation
@@ -335,7 +358,9 @@ class RealTimeScoringEngine:
             logger.error(f"Error calculating incremental adjustment for {wallet_address}: {e}")
             return 0.0
 
-    async def _calculate_real_time_confidence_intervals(self, wallet_address: str) -> Dict[str, Any]:
+    async def _calculate_real_time_confidence_intervals(
+        self, wallet_address: str
+    ) -> Dict[str, Any]:
         """Calculate real-time confidence intervals for current score."""
 
         try:
@@ -355,18 +380,22 @@ class RealTimeScoringEngine:
 
             for _ in range(n_bootstrap):
                 # Bootstrap resample
-                bootstrap_sample = np.random.choice(recent_scores, size=len(recent_scores), replace=True)
+                bootstrap_sample = np.random.choice(
+                    recent_scores, size=len(recent_scores), replace=True
+                )
                 bootstrap_means.append(np.mean(bootstrap_sample))
 
             # Calculate confidence intervals
-            ci_lower = np.percentile(bootstrap_means, 5)   # 90% CI
+            ci_lower = np.percentile(bootstrap_means, 5)  # 90% CI
             ci_upper = np.percentile(bootstrap_means, 95)
             ci_mean = np.mean(bootstrap_means)
             ci_std = np.std(bootstrap_means)
 
             # Calculate confidence level based on interval width
             interval_width = ci_upper - ci_lower
-            confidence_level = max(0.1, 1 - (interval_width / 20))  # Wider interval = lower confidence
+            confidence_level = max(
+                0.1, 1 - (interval_width / 20)
+            )  # Wider interval = lower confidence
 
             return {
                 "confidence_level": confidence_level,
@@ -375,7 +404,7 @@ class RealTimeScoringEngine:
                 "mean_estimate": ci_mean,
                 "standard_error": ci_std,
                 "interval_width": interval_width,
-                "samples_used": len(recent_scores)
+                "samples_used": len(recent_scores),
             }
 
         except Exception as e:
@@ -448,7 +477,7 @@ class RealTimeScoringEngine:
                 "trend_strength": trend_strength,
                 "trend_significant": trend_significant,
                 "momentum": momentum,
-                "samples_used": len(recent_scores)
+                "samples_used": len(recent_scores),
             }
 
         except Exception as e:
@@ -483,7 +512,7 @@ class RealTimeScoringEngine:
                 # Predict future scores
                 future_hours = np.arange(
                     max(hours_elapsed) + 1,
-                    max(hours_elapsed) + self.scoring_params["prediction_horizon_hours"] + 1
+                    max(hours_elapsed) + self.scoring_params["prediction_horizon_hours"] + 1,
                 )
 
                 predicted_scores = linear_trend(future_hours)
@@ -493,7 +522,7 @@ class RealTimeScoringEngine:
                 rmse = np.sqrt(np.mean(residuals**2))
 
                 # Prediction intervals (simplified)
-                prediction_std = rmse * np.sqrt(1 + 1/len(scores))
+                prediction_std = rmse * np.sqrt(1 + 1 / len(scores))
                 confidence_interval = 1.96 * prediction_std  # 95% CI
 
                 # Calculate trend direction and strength
@@ -521,7 +550,7 @@ class RealTimeScoringEngine:
                     "trend_slope_daily": trend_daily,
                     "confidence_interval": confidence_interval,
                     "rmse": rmse,
-                    "prediction_horizon_hours": self.scoring_params["prediction_horizon_hours"]
+                    "prediction_horizon_hours": self.scoring_params["prediction_horizon_hours"],
                 }
 
             except np.RankWarning:
@@ -531,7 +560,9 @@ class RealTimeScoringEngine:
             logger.error(f"Error predicting score trend for {wallet_address}: {e}")
             return {"prediction_available": False, "reason": str(e)}
 
-    async def _initialize_score_prediction(self, wallet_address: str, initial_history: List[Dict[str, Any]]):
+    async def _initialize_score_prediction(
+        self, wallet_address: str, initial_history: List[Dict[str, Any]]
+    ):
         """Initialize score prediction models for a wallet."""
 
         try:
@@ -541,7 +572,7 @@ class RealTimeScoringEngine:
             self.score_predictors[wallet_address] = {
                 "initialized": True,
                 "model_type": "linear_trend",
-                "training_samples": len(initial_history)
+                "training_samples": len(initial_history),
             }
 
         except Exception as e:
@@ -571,13 +602,15 @@ class RealTimeScoringEngine:
             self.market_regime_state = {
                 "current_regime": regime,
                 "last_update": current_time.isoformat(),
-                "conditions": market_conditions
+                "conditions": market_conditions,
             }
 
         except Exception as e:
             logger.error(f"Error checking market regime update: {e}")
 
-    async def _apply_market_regime_adjustment(self, wallet_address: str, base_score: Optional[float]) -> Optional[float]:
+    async def _apply_market_regime_adjustment(
+        self, wallet_address: str, base_score: Optional[float]
+    ) -> Optional[float]:
         """Apply market regime adjustments to scores."""
 
         try:
@@ -589,11 +622,11 @@ class RealTimeScoringEngine:
             # Get regime-specific adjustments
             # In practice, this would use historical regime performance data
             regime_adjustments = {
-                "bull": 1.05,      # Slightly higher scores in bull markets
-                "bear": 0.95,      # Slightly lower scores in bear markets
+                "bull": 1.05,  # Slightly higher scores in bull markets
+                "bear": 0.95,  # Slightly lower scores in bear markets
                 "high_volatility": 0.98,  # Conservative adjustment for volatility
-                "low_liquidity": 0.97,    # Conservative for low liquidity
-                "normal": 1.0      # No adjustment
+                "low_liquidity": 0.97,  # Conservative for low liquidity
+                "normal": 1.0,  # No adjustment
             }
 
             adjustment_factor = regime_adjustments.get(current_regime, 1.0)
@@ -604,7 +637,9 @@ class RealTimeScoringEngine:
             logger.error(f"Error applying market regime adjustment for {wallet_address}: {e}")
             return base_score
 
-    async def _check_score_alerts(self, wallet_address: str, current_score: Optional[float], stability_metrics: Dict[str, Any]) -> List[Dict[str, Any]]:
+    async def _check_score_alerts(
+        self, wallet_address: str, current_score: Optional[float], stability_metrics: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """Check for score alerts that require attention."""
 
         alerts = []
@@ -624,39 +659,45 @@ class RealTimeScoringEngine:
                 change_pct = abs(score_change) / max(abs(previous_score), 0.1)
 
                 if change_pct >= self.scoring_params["alert_threshold_change"]:
-                    alerts.append({
-                        "type": "score_change",
-                        "severity": "high" if change_pct >= 0.2 else "medium",
-                        "message": f"Score changed by {change_pct:.1%} ({previous_score:.1f} → {current_score:.1f})",
-                        "direction": "increased" if score_change > 0 else "decreased",
-                        "timestamp": datetime.now().isoformat()
-                    })
+                    alerts.append(
+                        {
+                            "type": "score_change",
+                            "severity": "high" if change_pct >= 0.2 else "medium",
+                            "message": f"Score changed by {change_pct:.1%} ({previous_score:.1f} → {current_score:.1f})",
+                            "direction": "increased" if score_change > 0 else "decreased",
+                            "timestamp": datetime.now().isoformat(),
+                        }
+                    )
 
             # Check for score instability
             stability_score = stability_metrics.get("stability_score", 1.0)
             volatility = stability_metrics.get("volatility", 0)
 
             if stability_score < 0.5 or volatility > self.scoring_params["stability_threshold"]:
-                alerts.append({
-                    "type": "score_instability",
-                    "severity": "medium",
-                    "message": f"Score instability detected (stability: {stability_score:.2f}, volatility: {volatility:.2f})",
-                    "recommendation": "Monitor score closely for stabilization",
-                    "timestamp": datetime.now().isoformat()
-                })
+                alerts.append(
+                    {
+                        "type": "score_instability",
+                        "severity": "medium",
+                        "message": f"Score instability detected (stability: {stability_score:.2f}, volatility: {volatility:.2f})",
+                        "recommendation": "Monitor score closely for stabilization",
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                )
 
             # Check for trend alerts
             trend = stability_metrics.get("trend", "stable")
             trend_strength = stability_metrics.get("trend_strength", 0)
 
             if trend in ["strongly_declining", "declining"] and trend_strength > 0.1:
-                alerts.append({
-                    "type": "negative_trend",
-                    "severity": "high",
-                    "message": f"Score trending {trend} (strength: {trend_strength:.3f})",
-                    "recommendation": "Investigate causes of score deterioration",
-                    "timestamp": datetime.now().isoformat()
-                })
+                alerts.append(
+                    {
+                        "type": "negative_trend",
+                        "severity": "high",
+                        "message": f"Score trending {trend} (strength: {trend_strength:.3f})",
+                        "recommendation": "Investigate causes of score deterioration",
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                )
 
         except Exception as e:
             logger.error(f"Error checking score alerts for {wallet_address}: {e}")
@@ -668,7 +709,9 @@ class RealTimeScoringEngine:
 
         try:
             wallet_state = self.active_wallets.get(wallet_address, {})
-            last_update = wallet_state.get("last_incremental_update") or wallet_state.get("last_full_update")
+            last_update = wallet_state.get("last_incremental_update") or wallet_state.get(
+                "last_full_update"
+            )
 
             if last_update:
                 last_update_time = datetime.fromisoformat(last_update)
@@ -687,13 +730,13 @@ class RealTimeScoringEngine:
                 return {
                     "freshness_level": freshness,
                     "seconds_since_update": time_since_update,
-                    "last_update": last_update
+                    "last_update": last_update,
                 }
             else:
                 return {
                     "freshness_level": "no_data",
                     "seconds_since_update": None,
-                    "last_update": None
+                    "last_update": None,
                 }
 
         except Exception as e:
@@ -704,11 +747,7 @@ class RealTimeScoringEngine:
         """Get current market conditions (placeholder)."""
 
         # In practice, this would fetch real market data
-        return {
-            "volatility_index": 0.2,
-            "liquidity_score": 0.6,
-            "trend_strength": 0.0
-        }
+        return {"volatility_index": 0.2, "liquidity_score": 0.6, "trend_strength": 0.0}
 
     def get_engine_status(self) -> Dict[str, Any]:
         """Get comprehensive engine status."""
@@ -721,8 +760,11 @@ class RealTimeScoringEngine:
             avg_update_time = np.mean(self.update_times) if self.update_times else None
 
             # Alert summary
-            recent_alerts = [alert for alert in self.score_alerts
-                           if (datetime.now() - datetime.fromisoformat(alert["timestamp"])).seconds < 3600]
+            recent_alerts = [
+                alert
+                for alert in self.score_alerts
+                if (datetime.now() - datetime.fromisoformat(alert["timestamp"])).seconds < 3600
+            ]
 
             return {
                 "total_wallets": total_wallets,
@@ -731,7 +773,7 @@ class RealTimeScoringEngine:
                 "total_updates_processed": len(self.update_times),
                 "recent_alerts_count": len(recent_alerts),
                 "market_regime": self.market_regime_state.get("current_regime", "unknown"),
-                "engine_health": "healthy" if total_wallets > 0 else "idle"
+                "engine_health": "healthy" if total_wallets > 0 else "idle",
             }
 
         except Exception as e:
@@ -746,7 +788,7 @@ class RealTimeScoringEngine:
             state_dir.mkdir(parents=True, exist_ok=True)
 
             # Save active wallets
-            with open(state_dir / "active_wallets.json", 'w') as f:
+            with open(state_dir / "active_wallets.json", "w") as f:
                 json.dump(self.active_wallets, f, indent=2, default=str)
 
             # Save score streams (last 50 entries per wallet)
@@ -754,11 +796,11 @@ class RealTimeScoringEngine:
             for wallet, stream in self.score_streams.items():
                 score_streams_data[wallet] = list(stream)[-50:]  # Last 50 scores
 
-            with open(state_dir / "score_streams.json", 'w') as f:
+            with open(state_dir / "score_streams.json", "w") as f:
                 json.dump(score_streams_data, f, indent=2, default=str)
 
             # Save market regime state
-            with open(state_dir / "market_regime.json", 'w') as f:
+            with open(state_dir / "market_regime.json", "w") as f:
                 json.dump(self.market_regime_state, f, indent=2, default=str)
 
             logger.info(f"💾 Real-time scoring state saved to {state_dir}")
@@ -775,21 +817,23 @@ class RealTimeScoringEngine:
             # Load active wallets
             wallets_file = state_dir / "active_wallets.json"
             if wallets_file.exists():
-                with open(wallets_file, 'r') as f:
+                with open(wallets_file, "r") as f:
                     self.active_wallets = json.load(f)
 
             # Load score streams
             streams_file = state_dir / "score_streams.json"
             if streams_file.exists():
-                with open(streams_file, 'r') as f:
+                with open(streams_file, "r") as f:
                     streams_data = json.load(f)
                     for wallet, stream_data in streams_data.items():
-                        self.score_streams[wallet] = deque(stream_data, maxlen=self.scoring_params["trend_analysis_window"])
+                        self.score_streams[wallet] = deque(
+                            stream_data, maxlen=self.scoring_params["trend_analysis_window"]
+                        )
 
             # Load market regime
             regime_file = state_dir / "market_regime.json"
             if regime_file.exists():
-                with open(regime_file, 'r') as f:
+                with open(regime_file, "r") as f:
                     self.market_regime_state = json.load(f)
 
             logger.info(f"📊 Real-time scoring state loaded from {state_dir}")
@@ -800,7 +844,9 @@ class RealTimeScoringEngine:
     async def run_scoring_loop(self, update_interval_seconds: int = 60):
         """Run continuous real-time scoring updates."""
 
-        logger.info(f"🔄 Starting real-time scoring loop (update interval: {update_interval_seconds}s)")
+        logger.info(
+            f"🔄 Starting real-time scoring loop (update interval: {update_interval_seconds}s)"
+        )
 
         while True:
             try:

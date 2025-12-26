@@ -1,25 +1,26 @@
 """
 Unit tests for utils/helpers.py - Utility functions.
 """
-import pytest
+
 import json
 from datetime import datetime, timedelta
-from unittest.mock import patch, Mock
-from decimal import Decimal
+from unittest.mock import patch
+
+import pytest
 
 from utils.helpers import (
-    normalize_address,
-    wei_to_usdc,
-    usdc_to_wei,
     calculate_confidence_score,
     calculate_position_size,
     format_currency,
-    get_time_ago,
-    truncate_string,
-    safe_json_parse,
-    get_environment_info,
     generate_environment_hash,
-    retry_with_backoff
+    get_environment_info,
+    get_time_ago,
+    normalize_address,
+    retry_with_backoff,
+    safe_json_parse,
+    truncate_string,
+    usdc_to_wei,
+    wei_to_usdc,
 )
 
 
@@ -170,9 +171,9 @@ class TestCalculateConfidenceScore:
     def test_calculate_confidence_score_high_value(self):
         """Test confidence score with high transaction value."""
         tx = {
-            'value': '1000000000000000000',  # 1 ETH
-            'gasUsed': '50000',
-            'input': '0x1234567890abcdef'
+            "value": "1000000000000000000",  # 1 ETH
+            "gasUsed": "50000",
+            "input": "0x1234567890abcdef",
         }
 
         result = calculate_confidence_score(tx)
@@ -182,9 +183,9 @@ class TestCalculateConfidenceScore:
     def test_calculate_confidence_score_contract_interaction(self):
         """Test confidence score for contract interaction."""
         tx = {
-            'value': '0',
-            'gasUsed': '150000',
-            'input': '0xa9059cbb000000000000000000000000742d35Cc6634C0532925a3b844Bc454e4438f44e00000000000000000000000000000000000000000000000000000000000003e8'
+            "value": "0",
+            "gasUsed": "150000",
+            "input": "0xa9059cbb000000000000000000000000742d35Cc6634C0532925a3b844Bc454e4438f44e00000000000000000000000000000000000000000000000000000000000003e8",
         }
 
         result = calculate_confidence_score(tx)
@@ -193,11 +194,7 @@ class TestCalculateConfidenceScore:
 
     def test_calculate_confidence_score_gas_usage(self):
         """Test confidence score based on gas usage."""
-        tx = {
-            'value': '0',
-            'gasUsed': '75000',  # Medium gas usage
-            'input': '0x'
-        }
+        tx = {"value": "0", "gasUsed": "75000", "input": "0x"}  # Medium gas usage
 
         result = calculate_confidence_score(tx)
 
@@ -205,11 +202,7 @@ class TestCalculateConfidenceScore:
 
     def test_calculate_confidence_score_input_length(self):
         """Test confidence score based on input data length."""
-        tx = {
-            'value': '0',
-            'gasUsed': '21000',
-            'input': '0x' + 'a' * 200  # Long input data
-        }
+        tx = {"value": "0", "gasUsed": "21000", "input": "0x" + "a" * 200}  # Long input data
 
         result = calculate_confidence_score(tx)
 
@@ -218,23 +211,19 @@ class TestCalculateConfidenceScore:
     def test_calculate_confidence_score_with_patterns(self):
         """Test confidence score with pattern matching."""
         tx = {
-            'value': '0',
-            'gasUsed': '21000',
-            'input': '0x12345678sellShares00000000000000000000000000000000000000000000000000000000'
+            "value": "0",
+            "gasUsed": "21000",
+            "input": "0x12345678sellShares00000000000000000000000000000000000000000000000000000000",
         }
 
-        patterns = ['sellShares', 'buyShares']
+        patterns = ["sellShares", "buyShares"]
         result = calculate_confidence_score(tx, patterns)
 
         assert result > 0.4  # Should get pattern bonus
 
     def test_calculate_confidence_score_minimum(self):
         """Test minimum confidence score."""
-        tx = {
-            'value': '0',
-            'gasUsed': '21000',
-            'input': '0x'
-        }
+        tx = {"value": "0", "gasUsed": "21000", "input": "0x"}
 
         result = calculate_confidence_score(tx)
 
@@ -243,12 +232,12 @@ class TestCalculateConfidenceScore:
     def test_calculate_confidence_score_maximum(self):
         """Test that confidence score is capped at 1.0."""
         tx = {
-            'value': '1000000000000000000000',  # Very high value
-            'gasUsed': '1000000',  # Very high gas
-            'input': '0x' + 'a' * 1000  # Very long input
+            "value": "1000000000000000000000",  # Very high value
+            "gasUsed": "1000000",  # Very high gas
+            "input": "0x" + "a" * 1000,  # Very long input
         }
 
-        patterns = ['sellShares', 'buyShares', 'transferPosition']
+        patterns = ["sellShares", "buyShares", "transferPosition"]
         result = calculate_confidence_score(tx, patterns)
 
         assert result <= 1.0
@@ -263,7 +252,7 @@ class TestCalculatePositionSize:
             original_amount=100.0,
             account_balance=1000.0,
             max_position_size=50.0,
-            risk_percentage=0.01
+            risk_percentage=0.01,
         )
 
         # Should be min of: risk_based (10.0), proportional (10.0), max_size (50.0)
@@ -275,7 +264,7 @@ class TestCalculatePositionSize:
             original_amount=10.0,
             account_balance=10000.0,
             max_position_size=100.0,
-            risk_percentage=0.01
+            risk_percentage=0.01,
         )
 
         # Risk based: 10000 * 0.01 = 100
@@ -289,7 +278,7 @@ class TestCalculatePositionSize:
             original_amount=1000.0,
             account_balance=10000.0,
             max_position_size=50.0,
-            risk_percentage=0.02
+            risk_percentage=0.02,
         )
 
         # Risk based: 10000 * 0.02 = 200
@@ -303,7 +292,7 @@ class TestCalculatePositionSize:
             original_amount=0.1,
             account_balance=100.0,
             max_position_size=100.0,
-            risk_percentage=0.001
+            risk_percentage=0.001,
         )
 
         # Should be at least 1.0 (minimum trade amount)
@@ -312,9 +301,7 @@ class TestCalculatePositionSize:
     def test_calculate_position_size_error_handling(self):
         """Test position size calculation error handling."""
         result = calculate_position_size(
-            original_amount=-10.0,  # Invalid
-            account_balance=1000.0,
-            max_position_size=50.0
+            original_amount=-10.0, account_balance=1000.0, max_position_size=50.0  # Invalid
         )
 
         # Should fall back to safe calculation
@@ -494,14 +481,8 @@ class TestSafeJsonParse:
     def test_safe_json_parse_complex_json(self):
         """Test parsing complex JSON structure."""
         complex_json = {
-            "trades": [
-                {"id": 1, "amount": 100.0},
-                {"id": 2, "amount": 200.0}
-            ],
-            "metadata": {
-                "timestamp": "2024-01-01T00:00:00Z",
-                "version": "1.0"
-            }
+            "trades": [{"id": 1, "amount": 100.0}, {"id": 2, "amount": 200.0}],
+            "metadata": {"timestamp": "2024-01-01T00:00:00Z", "version": "1.0"},
         }
         json_str = json.dumps(complex_json)
 
@@ -513,12 +494,14 @@ class TestSafeJsonParse:
 class TestGetEnvironmentInfo:
     """Test environment info collection."""
 
-    @patch('platform.system')
-    @patch('platform.platform')
-    @patch('platform.machine')
-    @patch('platform.processor')
-    @patch('sys.version')
-    def test_get_environment_info(self, mock_version, mock_processor, mock_machine, mock_platform, mock_system):
+    @patch("platform.system")
+    @patch("platform.platform")
+    @patch("platform.machine")
+    @patch("platform.processor")
+    @patch("sys.version")
+    def test_get_environment_info(
+        self, mock_version, mock_processor, mock_machine, mock_platform, mock_system
+    ):
         """Test environment info collection."""
         mock_system.return_value = "Linux"
         mock_platform.return_value = "Linux-5.4.0-74-generic-x86_64-with-Ubuntu-20.04.3-LTS"
@@ -528,14 +511,14 @@ class TestGetEnvironmentInfo:
 
         result = get_environment_info()
 
-        assert result['system'] == "Linux"
-        assert result['platform'] == "Linux-5.4.0-74-generic-x86_64-with-Ubuntu-20.04.3-LTS"
-        assert result['machine'] == "x86_64"
-        assert result['processor'] == "x86_64"
-        assert "3.9.7" in result['python_version']
-        assert 'timestamp' in result
-        assert 'environment_hash' in result
-        assert len(result['environment_hash']) == 8
+        assert result["system"] == "Linux"
+        assert result["platform"] == "Linux-5.4.0-74-generic-x86_64-with-Ubuntu-20.04.3-LTS"
+        assert result["machine"] == "x86_64"
+        assert result["processor"] == "x86_64"
+        assert "3.9.7" in result["python_version"]
+        assert "timestamp" in result
+        assert "environment_hash" in result
+        assert len(result["environment_hash"]) == 8
 
 
 class TestGenerateEnvironmentHash:
@@ -543,7 +526,7 @@ class TestGenerateEnvironmentHash:
 
     def test_generate_environment_hash(self):
         """Test environment hash generation."""
-        with patch.dict('os.environ', {'VAR1': 'value1', 'VAR2': 'value2'}):
+        with patch.dict("os.environ", {"VAR1": "value1", "VAR2": "value2"}):
             result = generate_environment_hash()
 
             assert len(result) == 8
@@ -553,16 +536,16 @@ class TestGenerateEnvironmentHash:
 
     def test_generate_environment_hash_empty(self):
         """Test environment hash with empty environment."""
-        with patch.dict('os.environ', {}, clear=True):
+        with patch.dict("os.environ", {}, clear=True):
             result = generate_environment_hash()
 
             assert len(result) == 8
 
     def test_generate_environment_hash_consistency(self):
         """Test that environment hash is consistent."""
-        env_vars = {'TEST_VAR': 'test_value', 'ANOTHER_VAR': 'another_value'}
+        env_vars = {"TEST_VAR": "test_value", "ANOTHER_VAR": "another_value"}
 
-        with patch.dict('os.environ', env_vars):
+        with patch.dict("os.environ", env_vars):
             hash1 = generate_environment_hash()
             hash2 = generate_environment_hash()
 
@@ -625,6 +608,7 @@ class TestRetryWithBackoff:
     @pytest.mark.asyncio
     async def test_retry_with_backoff_returns_none_on_failure(self):
         """Test retry decorator returns None when function fails."""
+
         @retry_with_backoff(max_attempts=2)
         async def test_function():
             raise Exception("Failure")
@@ -654,7 +638,7 @@ class TestHelpersIntegration:
         addresses = [
             "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
             "742d35Cc6634C0532925a3b844Bc454e4438f44e",
-            "0x742D35CC6634C0532925A3B844BC454E4438F44E"
+            "0x742D35CC6634C0532925A3B844BC454E4438F44E",
         ]
 
         normalized = [normalize_address(addr) for addr in addresses]
@@ -667,9 +651,9 @@ class TestHelpersIntegration:
         """Test confidence scoring with realistic transaction data."""
         # Realistic Polymarket trade transaction
         tx = {
-            'value': '0',
-            'gasUsed': '125000',
-            'input': '0x12345678000000000000000000000000742d35Cc6634C0532925a3b844Bc454e4438f44e00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001'
+            "value": "0",
+            "gasUsed": "125000",
+            "input": "0x12345678000000000000000000000000742d35Cc6634C0532925a3b844Bc454e4438f44e00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001",
         }
 
         score = calculate_confidence_score(tx)
@@ -686,7 +670,7 @@ class TestHelpersIntegration:
             original_amount=500.0,
             account_balance=10000.0,
             max_position_size=200.0,
-            risk_percentage=0.01
+            risk_percentage=0.01,
         )
 
         # Risk-based: 10000 * 0.01 = $100

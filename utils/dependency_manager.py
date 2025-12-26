@@ -9,23 +9,17 @@ This module provides comprehensive dependency management including:
 - Conflict resolution
 """
 
-import os
-import sys
 import json
-import hashlib
-import subprocess
-import tempfile
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any, Set
-from dataclasses import dataclass, asdict
-from datetime import datetime, timedelta
 import logging
-import re
+import subprocess
+import sys
+from dataclasses import asdict, dataclass
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 # Third-party imports (will be available in virtual environment)
 try:
-    import requests
-    from packaging import version
     import pkg_resources
 except ImportError:
     print("⚠️  Environment dependencies not available. Run setup first.")
@@ -37,6 +31,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class DependencySpec:
     """Specification for a Python dependency"""
+
     name: str
     version_spec: str
     description: str = ""
@@ -52,6 +47,7 @@ class DependencySpec:
 @dataclass
 class VulnerabilityInfo:
     """Security vulnerability information"""
+
     package: str
     version: str
     vulnerability_id: str
@@ -64,6 +60,7 @@ class VulnerabilityInfo:
 @dataclass
 class DependencyStatus:
     """Status of a dependency"""
+
     name: str
     current_version: Optional[str]
     required_version: str
@@ -102,7 +99,7 @@ class DependencyManager:
         logging.basicConfig(
             filename=log_dir / "dependency_manager.log",
             level=logging.INFO,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         )
 
     def _load_dependency_specs(self) -> Dict[str, DependencySpec]:
@@ -114,84 +111,84 @@ class DependencyManager:
             name="web3",
             version_spec="6.15.1",
             description="Web3.py library for Ethereum interaction",
-            security_critical=True
+            security_critical=True,
         )
 
         specs["py-clob-client"] = DependencySpec(
             name="py-clob-client",
             version_spec="0.16.0",
             description="Polymarket CLOB client",
-            security_critical=True
+            security_critical=True,
         )
 
         specs["pydantic"] = DependencySpec(
             name="pydantic",
             version_spec="2.5.3",
             description="Data validation and settings management",
-            security_critical=False
+            security_critical=False,
         )
 
         specs["tenacity"] = DependencySpec(
             name="tenacity",
             version_spec="8.2.3",
             description="Retry logic for API calls",
-            security_critical=False
+            security_critical=False,
         )
 
         specs["cryptography"] = DependencySpec(
             name="cryptography",
             version_spec="41.0.7",
             description="Cryptographic operations",
-            security_critical=True
+            security_critical=True,
         )
 
         specs["requests"] = DependencySpec(
             name="requests",
             version_spec="2.31.0",
             description="HTTP library",
-            security_critical=True
+            security_critical=True,
         )
 
         specs["aiohttp"] = DependencySpec(
             name="aiohttp",
             version_spec="3.9.1",
             description="Async HTTP client",
-            security_critical=True
+            security_critical=True,
         )
 
         specs["pandas"] = DependencySpec(
             name="pandas",
             version_spec="2.1.4",
             description="Data analysis library",
-            security_critical=False
+            security_critical=False,
         )
 
         specs["apscheduler"] = DependencySpec(
             name="APScheduler",
             version_spec="3.10.4",
             description="Task scheduling",
-            security_critical=False
+            security_critical=False,
         )
 
         specs["python-telegram-bot"] = DependencySpec(
             name="python-telegram-bot",
             version_spec="20.7",
             description="Telegram bot API",
-            security_critical=True
+            security_critical=True,
         )
 
         specs["loguru"] = DependencySpec(
             name="loguru",
             version_spec="0.7.2",
             description="Advanced logging",
-            security_critical=False
+            security_critical=False,
         )
 
         specs["python-json-logger"] = DependencySpec(
             name="python-json-logger",
             version_spec="2.0.7",
             description="JSON logging",
-            security_critical=False
+            security_critical=False,
         )
 
         # Development dependencies
@@ -200,7 +197,7 @@ class DependencyManager:
             version_spec="7.4.3",
             description="Testing framework",
             security_critical=False,
-            environments=["staging", "development"]
+            environments=["staging", "development"],
         )
 
         specs["pytest-asyncio"] = DependencySpec(
@@ -208,7 +205,7 @@ class DependencyManager:
             version_spec="0.21.1",
             description="Async testing support",
             security_critical=False,
-            environments=["staging", "development"]
+            environments=["staging", "development"],
         )
 
         specs["pytest-cov"] = DependencySpec(
@@ -216,7 +213,7 @@ class DependencyManager:
             version_spec="4.1.0",
             description="Coverage reporting",
             security_critical=False,
-            environments=["staging", "development"]
+            environments=["staging", "development"],
         )
 
         specs["black"] = DependencySpec(
@@ -224,7 +221,7 @@ class DependencyManager:
             version_spec="23.12.1",
             description="Code formatting",
             security_critical=False,
-            environments=["development"]
+            environments=["development"],
         )
 
         specs["isort"] = DependencySpec(
@@ -232,7 +229,7 @@ class DependencyManager:
             version_spec="5.13.2",
             description="Import sorting",
             security_critical=False,
-            environments=["development"]
+            environments=["development"],
         )
 
         specs["mypy"] = DependencySpec(
@@ -240,7 +237,7 @@ class DependencyManager:
             version_spec="1.7.1",
             description="Type checking",
             security_critical=False,
-            environments=["development"]
+            environments=["development"],
         )
 
         # Security dependencies
@@ -249,7 +246,7 @@ class DependencyManager:
             version_spec="1.7.5",
             description="Security linting",
             security_critical=False,
-            environments=["staging", "development"]
+            environments=["staging", "development"],
         )
 
         specs["safety"] = DependencySpec(
@@ -257,7 +254,7 @@ class DependencyManager:
             version_spec="2.3.5",
             description="Security vulnerability scanning",
             security_critical=False,
-            environments=["staging", "development"]
+            environments=["staging", "development"],
         )
 
         return specs
@@ -285,7 +282,7 @@ class DependencyManager:
         """Generate requirements file for specific environment"""
         requirements_file = self.requirements_dir / f"requirements-{environment}.txt"
 
-        with open(requirements_file, 'w') as f:
+        with open(requirements_file, "w") as f:
             f.write(f"# Requirements for {environment} environment\n")
             f.write(f"# Generated on {datetime.now().isoformat()}\n")
             f.write("# DO NOT EDIT MANUALLY - Use dependency_manager.py\n\n")
@@ -319,7 +316,7 @@ class DependencyManager:
             cache_data = {
                 "timestamp": datetime.now().isoformat(),
                 "environment": environment,
-                "vulnerabilities": [asdict(v) for v in vulnerabilities]
+                "vulnerabilities": [asdict(v) for v in vulnerabilities],
             }
             self._save_vulnerability_cache(cache_data)
 
@@ -331,8 +328,7 @@ class DependencyManager:
     def _is_safety_available(self) -> bool:
         """Check if safety tool is available"""
         try:
-            subprocess.run(["safety", "--version"],
-                         capture_output=True, check=True)
+            subprocess.run(["safety", "--version"], capture_output=True, check=True)
             return True
         except (subprocess.CalledProcessError, FileNotFoundError):
             return False
@@ -347,9 +343,11 @@ class DependencyManager:
             return vulnerabilities
 
         try:
-            result = subprocess.run([
-                "safety", "check", "--file", str(requirements_file), "--json"
-            ], capture_output=True, text=True)
+            result = subprocess.run(
+                ["safety", "check", "--file", str(requirements_file), "--json"],
+                capture_output=True,
+                text=True,
+            )
 
             if result.returncode == 0:
                 # No vulnerabilities found
@@ -359,15 +357,19 @@ class DependencyManager:
             try:
                 safety_data = json.loads(result.stdout)
                 for vuln in safety_data:
-                    vulnerabilities.append(VulnerabilityInfo(
-                        package=vuln.get("package", ""),
-                        version=vuln.get("version", ""),
-                        vulnerability_id=vuln.get("vulnerability_id", ""),
-                        severity=vuln.get("severity", "unknown"),
-                        description=vuln.get("description", ""),
-                        published_date=datetime.fromisoformat(vuln.get("published_date", "").replace('Z', '+00:00')),
-                        fixed_version=vuln.get("fixed_version")
-                    ))
+                    vulnerabilities.append(
+                        VulnerabilityInfo(
+                            package=vuln.get("package", ""),
+                            version=vuln.get("version", ""),
+                            vulnerability_id=vuln.get("vulnerability_id", ""),
+                            severity=vuln.get("severity", "unknown"),
+                            description=vuln.get("description", ""),
+                            published_date=datetime.fromisoformat(
+                                vuln.get("published_date", "").replace("Z", "+00:00")
+                            ),
+                            fixed_version=vuln.get("fixed_version"),
+                        )
+                    )
             except json.JSONDecodeError:
                 logger.error("Failed to parse safety output")
 
@@ -382,7 +384,7 @@ class DependencyManager:
             return None
 
         try:
-            with open(self.vuln_cache_file, 'r') as f:
+            with open(self.vuln_cache_file, "r") as f:
                 return json.load(f)
         except Exception as e:
             logger.error(f"Error loading vulnerability cache: {e}")
@@ -391,7 +393,7 @@ class DependencyManager:
     def _save_vulnerability_cache(self, data: Dict) -> None:
         """Save vulnerability cache"""
         try:
-            with open(self.vuln_cache_file, 'w') as f:
+            with open(self.vuln_cache_file, "w") as f:
                 json.dump(data, f, indent=2)
         except Exception as e:
             logger.error(f"Error saving vulnerability cache: {e}")
@@ -412,7 +414,7 @@ class DependencyManager:
             "updates_available": [],
             "security_updates": [],
             "breaking_changes": [],
-            "dry_run": dry_run
+            "dry_run": dry_run,
         }
 
         try:
@@ -436,7 +438,7 @@ class DependencyManager:
             "environment": environment,
             "conflicts": [],
             "resolutions": [],
-            "unresolved": []
+            "unresolved": [],
         }
 
         try:
@@ -471,7 +473,7 @@ class DependencyManager:
                     is_installed=False,
                     is_compatible=True,
                     vulnerabilities=[],
-                    last_checked=datetime.now()
+                    last_checked=datetime.now(),
                 )
 
                 # Check if installed
@@ -524,9 +526,9 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="Dependency Manager for Polymarket Copy Bot")
-    parser.add_argument("action", choices=[
-        "generate", "check-vulns", "update", "resolve", "status", "install"
-    ])
+    parser.add_argument(
+        "action", choices=["generate", "check-vulns", "update", "resolve", "status", "install"]
+    )
     parser.add_argument("--env", default="production", help="Environment name")
     parser.add_argument("--dry-run", action="store_true", help="Dry run for updates")
 
@@ -536,14 +538,20 @@ def main():
 
     if args.action == "generate":
         success = manager.generate_requirements_files()
-        print("✅ Generated requirements files" if success else "❌ Failed to generate requirements files")
+        print(
+            "✅ Generated requirements files"
+            if success
+            else "❌ Failed to generate requirements files"
+        )
 
     elif args.action == "check-vulns":
         vulns = manager.check_vulnerabilities(args.env)
         if vulns:
             print(f"🚨 Found {len(vulns)} vulnerabilities:")
             for vuln in vulns:
-                print(f"  - {vuln.package} {vuln.version}: {vuln.vulnerability_id} ({vuln.severity})")
+                print(
+                    f"  - {vuln.package} {vuln.version}: {vuln.vulnerability_id} ({vuln.severity})"
+                )
         else:
             print("✅ No vulnerabilities found")
 
@@ -559,11 +567,17 @@ def main():
         statuses = manager.get_dependency_status(args.env)
         for status in statuses:
             installed = "✅" if status.is_installed else "❌"
-            print(f"{installed} {status.name}: {status.current_version or 'not installed'} (required: {status.required_version})")
+            print(
+                f"{installed} {status.name}: {status.current_version or 'not installed'} (required: {status.required_version})"
+            )
 
     elif args.action == "install":
         success = manager.install_dependencies(args.env)
-        print(f"✅ Installed dependencies for {args.env}" if success else f"❌ Failed to install dependencies")
+        print(
+            f"✅ Installed dependencies for {args.env}"
+            if success
+            else "❌ Failed to install dependencies"
+        )
 
 
 if __name__ == "__main__":

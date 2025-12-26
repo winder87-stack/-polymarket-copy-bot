@@ -9,33 +9,34 @@ This module provides comprehensive health checking for:
 - Security checks
 """
 
-import os
-import sys
-import json
-import psutil
 import asyncio
-from pathlib import Path
-from typing import Dict, List, Optional, Any
-from datetime import datetime, timedelta
+import json
 import logging
+import sys
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+import psutil
 
 # Third-party imports
 try:
-    from fastapi import FastAPI, HTTPException
-    from pydantic import BaseModel
     import uvicorn
+    from fastapi import FastAPI
+    from pydantic import BaseModel
 except ImportError:
     FastAPI = None
     print("⚠️  FastAPI not available. Health check endpoints disabled.")
 
-from environment_manager import EnvironmentManager
 from dependency_manager import DependencyManager
+from environment_manager import EnvironmentManager
 
 logger = logging.getLogger(__name__)
 
 
 class HealthStatus(BaseModel):
     """Health status response model"""
+
     status: str  # "healthy", "degraded", "unhealthy"
     timestamp: datetime
     version: str
@@ -65,7 +66,7 @@ class SystemHealthCheck:
                 "python_ok": env_health.python_version_ok,
                 "deps_ok": env_health.dependencies_ok,
                 "config_ok": env_health.configuration_ok,
-                "security_ok": env_health.security_ok
+                "security_ok": env_health.security_ok,
             }
             if not env_health.is_healthy:
                 issues.extend(env_health.issues)
@@ -76,16 +77,21 @@ class SystemHealthCheck:
         # Dependency check
         try:
             dep_statuses = self.dep_manager.get_dependency_status(environment)
-            critical_deps = [s for s in dep_statuses if any(
-                spec.security_critical for spec in self.dep_manager.dependencies.values()
-                if spec.name == s.name
-            )]
+            critical_deps = [
+                s
+                for s in dep_statuses
+                if any(
+                    spec.security_critical
+                    for spec in self.dep_manager.dependencies.values()
+                    if spec.name == s.name
+                )
+            ]
 
             checks["dependencies"] = {
                 "total": len(dep_statuses),
                 "installed": len([s for s in dep_statuses if s.is_installed]),
                 "critical_installed": len([s for s in critical_deps if s.is_installed]),
-                "vulnerabilities": len(self.dep_manager.check_vulnerabilities(environment))
+                "vulnerabilities": len(self.dep_manager.check_vulnerabilities(environment)),
             }
 
             missing_critical = [s.name for s in critical_deps if not s.is_installed]
@@ -121,7 +127,7 @@ class SystemHealthCheck:
             version=self._get_version(),
             environment=environment,
             checks=checks,
-            issues=issues
+            issues=issues,
         )
 
     def _check_system_resources(self) -> Dict[str, Any]:
@@ -131,7 +137,7 @@ class SystemHealthCheck:
             "memory_percent": psutil.virtual_memory().percent,
             "disk_usage": psutil.disk_usage(self.project_root).percent,
             "memory_available_gb": round(psutil.virtual_memory().available / (1024**3), 2),
-            "disk_available_gb": round(psutil.disk_usage(self.project_root).free / (1024**3), 2)
+            "disk_available_gb": round(psutil.disk_usage(self.project_root).free / (1024**3), 2),
         }
 
     def _check_services(self, environment: str) -> Dict[str, Any]:
@@ -140,11 +146,11 @@ class SystemHealthCheck:
 
         # Check if bot process is running
         bot_running = False
-        for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+        for proc in psutil.process_iter(["pid", "name", "cmdline"]):
             try:
-                if 'python' in proc.info['name'].lower():
-                    cmdline = ' '.join(proc.info['cmdline'])
-                    if 'main.py' in cmdline and str(self.project_root) in cmdline:
+                if "python" in proc.info["name"].lower():
+                    cmdline = " ".join(proc.info["cmdline"])
+                    if "main.py" in cmdline and str(self.project_root) in cmdline:
                         bot_running = True
                         break
             except (psutil.NoSuchProcess, psutil.AccessDenied):
@@ -153,13 +159,16 @@ class SystemHealthCheck:
         services["bot_process"] = bot_running
 
         # Check systemd service status (Linux only)
-        if sys.platform.startswith('linux'):
+        if sys.platform.startswith("linux"):
             try:
                 import subprocess
-                service_name = f"polymarket-bot{'-' + environment if environment != 'production' else ''}"
-                result = subprocess.run([
-                    'systemctl', 'is-active', service_name
-                ], capture_output=True, text=True)
+
+                service_name = (
+                    f"polymarket-bot{'-' + environment if environment != 'production' else ''}"
+                )
+                result = subprocess.run(
+                    ["systemctl", "is-active", service_name], capture_output=True, text=True
+                )
 
                 services["systemd_service"] = result.stdout.strip()
             except Exception:
@@ -178,9 +187,10 @@ class SystemHealthCheck:
             pyproject_file = self.project_root / "pyproject.toml"
             if pyproject_file.exists():
                 import tomllib
-                with open(pyproject_file, 'rb') as f:
+
+                with open(pyproject_file, "rb") as f:
                     data = tomllib.load(f)
-                return data.get('tool', {}).get('poetry', {}).get('version', 'unknown')
+                return data.get("tool", {}).get("poetry", {}).get("version", "unknown")
 
         except Exception:
             pass
@@ -189,11 +199,7 @@ class SystemHealthCheck:
 
     async def check_environment_reproduction(self, environment: str) -> Dict[str, Any]:
         """Check if environment can be reproduced"""
-        result = {
-            "reproducible": True,
-            "issues": [],
-            "recommendations": []
-        }
+        result = {"reproducible": True, "issues": [], "recommendations": []}
 
         try:
             # Check requirements files
@@ -246,10 +252,10 @@ if FastAPI:
                 "python_version_ok": env_health.python_version_ok,
                 "dependencies_ok": env_health.dependencies_ok,
                 "configuration_ok": env_health.configuration_ok,
-                "security_ok": env_health.security_ok
+                "security_ok": env_health.security_ok,
             },
             "issues": env_health.issues,
-            "timestamp": env_health.last_check
+            "timestamp": env_health.last_check,
         }
 
     @app.get("/health/dependencies")
@@ -265,18 +271,23 @@ if FastAPI:
                     "name": s.name,
                     "installed": s.is_installed,
                     "version": s.current_version,
-                    "required": s.required_version
-                } for s in statuses
+                    "required": s.required_version,
+                }
+                for s in statuses
             ],
             "vulnerabilities": len(vulnerabilities),
-            "critical_missing": len([
-                s for s in statuses
-                if not s.is_installed and any(
-                    spec.security_critical
-                    for spec in health_checker.dep_manager.dependencies.values()
-                    if spec.name == s.name
-                )
-            ])
+            "critical_missing": len(
+                [
+                    s
+                    for s in statuses
+                    if not s.is_installed
+                    and any(
+                        spec.security_critical
+                        for spec in health_checker.dep_manager.dependencies.values()
+                        if spec.name == s.name
+                    )
+                ]
+            ),
         }
 
     @app.get("/health/reproducibility")
@@ -305,12 +316,18 @@ def main():
         # Run synchronous health check
         async def run_check():
             health = await checker.check_overall_health(args.env)
-            print(json.dumps({
-                "status": health.status,
-                "environment": health.environment,
-                "issues": health.issues,
-                "checks": health.checks
-            }, indent=2, default=str))
+            print(
+                json.dumps(
+                    {
+                        "status": health.status,
+                        "environment": health.environment,
+                        "issues": health.issues,
+                        "checks": health.checks,
+                    },
+                    indent=2,
+                    default=str,
+                )
+            )
 
         asyncio.run(run_check())
 
@@ -323,6 +340,7 @@ def main():
         uvicorn.run(app, host="0.0.0.0", port=args.port)
 
     elif args.action == "reproduce":
+
         async def run_reproduce():
             result = await checker.check_environment_reproduction(args.env)
             print(json.dumps(result, indent=2))

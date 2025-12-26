@@ -18,24 +18,25 @@ DO NOT USE MAINNET KEYS OR REAL FUNDS WITH THIS SCRIPT!
 """
 
 import asyncio
+import logging
 import signal
 import sys
-import logging
-from datetime import datetime, timedelta
-from typing import Dict, Any, Optional
+from datetime import datetime
+from typing import Optional
 
 # Import staging configuration
 from config.settings_staging import staging_settings
 from core.clob_client import PolymarketClient
-from core.wallet_monitor import WalletMonitor
 from core.trade_executor import TradeExecutor
-from utils.alerts import send_error_alert, send_trade_alert
+from core.wallet_monitor import WalletMonitor
+from utils.alerts import send_error_alert
 from utils.logging_utils import setup_logging
 
 # Setup staging logging
 setup_logging(staging_settings.logging.log_level, staging_settings.logging.log_file)
 
 logger = logging.getLogger(__name__)
+
 
 class PolymarketStagingBot:
     """
@@ -75,8 +76,7 @@ class PolymarketStagingBot:
 
             # Initialize CLOB client (staging endpoint)
             self.clob_client = PolymarketClient(
-                host=self.settings.network.clob_host,
-                private_key=self.settings.trading.private_key
+                host=self.settings.network.clob_host, private_key=self.settings.trading.private_key
             )
 
             # Initialize wallet monitor (staging wallets)
@@ -84,7 +84,7 @@ class PolymarketStagingBot:
                 web3_provider=self.settings.network.polygon_rpc_url,
                 clob_client=self.clob_client,
                 target_wallets=self.settings.monitoring.target_wallets,
-                min_confidence_score=self.settings.monitoring.min_confidence_score
+                min_confidence_score=self.settings.monitoring.min_confidence_score,
             )
 
             # Initialize trade executor (staging risk parameters)
@@ -94,7 +94,7 @@ class PolymarketStagingBot:
                 max_daily_loss=self.settings.risk.max_daily_loss,
                 max_concurrent_positions=self.settings.risk.max_concurrent_positions,
                 stop_loss_pct=self.settings.risk.stop_loss_percentage,
-                take_profit_pct=self.settings.risk.take_profit_percentage
+                take_profit_pct=self.settings.risk.take_profit_percentage,
             )
 
             # Test connections
@@ -115,6 +115,7 @@ class PolymarketStagingBot:
         # Test RPC connection
         try:
             from web3 import Web3
+
             web3 = Web3(Web3.HTTPProvider(self.settings.network.polygon_rpc_url))
             block_number = web3.eth.block_number
             logger.info(f"✅ Connected to Polygon Mumbai testnet (Block: {block_number})")
@@ -190,7 +191,9 @@ class PolymarketStagingBot:
                         # Execute trades
                         await self._execute_staging_trades(allowed_trades)
                     else:
-                        logger.info("ℹ️ Staging: No trades allowed (daily limit reached or filtered)")
+                        logger.info(
+                            "ℹ️ Staging: No trades allowed (daily limit reached or filtered)"
+                        )
 
                 # Periodic health check
                 await self._periodic_staging_health_check()
@@ -226,9 +229,11 @@ class PolymarketStagingBot:
                 continue
 
             # Check position size limits
-            trade_amount = trade.get('amount', 0)
+            trade_amount = trade.get("amount", 0)
             if trade_amount > self.settings.risk.max_position_size:
-                logger.info(f"ℹ️ Staging: Trade amount ${trade_amount} exceeds max position size, skipping")
+                logger.info(
+                    f"ℹ️ Staging: Trade amount ${trade_amount} exceeds max position size, skipping"
+                )
                 continue
 
             # Additional staging filters can be added here
@@ -249,17 +254,19 @@ class PolymarketStagingBot:
                     # Real testnet trading
                     result = await self.trade_executor.execute_copy_trade(trade)
 
-                if result and result.get('status') == 'success':
+                if result and result.get("status") == "success":
                     self.staging_trade_count += 1
                     self.staging_daily_trades += 1
 
                     await self._send_staging_alert(
                         "TRADE_EXECUTED",
                         f"Trade {self.staging_trade_count}: {trade.get('market', 'Unknown')} - "
-                        f"${trade.get('amount', 0):.2f} ({'PAPER' if self.settings.staging.enable_paper_trading else 'TESTNET'})"
+                        f"${trade.get('amount', 0):.2f} ({'PAPER' if self.settings.staging.enable_paper_trading else 'TESTNET'})",
                     )
 
-                    logger.info(f"✅ Staging trade {self.staging_trade_count} executed successfully")
+                    logger.info(
+                        f"✅ Staging trade {self.staging_trade_count} executed successfully"
+                    )
 
                 else:
                     logger.warning(f"⚠️ Staging trade failed: {result}")
@@ -277,19 +284,17 @@ class PolymarketStagingBot:
 
         # Simulate success/failure randomly (90% success rate for testing)
         import random
+
         success = random.random() < 0.9
 
         if success:
             return {
-                'status': 'success',
-                'order_id': f'paper_{datetime.now().timestamp()}',
-                'amount': trade.get('amount', 0)
+                "status": "success",
+                "order_id": f"paper_{datetime.now().timestamp()}",
+                "amount": trade.get("amount", 0),
             }
         else:
-            return {
-                'status': 'failed',
-                'reason': 'Simulated failure for testing'
-            }
+            return {"status": "failed", "reason": "Simulated failure for testing"}
 
     async def _periodic_staging_health_check(self):
         """Periodic health check for staging"""
@@ -302,46 +307,50 @@ class PolymarketStagingBot:
         logger.info("🏥 Running staging health check...")
 
         health_status = {
-            'timestamp': datetime.now().isoformat(),
-            'environment': 'staging',
-            'uptime_hours': (datetime.now() - self.staging_start_time).total_seconds() / 3600,
-            'total_trades': self.staging_trade_count,
-            'daily_trades': self.staging_daily_trades,
-            'daily_limit': self.settings.staging.max_trades_per_day
+            "timestamp": datetime.now().isoformat(),
+            "environment": "staging",
+            "uptime_hours": (datetime.now() - self.staging_start_time).total_seconds() / 3600,
+            "total_trades": self.staging_trade_count,
+            "daily_trades": self.staging_daily_trades,
+            "daily_limit": self.settings.staging.max_trades_per_day,
         }
 
         try:
             # Check RPC connection
             from web3 import Web3
+
             web3 = Web3(Web3.HTTPProvider(self.settings.network.polygon_rpc_url))
-            health_status['rpc_connected'] = web3.is_connected()
-            health_status['current_block'] = web3.eth.block_number if web3.is_connected() else None
+            health_status["rpc_connected"] = web3.is_connected()
+            health_status["current_block"] = web3.eth.block_number if web3.is_connected() else None
 
             # Check wallet balance
-            if hasattr(self, 'clob_client') and self.clob_client:
+            if hasattr(self, "clob_client") and self.clob_client:
                 balance = await self.clob_client.get_balance()
-                health_status['wallet_balance'] = balance
+                health_status["wallet_balance"] = balance
 
             # Check memory usage
             import psutil
-            process = psutil.Process()
-            health_status['memory_mb'] = process.memory_info().rss / 1024 / 1024
 
-            health_status['status'] = 'healthy'
+            process = psutil.Process()
+            health_status["memory_mb"] = process.memory_info().rss / 1024 / 1024
+
+            health_status["status"] = "healthy"
             logger.info("✅ Staging health check passed")
 
         except Exception as e:
-            health_status['status'] = 'error'
-            health_status['error'] = str(e)
+            health_status["status"] = "error"
+            health_status["error"] = str(e)
             logger.error(f"❌ Staging health check failed: {e}")
 
         # Log health status
-        logger.info(f"🏥 Staging Health: {health_status['status']} | "
-                   f"Trades: {health_status['total_trades']} | "
-                   f"Memory: {health_status.get('memory_mb', 0):.1f}MB")
+        logger.info(
+            f"🏥 Staging Health: {health_status['status']} | "
+            f"Trades: {health_status['total_trades']} | "
+            f"Memory: {health_status.get('memory_mb', 0):.1f}MB"
+        )
 
         # Send alert if unhealthy
-        if health_status['status'] != 'healthy':
+        if health_status["status"] != "healthy":
             await self._send_staging_alert("HEALTH_CHECK_FAILED", str(health_status))
 
     async def _send_staging_alert(self, alert_type: str, message: str):
@@ -350,11 +359,14 @@ class PolymarketStagingBot:
 
         if self.settings.alerts.telegram_bot_token and self.settings.alerts.telegram_chat_id:
             try:
-                await send_error_alert(staging_message, {
-                    'environment': 'staging',
-                    'alert_type': alert_type,
-                    'timestamp': datetime.now().isoformat()
-                })
+                await send_error_alert(
+                    staging_message,
+                    {
+                        "environment": "staging",
+                        "alert_type": alert_type,
+                        "timestamp": datetime.now().isoformat(),
+                    },
+                )
             except Exception as e:
                 logger.error(f"Failed to send staging alert: {e}")
 

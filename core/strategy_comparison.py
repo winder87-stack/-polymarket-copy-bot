@@ -16,23 +16,15 @@ Features:
 - Scenario-based robustness testing
 """
 
-import asyncio
 import json
 import logging
-import time
-from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional
 
 import numpy as np
-import pandas as pd
 from scipy import stats
-from scipy.stats import ttest_ind, mannwhitneyu, levene, f_oneway
+from scipy.stats import f_oneway, mannwhitneyu, ttest_ind
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
-from statsmodels.tsa.stattools import grangercausalitytests
-from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.linear_model import LinearRegression
-from sklearn.decomposition import PCA
 
 from core.backtesting_engine import BacktestingEngine
 
@@ -53,59 +45,67 @@ class StrategyComparisonFramework:
         # Comparison configuration
         self.comparison_config = {
             # Statistical testing parameters
-            "significance_level": 0.05,              # 5% significance level
-            "min_sample_size": 30,                   # Minimum observations for statistical tests
-            "bootstrap_iterations": 1000,            # Bootstrap iterations for confidence intervals
-            "confidence_level": 0.95,                # 95% confidence intervals
-
+            "significance_level": 0.05,  # 5% significance level
+            "min_sample_size": 30,  # Minimum observations for statistical tests
+            "bootstrap_iterations": 1000,  # Bootstrap iterations for confidence intervals
+            "confidence_level": 0.95,  # 95% confidence intervals
             # Risk-adjusted comparison parameters
-            "risk_free_rate": 0.02,                  # Annual risk-free rate
-            "benchmark_adjustment": True,            # Adjust for benchmark performance
-            "volatility_scaling": True,              # Scale for volatility differences
-
+            "risk_free_rate": 0.02,  # Annual risk-free rate
+            "benchmark_adjustment": True,  # Adjust for benchmark performance
+            "volatility_scaling": True,  # Scale for volatility differences
             # Strategy definitions
             "strategy_definitions": {
                 "market_maker_only": {
                     "name": "Market Maker Only",
                     "wallet_type_filter": ["market_maker"],
-                    "description": "Copy only market maker wallets"
+                    "description": "Copy only market maker wallets",
                 },
                 "directional_trader_only": {
                     "name": "Directional Trader Only",
                     "wallet_type_filter": ["directional_trader"],
-                    "description": "Copy only directional trader wallets"
+                    "description": "Copy only directional trader wallets",
                 },
                 "arbitrage_trader_only": {
                     "name": "Arbitrage Trader Only",
                     "wallet_type_filter": ["arbitrage_trader"],
-                    "description": "Copy only arbitrage trader wallets"
+                    "description": "Copy only arbitrage trader wallets",
                 },
                 "hybrid_optimized": {
                     "name": "Hybrid Optimized",
-                    "wallet_type_filter": ["market_maker", "directional_trader", "arbitrage_trader"],
-                    "description": "Optimized combination of all wallet types"
+                    "wallet_type_filter": [
+                        "market_maker",
+                        "directional_trader",
+                        "arbitrage_trader",
+                    ],
+                    "description": "Optimized combination of all wallet types",
                 },
                 "equal_weight_hybrid": {
                     "name": "Equal Weight Hybrid",
-                    "wallet_type_filter": ["market_maker", "directional_trader", "arbitrage_trader"],
-                    "description": "Equal allocation across wallet types"
+                    "wallet_type_filter": [
+                        "market_maker",
+                        "directional_trader",
+                        "arbitrage_trader",
+                    ],
+                    "description": "Equal allocation across wallet types",
                 },
                 "performance_weighted": {
                     "name": "Performance Weighted",
-                    "wallet_type_filter": ["market_maker", "directional_trader", "arbitrage_trader"],
-                    "description": "Weight allocation by recent performance"
-                }
+                    "wallet_type_filter": [
+                        "market_maker",
+                        "directional_trader",
+                        "arbitrage_trader",
+                    ],
+                    "description": "Weight allocation by recent performance",
+                },
             },
-
             # Performance attribution parameters
-            "attribution_window_days": 90,           # Attribution analysis window
-            "factor_model_components": 5,            # Number of principal components
-            "peer_group_comparison": True,           # Compare to peer group strategies
-
+            "attribution_window_days": 90,  # Attribution analysis window
+            "factor_model_components": 5,  # Number of principal components
+            "peer_group_comparison": True,  # Compare to peer group strategies
             # Drawdown analysis parameters
-            "drawdown_quantile_analysis": True,      # Analyze drawdown quantiles
-            "recovery_time_analysis": True,          # Analyze recovery patterns
-            "drawdown_correlation_analysis": True,   # Analyze drawdown correlations
+            "drawdown_quantile_analysis": True,  # Analyze drawdown quantiles
+            "recovery_time_analysis": True,  # Analyze recovery patterns
+            "drawdown_correlation_analysis": True,  # Analyze drawdown correlations
         }
 
         # Comparison results storage
@@ -122,7 +122,7 @@ class StrategyComparisonFramework:
         start_date: datetime,
         end_date: datetime,
         capital: float = 10000.0,
-        strategies_to_compare: Optional[List[str]] = None
+        strategies_to_compare: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
         Run comprehensive comparison of different copy trading strategies.
@@ -151,7 +151,7 @@ class StrategyComparisonFramework:
             "drawdown_comparison": {},
             "robustness_analysis": {},
             "recommendations": {},
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
         try:
@@ -174,7 +174,9 @@ class StrategyComparisonFramework:
 
             # Performance attribution analysis
             logger.info("🔍 Running performance attribution analysis")
-            attribution_analysis = await self._run_performance_attribution(strategy_results, dataset)
+            attribution_analysis = await self._run_performance_attribution(
+                strategy_results, dataset
+            )
             comparison_results["performance_attribution"] = attribution_analysis
 
             # Drawdown analysis by strategy
@@ -194,7 +196,9 @@ class StrategyComparisonFramework:
                 comparison_results
             )
 
-            logger.info(f"✅ Strategy comparison completed: {len(strategies_to_compare)} strategies analyzed")
+            logger.info(
+                f"✅ Strategy comparison completed: {len(strategies_to_compare)} strategies analyzed"
+            )
 
         except Exception as e:
             logger.error(f"Error in comprehensive strategy comparison: {e}")
@@ -208,7 +212,7 @@ class StrategyComparisonFramework:
         dataset: Dict[str, Any],
         start_date: datetime,
         end_date: datetime,
-        capital: float
+        capital: float,
     ) -> Dict[str, Any]:
         """Run backtests for all strategies to be compared."""
 
@@ -217,7 +221,9 @@ class StrategyComparisonFramework:
         for strategy_name in strategy_names:
             try:
                 # Get strategy configuration
-                strategy_config = self.comparison_config["strategy_definitions"].get(strategy_name, {})
+                strategy_config = self.comparison_config["strategy_definitions"].get(
+                    strategy_name, {}
+                )
 
                 if not strategy_config:
                     logger.warning(f"Strategy configuration not found for {strategy_name}")
@@ -231,7 +237,7 @@ class StrategyComparisonFramework:
                 strategy_results[strategy_name] = {
                     "config": strategy_config,
                     "backtest_result": backtest_result,
-                    "performance_summary": self._extract_performance_summary(backtest_result)
+                    "performance_summary": self._extract_performance_summary(backtest_result),
                 }
 
                 logger.debug(f"Completed backtest for {strategy_name}")
@@ -260,7 +266,7 @@ class StrategyComparisonFramework:
             "expected_shortfall_95": risk_metrics.get("expected_shortfall_95", 0),
             "volatility": risk_metrics.get("volatility", 0),
             "beta": risk_metrics.get("beta", 1.0),
-            "alpha": performance_metrics.get("alpha", 0)
+            "alpha": performance_metrics.get("alpha", 0),
         }
 
     def _run_statistical_comparison(self, strategy_results: Dict[str, Any]) -> Dict[str, Any]:
@@ -271,7 +277,7 @@ class StrategyComparisonFramework:
             "anova_results": {},
             "nonparametric_tests": {},
             "effect_sizes": {},
-            "statistical_significance_summary": {}
+            "statistical_significance_summary": {},
         }
 
         try:
@@ -284,7 +290,7 @@ class StrategyComparisonFramework:
                     performance_series[strategy_name] = {
                         "sharpe_ratio": perf_summary["sharpe_ratio"],
                         "total_return": perf_summary["total_return"],
-                        "max_drawdown": perf_summary["max_drawdown"]
+                        "max_drawdown": perf_summary["max_drawdown"],
                     }
 
             if len(performance_series) < 2:
@@ -307,7 +313,7 @@ class StrategyComparisonFramework:
                 pairwise_results = {}
 
                 for i in range(len(strategy_names)):
-                    for j in range(i+1, len(strategy_names)):
+                    for j in range(i + 1, len(strategy_names)):
                         strategy1 = strategy_names[i]
                         strategy2 = strategy_names[j]
 
@@ -318,11 +324,11 @@ class StrategyComparisonFramework:
                         t_stat, p_value = ttest_ind(data1, data2)
 
                         # Mann-Whitney U test (non-parametric)
-                        u_stat, u_p_value = mannwhitneyu(data1, data2, alternative='two-sided')
+                        u_stat, u_p_value = mannwhitneyu(data1, data2, alternative="two-sided")
 
                         # Effect size (Cohen's d)
                         mean_diff = np.mean(data1) - np.mean(data2)
-                        pooled_std = np.sqrt((np.std(data1)**2 + np.std(data2)**2) / 2)
+                        pooled_std = np.sqrt((np.std(data1) ** 2 + np.std(data2) ** 2) / 2)
                         cohens_d = mean_diff / pooled_std if pooled_std > 0 else 0
 
                         pairwise_results[f"{strategy1}_vs_{strategy2}"] = {
@@ -332,8 +338,9 @@ class StrategyComparisonFramework:
                             "mann_whitney_u": u_stat,
                             "mann_whitney_p": u_p_value,
                             "cohens_d": cohens_d,
-                            "significant_difference": p_value < self.comparison_config["significance_level"],
-                            "effect_size_interpretation": self._interpret_effect_size(cohens_d)
+                            "significant_difference": p_value
+                            < self.comparison_config["significance_level"],
+                            "effect_size_interpretation": self._interpret_effect_size(cohens_d),
                         }
 
                 statistical_comparison["pairwise_tests"][metric] = pairwise_results
@@ -353,13 +360,18 @@ class StrategyComparisonFramework:
                         group_labels.extend([strategy_name] * len(values))
 
                     # One-way ANOVA
-                    f_stat, anova_p = f_oneway(*[metric_values_list[i::len(performance_series)]
-                                                for i in range(len(performance_series))])
+                    f_stat, anova_p = f_oneway(
+                        *[
+                            metric_values_list[i :: len(performance_series)]
+                            for i in range(len(performance_series))
+                        ]
+                    )
 
                     statistical_comparison["anova_results"][metric] = {
                         "f_statistic": f_stat,
                         "p_value": anova_p,
-                        "significant_difference": anova_p < self.comparison_config["significance_level"]
+                        "significant_difference": anova_p
+                        < self.comparison_config["significance_level"],
                     }
 
                     # Post-hoc Tukey HSD test
@@ -368,8 +380,8 @@ class StrategyComparisonFramework:
                         statistical_comparison["anova_results"][metric]["tukey_hsd"] = str(tukey)
 
             # Statistical significance summary
-            statistical_comparison["statistical_significance_summary"] = self._create_significance_summary(
-                statistical_comparison
+            statistical_comparison["statistical_significance_summary"] = (
+                self._create_significance_summary(statistical_comparison)
             )
 
         except Exception as e:
@@ -392,7 +404,9 @@ class StrategyComparisonFramework:
         else:
             return "large"
 
-    def _create_significance_summary(self, statistical_comparison: Dict[str, Any]) -> Dict[str, Any]:
+    def _create_significance_summary(
+        self, statistical_comparison: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Create summary of statistical significance findings."""
 
         summary = {
@@ -400,7 +414,7 @@ class StrategyComparisonFramework:
             "significant_differences_found": 0,
             "strongest_effects": [],
             "most_robust_strategy": None,
-            "key_findings": []
+            "key_findings": [],
         }
 
         # Count significant differences
@@ -413,11 +427,13 @@ class StrategyComparisonFramework:
 
                     # Track strongest effects
                     cohens_d = abs(test_result.get("cohens_d", 0))
-                    summary["strongest_effects"].append({
-                        "comparison": test_result.get("comparison", ""),
-                        "effect_size": cohens_d,
-                        "interpretation": test_result.get("effect_size_interpretation", "")
-                    })
+                    summary["strongest_effects"].append(
+                        {
+                            "comparison": test_result.get("comparison", ""),
+                            "effect_size": cohens_d,
+                            "interpretation": test_result.get("effect_size_interpretation", ""),
+                        }
+                    )
 
         # Sort strongest effects
         summary["strongest_effects"].sort(key=lambda x: x["effect_size"], reverse=True)
@@ -426,19 +442,29 @@ class StrategyComparisonFramework:
         # Identify most robust strategy (least statistical differences from others)
         # This is a simplified analysis
         if summary["total_tests_run"] > 0:
-            significance_rate = summary["significant_differences_found"] / summary["total_tests_run"]
+            significance_rate = (
+                summary["significant_differences_found"] / summary["total_tests_run"]
+            )
             summary["overall_significance_rate"] = significance_rate
 
             if significance_rate < 0.3:
-                summary["key_findings"].append("Low statistical significance - strategies perform similarly")
+                summary["key_findings"].append(
+                    "Low statistical significance - strategies perform similarly"
+                )
             elif significance_rate < 0.6:
-                summary["key_findings"].append("Moderate statistical differences between strategies")
+                summary["key_findings"].append(
+                    "Moderate statistical differences between strategies"
+                )
             else:
-                summary["key_findings"].append("Strong statistical differences - clear performance hierarchy")
+                summary["key_findings"].append(
+                    "Strong statistical differences - clear performance hierarchy"
+                )
 
         return summary
 
-    def _analyze_risk_adjusted_performance(self, strategy_results: Dict[str, Any]) -> Dict[str, Any]:
+    def _analyze_risk_adjusted_performance(
+        self, strategy_results: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Analyze risk-adjusted performance across strategies."""
 
         risk_adjusted_analysis = {
@@ -449,7 +475,7 @@ class StrategyComparisonFramework:
             "kelly_criterion": {},
             "risk_adjusted_rankings": {},
             "efficient_frontier_analysis": {},
-            "performance_vs_risk_quadrants": {}
+            "performance_vs_risk_quadrants": {},
         }
 
         try:
@@ -464,7 +490,7 @@ class StrategyComparisonFramework:
                         "max_drawdown": perf_summary["max_drawdown"],
                         "sharpe_ratio": perf_summary["sharpe_ratio"],
                         "sortino_ratio": perf_summary["sortino_ratio"],
-                        "calmar_ratio": perf_summary["calmar_ratio"]
+                        "calmar_ratio": perf_summary["calmar_ratio"],
                     }
 
             if not strategy_performance:
@@ -474,7 +500,7 @@ class StrategyComparisonFramework:
             for strategy_name, perf_data in strategy_performance.items():
                 returns = perf_data["total_return"]
                 volatility = perf_data["volatility"]
-                max_dd = perf_data["max_drawdown"]
+                perf_data["max_drawdown"]
 
                 # Omega ratio (probability weighted ratio of gains vs losses)
                 # Simplified calculation - assumes normal distribution
@@ -507,13 +533,15 @@ class StrategyComparisonFramework:
 
         return risk_adjusted_analysis
 
-    def _calculate_omega_ratio(self, expected_return: float, volatility: float, threshold: float = 0.0) -> float:
+    def _calculate_omega_ratio(
+        self, expected_return: float, volatility: float, threshold: float = 0.0
+    ) -> float:
         """Calculate Omega ratio (probability-weighted ratio of gains vs losses)."""
 
         # Simplified calculation using normal distribution assumption
         try:
             if volatility <= 0:
-                return float('inf') if expected_return > threshold else 0
+                return float("inf") if expected_return > threshold else 0
 
             # Calculate probability of positive returns
             z_score = (threshold - expected_return) / volatility
@@ -522,15 +550,23 @@ class StrategyComparisonFramework:
             # Calculate expected value of positive returns
             if prob_positive > 0:
                 # Simplified: assume positive returns follow truncated normal
-                mu_positive = expected_return + volatility * (stats.norm.pdf(z_score) / prob_positive)
+                mu_positive = expected_return + volatility * (
+                    stats.norm.pdf(z_score) / prob_positive
+                )
                 expected_positive = mu_positive * prob_positive
 
                 # Expected value of negative returns
                 prob_negative = 1 - prob_positive
-                mu_negative = expected_return - volatility * (stats.norm.pdf(z_score) / prob_negative) if prob_negative > 0 else 0
+                mu_negative = (
+                    expected_return - volatility * (stats.norm.pdf(z_score) / prob_negative)
+                    if prob_negative > 0
+                    else 0
+                )
                 expected_negative = abs(mu_negative) * prob_negative
 
-                omega_ratio = expected_positive / expected_negative if expected_negative > 0 else float('inf')
+                omega_ratio = (
+                    expected_positive / expected_negative if expected_negative > 0 else float("inf")
+                )
             else:
                 omega_ratio = 0
 
@@ -539,7 +575,9 @@ class StrategyComparisonFramework:
         except Exception:
             return 1.0  # Neutral ratio
 
-    def _calculate_kelly_criterion(self, expected_return: float, volatility: float, risk_free_rate: float) -> float:
+    def _calculate_kelly_criterion(
+        self, expected_return: float, volatility: float, risk_free_rate: float
+    ) -> float:
         """Calculate Kelly criterion for optimal position sizing."""
 
         try:
@@ -554,7 +592,7 @@ class StrategyComparisonFramework:
             if annual_volatility <= 0:
                 return 1.0  # Full position if no volatility
 
-            kelly_fraction = (annual_return - risk_free_rate) / (annual_volatility ** 2)
+            kelly_fraction = (annual_return - risk_free_rate) / (annual_volatility**2)
 
             # Cap at reasonable limits
             kelly_fraction = max(-0.5, min(0.5, kelly_fraction))  # Between -50% and +50%
@@ -564,7 +602,9 @@ class StrategyComparisonFramework:
         except Exception:
             return 0.0
 
-    def _create_risk_adjusted_rankings(self, strategy_performance: Dict[str, Any]) -> Dict[str, Any]:
+    def _create_risk_adjusted_rankings(
+        self, strategy_performance: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Create comprehensive risk-adjusted rankings."""
 
         rankings = {
@@ -572,7 +612,7 @@ class StrategyComparisonFramework:
             "sortino_rankings": [],
             "calmar_rankings": [],
             "omega_rankings": [],
-            "composite_rankings": []
+            "composite_rankings": [],
         }
 
         # Individual metric rankings
@@ -581,7 +621,7 @@ class StrategyComparisonFramework:
             metric_values.sort(key=lambda x: x[1], reverse=True)  # Higher is better
 
             rankings[f"{metric}_rankings"] = [
-                {"strategy": name, "value": value, "rank": i+1}
+                {"strategy": name, "value": value, "rank": i + 1}
                 for i, (name, value) in enumerate(metric_values)
             ]
 
@@ -599,7 +639,7 @@ class StrategyComparisonFramework:
         # Rank by composite score
         composite_rankings = sorted(composite_scores.items(), key=lambda x: x[1], reverse=True)
         rankings["composite_rankings"] = [
-            {"strategy": name, "composite_score": score, "rank": i+1}
+            {"strategy": name, "composite_score": score, "rank": i + 1}
             for i, (name, score) in enumerate(composite_rankings)
         ]
 
@@ -613,7 +653,7 @@ class StrategyComparisonFramework:
             "optimal_portfolios": [],
             "sharpe_optimal": None,
             "min_volatility": None,
-            "efficient_portfolio_weights": {}
+            "efficient_portfolio_weights": {},
         }
 
         try:
@@ -649,8 +689,10 @@ class StrategyComparisonFramework:
             for i in range(len(portfolio_volatilities)):
                 is_efficient = True
                 for j in range(len(portfolio_volatilities)):
-                    if (portfolio_volatilities[j] <= portfolio_volatilities[i] and
-                        portfolio_returns[j] > portfolio_returns[i]):
+                    if (
+                        portfolio_volatilities[j] <= portfolio_volatilities[i]
+                        and portfolio_returns[j] > portfolio_returns[i]
+                    ):
                         is_efficient = False
                         break
                 if is_efficient:
@@ -662,17 +704,23 @@ class StrategyComparisonFramework:
                     "return": portfolio_returns[i],
                     "volatility": portfolio_volatilities[i],
                     "weights": dict(zip(strategies, portfolio_weights[i])),
-                    "sharpe_ratio": portfolio_returns[i] / portfolio_volatilities[i] if portfolio_volatilities[i] > 0 else 0
+                    "sharpe_ratio": (
+                        portfolio_returns[i] / portfolio_volatilities[i]
+                        if portfolio_volatilities[i] > 0
+                        else 0
+                    ),
                 }
                 for i in efficient_indices
             ]
 
             # Find Sharpe optimal and minimum volatility portfolios
             if efficient_frontier["optimal_portfolios"]:
-                sharpe_optimal = max(efficient_frontier["optimal_portfolios"],
-                                   key=lambda x: x["sharpe_ratio"])
-                min_vol = min(efficient_frontier["optimal_portfolios"],
-                            key=lambda x: x["volatility"])
+                sharpe_optimal = max(
+                    efficient_frontier["optimal_portfolios"], key=lambda x: x["sharpe_ratio"]
+                )
+                min_vol = min(
+                    efficient_frontier["optimal_portfolios"], key=lambda x: x["volatility"]
+                )
 
                 efficient_frontier["sharpe_optimal"] = sharpe_optimal
                 efficient_frontier["min_volatility"] = min_vol
@@ -683,14 +731,16 @@ class StrategyComparisonFramework:
 
         return efficient_frontier
 
-    def _analyze_performance_risk_quadrants(self, strategy_performance: Dict[str, Any]) -> Dict[str, Any]:
+    def _analyze_performance_risk_quadrants(
+        self, strategy_performance: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Analyze strategies in performance vs risk quadrants."""
 
         quadrants = {
-            "high_return_high_risk": [],    # Top-right: Aggressive strategies
-            "high_return_low_risk": [],     # Top-left: Best strategies
-            "low_return_high_risk": [],     # Bottom-right: Worst strategies
-            "low_return_low_risk": []       # Bottom-left: Conservative strategies
+            "high_return_high_risk": [],  # Top-right: Aggressive strategies
+            "high_return_low_risk": [],  # Top-left: Best strategies
+            "low_return_high_risk": [],  # Bottom-right: Worst strategies
+            "low_return_low_risk": [],  # Bottom-left: Conservative strategies
         }
 
         try:
@@ -721,7 +771,9 @@ class StrategyComparisonFramework:
 
         return quadrants
 
-    async def _run_performance_attribution(self, strategy_results: Dict[str, Any], dataset: Dict[str, Any]) -> Dict[str, Any]:
+    async def _run_performance_attribution(
+        self, strategy_results: Dict[str, Any], dataset: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Run performance attribution analysis."""
 
         attribution_analysis = {
@@ -729,7 +781,7 @@ class StrategyComparisonFramework:
             "strategy_contribution": {},
             "market_timing": {},
             "security_selection": {},
-            "peer_group_comparison": {}
+            "peer_group_comparison": {},
         }
 
         try:
@@ -741,7 +793,7 @@ class StrategyComparisonFramework:
                     strategy_performance[strategy_name] = {
                         "total_return": perf_summary["total_return"],
                         "active_return": perf_summary.get("alpha", 0),  # Alpha as active return
-                        "tracking_error": perf_summary.get("volatility", 0.15)
+                        "tracking_error": perf_summary.get("volatility", 0.15),
                     }
 
             if not strategy_performance:
@@ -752,7 +804,9 @@ class StrategyComparisonFramework:
             market_returns = self._extract_market_returns_for_attribution(dataset)
 
             if market_returns:
-                factor_attribution = self._calculate_factor_attribution(strategy_performance, market_returns)
+                factor_attribution = self._calculate_factor_attribution(
+                    strategy_performance, market_returns
+                )
                 attribution_analysis["factor_attribution"] = factor_attribution
 
             # Strategy contribution analysis
@@ -765,7 +819,9 @@ class StrategyComparisonFramework:
 
         return attribution_analysis
 
-    def _extract_market_returns_for_attribution(self, dataset: Dict[str, Any]) -> Optional[List[float]]:
+    def _extract_market_returns_for_attribution(
+        self, dataset: Dict[str, Any]
+    ) -> Optional[List[float]]:
         """Extract market returns for attribution analysis."""
 
         try:
@@ -784,7 +840,7 @@ class StrategyComparisonFramework:
             # Calculate returns
             returns = []
             for i in range(1, len(prices)):
-                ret = prices[i]["price"] / prices[i-1]["price"] - 1
+                ret = prices[i]["price"] / prices[i - 1]["price"] - 1
                 returns.append(ret)
 
             return returns
@@ -792,7 +848,9 @@ class StrategyComparisonFramework:
         except Exception:
             return None
 
-    def _calculate_factor_attribution(self, strategy_performance: Dict[str, Any], market_returns: List[float]) -> Dict[str, Any]:
+    def _calculate_factor_attribution(
+        self, strategy_performance: Dict[str, Any], market_returns: List[float]
+    ) -> Dict[str, Any]:
         """Calculate factor attribution using simplified factor model."""
 
         factor_attribution = {}
@@ -815,7 +873,7 @@ class StrategyComparisonFramework:
                     "market_factor_contribution": market_contribution,
                     "alpha_contribution": alpha_contribution,
                     "total_attribution": market_contribution + alpha_contribution,
-                    "factor_weights": {"market": estimated_beta}
+                    "factor_weights": {"market": estimated_beta},
                 }
 
         except Exception as e:
@@ -823,13 +881,15 @@ class StrategyComparisonFramework:
 
         return factor_attribution
 
-    def _analyze_strategy_contribution(self, strategy_performance: Dict[str, Any]) -> Dict[str, Any]:
+    def _analyze_strategy_contribution(
+        self, strategy_performance: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Analyze contribution by strategy type."""
 
         strategy_contribution = {
             "by_wallet_type": {},
             "performance_sources": {},
-            "strategy_characteristics": {}
+            "strategy_characteristics": {},
         }
 
         try:
@@ -838,24 +898,25 @@ class StrategyComparisonFramework:
                 "market_maker_focused": ["market_maker_only"],
                 "directional_focused": ["directional_trader_only"],
                 "arbitrage_focused": ["arbitrage_trader_only"],
-                "hybrid": ["hybrid_optimized", "equal_weight_hybrid", "performance_weighted"]
+                "hybrid": ["hybrid_optimized", "equal_weight_hybrid", "performance_weighted"],
             }
 
             for group_name, strategy_names in type_groups.items():
                 group_performance = [
-                    strategy_performance[s] for s in strategy_names
-                    if s in strategy_performance
+                    strategy_performance[s] for s in strategy_names if s in strategy_performance
                 ]
 
                 if group_performance:
                     avg_return = np.mean([p["total_return"] for p in group_performance])
-                    avg_volatility = np.mean([p.get("tracking_error", 0.15) for p in group_performance])
+                    avg_volatility = np.mean(
+                        [p.get("tracking_error", 0.15) for p in group_performance]
+                    )
 
                     strategy_contribution["by_wallet_type"][group_name] = {
                         "average_return": avg_return,
                         "average_volatility": avg_volatility,
                         "sharpe_ratio": avg_return / avg_volatility if avg_volatility > 0 else 0,
-                        "strategy_count": len(group_performance)
+                        "strategy_count": len(group_performance),
                     }
 
         except Exception as e:
@@ -871,7 +932,7 @@ class StrategyComparisonFramework:
             "recovery_patterns": {},
             "drawdown_correlations": {},
             "worst_drawdown_scenarios": {},
-            "drawdown_duration_analysis": {}
+            "drawdown_duration_analysis": {},
         }
 
         try:
@@ -886,23 +947,27 @@ class StrategyComparisonFramework:
                     "max_drawdown": risk_metrics.get("max_drawdown", 0),
                     "average_drawdown": risk_metrics.get("average_drawdown", 0),
                     "drawdown_volatility": risk_metrics.get("drawdown_volatility", 0),
-                    "recovery_time": risk_metrics.get("recovery_time", 0)
+                    "recovery_time": risk_metrics.get("recovery_time", 0),
                 }
 
             if strategy_drawdowns:
                 drawdown_analysis["drawdown_statistics"] = strategy_drawdowns
 
                 # Calculate drawdown correlations
-                drawdown_values = np.array([
-                    [dd["max_drawdown"], dd["average_drawdown"]]
-                    for dd in strategy_drawdowns.values()
-                ]).T
+                drawdown_values = np.array(
+                    [
+                        [dd["max_drawdown"], dd["average_drawdown"]]
+                        for dd in strategy_drawdowns.values()
+                    ]
+                ).T
 
                 if drawdown_values.shape[1] >= 2:
                     corr_matrix = np.corrcoef(drawdown_values)
                     drawdown_analysis["drawdown_correlations"] = {
                         "max_drawdown_correlation": corr_matrix[0, 1],
-                        "correlation_interpretation": self._interpret_drawdown_correlation(corr_matrix[0, 1])
+                        "correlation_interpretation": self._interpret_drawdown_correlation(
+                            corr_matrix[0, 1]
+                        ),
                     }
 
         except Exception as e:
@@ -929,7 +994,7 @@ class StrategyComparisonFramework:
         dataset: Dict[str, Any],
         start_date: datetime,
         end_date: datetime,
-        capital: float
+        capital: float,
     ) -> Dict[str, Any]:
         """Run robustness analysis across different market conditions."""
 
@@ -938,7 +1003,7 @@ class StrategyComparisonFramework:
             "stress_test_results": {},
             "scenario_analysis": {},
             "robustness_scores": {},
-            "regime_stability": {}
+            "regime_stability": {},
         }
 
         try:
@@ -972,7 +1037,7 @@ class StrategyComparisonFramework:
         dataset: Dict[str, Any],
         start_date: datetime,
         end_date: datetime,
-        capital: float
+        capital: float,
     ) -> Dict[str, Any]:
         """Analyze strategy performance across different market regimes."""
 
@@ -986,7 +1051,9 @@ class StrategyComparisonFramework:
                 regime_results = {}
 
                 for strategy_name in strategies:
-                    strategy_config = self.comparison_config["strategy_definitions"].get(strategy_name, {})
+                    strategy_config = self.comparison_config["strategy_definitions"].get(
+                        strategy_name, {}
+                    )
 
                     # Run backtest for this regime period
                     regime_result = await self.backtesting_engine.run_backtest(
@@ -995,9 +1062,13 @@ class StrategyComparisonFramework:
 
                     regime_results[strategy_name] = {
                         "total_return": regime_result.get("total_return", 0),
-                        "sharpe_ratio": regime_result.get("performance_metrics", {}).get("sharpe_ratio", 0),
-                        "max_drawdown": regime_result.get("performance_metrics", {}).get("max_drawdown", 0),
-                        "win_rate": regime_result.get("performance_metrics", {}).get("win_rate", 0)
+                        "sharpe_ratio": regime_result.get("performance_metrics", {}).get(
+                            "sharpe_ratio", 0
+                        ),
+                        "max_drawdown": regime_result.get("performance_metrics", {}).get(
+                            "max_drawdown", 0
+                        ),
+                        "win_rate": regime_result.get("performance_metrics", {}).get("win_rate", 0),
                     }
 
                 regime_performance[regime] = regime_results
@@ -1007,24 +1078,20 @@ class StrategyComparisonFramework:
 
         return regime_performance
 
-    def _identify_regime_periods(self, dataset: Dict[str, Any], start_date: datetime, end_date: datetime) -> Dict[str, Any]:
+    def _identify_regime_periods(
+        self, dataset: Dict[str, Any], start_date: datetime, end_date: datetime
+    ) -> Dict[str, Any]:
         """Identify periods of different market regimes."""
 
         # Simplified regime identification
         total_days = (end_date - start_date).days
         regime_periods = {
-            "bull": {
-                "start": start_date,
-                "end": start_date + timedelta(days=total_days * 0.4)
-            },
+            "bull": {"start": start_date, "end": start_date + timedelta(days=total_days * 0.4)},
             "bear": {
                 "start": start_date + timedelta(days=total_days * 0.4),
-                "end": start_date + timedelta(days=total_days * 0.7)
+                "end": start_date + timedelta(days=total_days * 0.7),
             },
-            "volatile": {
-                "start": start_date + timedelta(days=total_days * 0.7),
-                "end": end_date
-            }
+            "volatile": {"start": start_date + timedelta(days=total_days * 0.7), "end": end_date},
         }
 
         return regime_periods
@@ -1035,7 +1102,7 @@ class StrategyComparisonFramework:
         dataset: Dict[str, Any],
         start_date: datetime,
         end_date: datetime,
-        capital: float
+        capital: float,
     ) -> Dict[str, Any]:
         """Run stress tests for strategies."""
 
@@ -1044,17 +1111,23 @@ class StrategyComparisonFramework:
         try:
             # Run Monte Carlo stress tests for each strategy
             for strategy_name in strategies:
-                strategy_config = self.comparison_config["strategy_definitions"].get(strategy_name, {})
+                strategy_config = self.comparison_config["strategy_definitions"].get(
+                    strategy_name, {}
+                )
 
                 stress_test = await self.backtesting_engine.run_monte_carlo_stress_test(
                     strategy_config, dataset, start_date, end_date, capital
                 )
 
                 stress_results[strategy_name] = {
-                    "survival_rate": stress_test.get("aggregate_statistics", {}).get("probability_profit", 0),
-                    "worst_case_return": stress_test.get("worst_case_scenario", {}).get("total_return", 0),
+                    "survival_rate": stress_test.get("aggregate_statistics", {}).get(
+                        "probability_profit", 0
+                    ),
+                    "worst_case_return": stress_test.get("worst_case_scenario", {}).get(
+                        "total_return", 0
+                    ),
                     "var_95": stress_test.get("var_95", 0),
-                    "expected_shortfall": stress_test.get("cvar_95", 0)
+                    "expected_shortfall": stress_test.get("cvar_95", 0),
                 }
 
         except Exception as e:
@@ -1063,9 +1136,7 @@ class StrategyComparisonFramework:
         return stress_results
 
     def _calculate_strategy_robustness(
-        self,
-        regime_performance: Dict[str, Any],
-        stress_results: Dict[str, Any]
+        self, regime_performance: Dict[str, Any], stress_results: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Calculate robustness scores for strategies."""
 
@@ -1089,7 +1160,7 @@ class StrategyComparisonFramework:
                 robustness_scores[strategy_name] = {
                     "regime_consistency": regime_consistency,
                     "stress_survival": survival_rate,
-                    "overall_robustness": (regime_consistency + survival_rate) / 2
+                    "overall_robustness": (regime_consistency + survival_rate) / 2,
                 }
 
         except Exception as e:
@@ -1097,7 +1168,9 @@ class StrategyComparisonFramework:
 
         return robustness_scores
 
-    def _generate_strategy_recommendations(self, comparison_results: Dict[str, Any]) -> Dict[str, Any]:
+    def _generate_strategy_recommendations(
+        self, comparison_results: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Generate strategy recommendations based on comparison results."""
 
         recommendations = {
@@ -1105,16 +1178,20 @@ class StrategyComparisonFramework:
             "alternative_strategies": [],
             "risk_warnings": [],
             "implementation_notes": [],
-            "monitoring_recommendations": []
+            "monitoring_recommendations": [],
         }
 
         try:
             # Analyze statistical comparison
-            statistical_summary = comparison_results.get("statistical_comparison", {}).get("statistical_significance_summary", {})
+            statistical_summary = comparison_results.get("statistical_comparison", {}).get(
+                "statistical_significance_summary", {}
+            )
             significance_rate = statistical_summary.get("overall_significance_rate", 0.5)
 
             # Analyze risk-adjusted rankings
-            risk_rankings = comparison_results.get("risk_adjusted_comparison", {}).get("risk_adjusted_rankings", {})
+            risk_rankings = comparison_results.get("risk_adjusted_comparison", {}).get(
+                "risk_adjusted_rankings", {}
+            )
             composite_rankings = risk_rankings.get("composite_rankings", [])
 
             if composite_rankings:
@@ -1128,7 +1205,9 @@ class StrategyComparisonFramework:
                 ]
 
             # Add risk warnings
-            robustness_scores = comparison_results.get("robustness_analysis", {}).get("robustness_scores", {})
+            robustness_scores = comparison_results.get("robustness_analysis", {}).get(
+                "robustness_scores", {}
+            )
 
             for strategy, robustness in robustness_scores.items():
                 if robustness.get("overall_robustness", 1.0) < 0.6:
@@ -1151,7 +1230,7 @@ class StrategyComparisonFramework:
                 "Track performance across different market regimes",
                 "Monitor strategy robustness through regular stress testing",
                 "Watch for significant changes in statistical relationships",
-                "Regularly reassess strategy allocations based on new data"
+                "Regularly reassess strategy allocations based on new data",
             ]
 
         except Exception as e:
@@ -1169,7 +1248,7 @@ class StrategyComparisonFramework:
 
             filepath = data_dir / f"{filename}.json"
 
-            with open(filepath, 'w') as f:
+            with open(filepath, "w") as f:
                 json.dump(results, f, indent=2, default=str)
 
             logger.info(f"💾 Strategy comparison results saved to {filepath}")
@@ -1183,9 +1262,11 @@ class StrategyComparisonFramework:
         return {
             "total_comparisons": len(self.comparison_results),
             "strategies_compared": list(self.comparison_config["strategy_definitions"].keys()),
-            "most_recent_comparison": max(self.comparison_results.keys()) if self.comparison_results else None,
+            "most_recent_comparison": (
+                max(self.comparison_results.keys()) if self.comparison_results else None
+            ),
             "key_findings": self._extract_key_findings(),
-            "comparison_system_health": "active" if self.comparison_results else "no_comparisons"
+            "comparison_system_health": "active" if self.comparison_results else "no_comparisons",
         }
 
     def _extract_key_findings(self) -> List[str]:
@@ -1197,7 +1278,9 @@ class StrategyComparisonFramework:
             return findings
 
         # Get most recent comparison
-        latest_comparison = max(self.comparison_results.values(), key=lambda x: x.get("timestamp", ""))
+        latest_comparison = max(
+            self.comparison_results.values(), key=lambda x: x.get("timestamp", "")
+        )
 
         # Extract recommendations
         recommendations = latest_comparison.get("recommendations", {})
@@ -1206,7 +1289,9 @@ class StrategyComparisonFramework:
             findings.append(f"Primary recommendation: {primary_rec}")
 
         # Extract statistical insights
-        statistical = latest_comparison.get("statistical_comparison", {}).get("statistical_significance_summary", {})
+        statistical = latest_comparison.get("statistical_comparison", {}).get(
+            "statistical_significance_summary", {}
+        )
         significance_rate = statistical.get("overall_significance_rate", 0)
         if significance_rate > 0.7:
             findings.append("Strong statistical differences between strategies")

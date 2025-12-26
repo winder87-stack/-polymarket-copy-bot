@@ -6,23 +6,27 @@ Test script for Polygonscan v2 API integration
 import asyncio
 import os
 import sys
-from typing import Optional
 
 # Add the core directory to path for imports
-sys.path.insert(0, 'core')
+sys.path.insert(0, "core")
+
 
 # Simple mock settings for testing
 class MockSettings:
     class Network:
-        polygonscan_api_key = os.getenv('POLYGONSCAN_API_KEY', 'test_key')
+        polygonscan_api_key = os.getenv("POLYGONSCAN_API_KEY", "test_key")
+
     network = Network()
 
     class Monitoring:
-        target_wallets = ['0x1234567890123456789012345678901234567890']
+        target_wallets = ["0x1234567890123456789012345678901234567890"]
         min_confidence_score = 0.3
+
     monitoring = Monitoring()
 
+
 settings = MockSettings()
+
 
 # Test just the API methods without full import
 def test_api_methods():
@@ -30,7 +34,7 @@ def test_api_methods():
 
     class MockMonitor:
         def __init__(self):
-            self.polygonscan_api_key = os.getenv('POLYGONSCAN_API_KEY', 'test_key')
+            self.polygonscan_api_key = os.getenv("POLYGONSCAN_API_KEY", "test_key")
 
         def _get_polygonscan_api_url(self):
             """Get the appropriate Polygonscan API URL (v1 or v2)"""
@@ -71,7 +75,7 @@ async def test_polygonscan_v2_api():
     success = test_api_methods()
 
     # Check if API key is configured
-    api_key = os.getenv('POLYGONSCAN_API_KEY')
+    api_key = os.getenv("POLYGONSCAN_API_KEY")
     if not api_key:
         print("\n⚠️  No Polygonscan API key found. Set POLYGONSCAN_API_KEY environment variable.")
         print("   v2 API methods are configured but cannot test live API calls.")
@@ -144,5 +148,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ Test failed with unexpected error: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

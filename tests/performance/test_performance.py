@@ -1,27 +1,27 @@
 """
 Performance tests for load testing, latency measurement, and stress testing.
 """
-import pytest
-import asyncio
-import time
-import statistics
-from unittest.mock import patch, Mock, AsyncMock
-from datetime import datetime, timedelta
-import psutil
-import os
 
-from core.wallet_monitor import WalletMonitor
-from core.trade_executor import TradeExecutor
-from core.clob_client import PolymarketClient
+import asyncio
+import os
+import statistics
+import time
+from datetime import datetime, timedelta
+from unittest.mock import AsyncMock
+
+import psutil
+import pytest
 
 
 class TestLoadTesting:
     """Load testing with multiple wallets."""
 
     @pytest.mark.asyncio
-    async def test_25_wallet_monitoring_load(self, performance_test_data, mock_wallet_monitor, performance_monitor):
+    async def test_25_wallet_monitoring_load(
+        self, performance_test_data, mock_wallet_monitor, performance_monitor
+    ):
         """Test monitoring 25 wallets simultaneously."""
-        mock_wallet_monitor.target_wallets = performance_test_data['wallets']
+        mock_wallet_monitor.target_wallets = performance_test_data["wallets"]
 
         # Mock transaction fetching
         mock_wallet_monitor.get_wallet_transactions.return_value = []
@@ -38,18 +38,20 @@ class TestLoadTesting:
         assert duration < 30.0  # Should complete within 30 seconds
 
         # Verify all wallets were processed
-        expected_calls = len(performance_test_data['wallets'])
+        expected_calls = len(performance_test_data["wallets"])
         assert mock_wallet_monitor.get_wallet_transactions.call_count == expected_calls
 
     @pytest.mark.asyncio
-    async def test_high_frequency_transaction_processing(self, mock_wallet_monitor, performance_test_data, performance_monitor):
+    async def test_high_frequency_transaction_processing(
+        self, mock_wallet_monitor, performance_test_data, performance_monitor
+    ):
         """Test processing high frequency transactions."""
         # Set up 1000 transactions
-        transactions = performance_test_data['transactions']
+        transactions = performance_test_data["transactions"]
 
         # Mock them as Polymarket transactions
         for tx in transactions:
-            tx['to'] = mock_wallet_monitor.polymarket_contracts[0]
+            tx["to"] = mock_wallet_monitor.polymarket_contracts[0]
 
         performance_monitor.start("transaction_processing")
 
@@ -70,21 +72,21 @@ class TestLoadTesting:
         trades = []
         for i in range(50):
             trade = {
-                'tx_hash': f'0x{i:064x}',
-                'timestamp': datetime.now() - timedelta(seconds=30),
-                'wallet_address': f'0x{i:040x}',
-                'condition_id': f'0x{i:040x}',
-                'side': 'BUY' if i % 2 == 0 else 'SELL',
-                'amount': 10.0,
-                'price': 0.65,
-                'token_id': f'0x{i+1:040x}',
-                'confidence_score': 0.8
+                "tx_hash": f"0x{i:064x}",
+                "timestamp": datetime.now() - timedelta(seconds=30),
+                "wallet_address": f"0x{i:040x}",
+                "condition_id": f"0x{i:040x}",
+                "side": "BUY" if i % 2 == 0 else "SELL",
+                "amount": 10.0,
+                "price": 0.65,
+                "token_id": f"0x{i+1:040x}",
+                "confidence_score": 0.8,
             }
             trades.append(trade)
 
         # Mock successful execution
         mock_trade_executor.execute_copy_trade.side_effect = [
-            {'status': 'success', 'order_id': f'order-{i}'} for i in range(50)
+            {"status": "success", "order_id": f"order-{i}"} for i in range(50)
         ]
 
         performance_monitor.start("concurrent_trade_execution")
@@ -97,7 +99,7 @@ class TestLoadTesting:
 
         # Performance assertions
         assert len(results) == 50
-        assert all(r['status'] == 'success' for r in results)
+        assert all(r["status"] == "success" for r in results)
         assert duration < 60.0  # Should complete within 60 seconds
         assert mock_trade_executor.execute_copy_trade.call_count == 50
 
@@ -108,6 +110,7 @@ class TestLatencyMeasurement:
     @pytest.mark.asyncio
     async def test_api_call_latency(self, mock_polymarket_client, performance_monitor):
         """Test API call latency."""
+
         # Mock API calls with realistic delays
         async def delayed_balance(*args, **kwargs):
             await asyncio.sleep(0.1)  # 100ms delay
@@ -139,6 +142,7 @@ class TestLatencyMeasurement:
     @pytest.mark.asyncio
     async def test_wallet_transaction_fetch_latency(self, mock_wallet_monitor, performance_monitor):
         """Test wallet transaction fetch latency."""
+
         # Mock API response with delay
         async def delayed_fetch(*args, **kwargs):
             await asyncio.sleep(0.05)  # 50ms delay
@@ -169,12 +173,15 @@ class TestLatencyMeasurement:
         assert max_latency < 0.2  # Max under 200ms
 
     @pytest.mark.asyncio
-    async def test_trade_execution_latency(self, mock_trade_executor, sample_trade, performance_monitor):
+    async def test_trade_execution_latency(
+        self, mock_trade_executor, sample_trade, performance_monitor
+    ):
         """Test trade execution latency."""
+
         # Mock successful execution with delay
         async def delayed_execution(*args, **kwargs):
             await asyncio.sleep(0.15)  # 150ms delay
-            return {'status': 'success', 'order_id': 'test-order'}
+            return {"status": "success", "order_id": "test-order"}
 
         mock_trade_executor.execute_copy_trade = delayed_execution
 
@@ -189,7 +196,7 @@ class TestLatencyMeasurement:
             latency = end_time - start_time
             latencies.append(latency)
 
-            assert result['status'] == 'success'
+            assert result["status"] == "success"
 
         # Performance analysis
         avg_latency = statistics.mean(latencies)
@@ -202,7 +209,9 @@ class TestLatencyMeasurement:
 class TestMemoryUsageProfiling:
     """Memory usage profiling tests."""
 
-    def test_memory_usage_during_transaction_processing(self, mock_wallet_monitor, performance_test_data):
+    def test_memory_usage_during_transaction_processing(
+        self, mock_wallet_monitor, performance_test_data
+    ):
         """Test memory usage during transaction processing."""
         process = psutil.Process(os.getpid())
 
@@ -210,11 +219,11 @@ class TestMemoryUsageProfiling:
         baseline_memory = process.memory_info().rss / 1024 / 1024  # MB
 
         # Process transactions
-        transactions = performance_test_data['transactions']
+        transactions = performance_test_data["transactions"]
         for tx in transactions[:100]:  # Process first 100
-            tx['to'] = mock_wallet_monitor.polymarket_contracts[0]
+            tx["to"] = mock_wallet_monitor.polymarket_contracts[0]
 
-        trades = mock_wallet_monitor.detect_polymarket_trades(transactions[:100])
+        mock_wallet_monitor.detect_polymarket_trades(transactions[:100])
 
         # Check memory after processing
         processing_memory = process.memory_info().rss / 1024 / 1024  # MB
@@ -236,7 +245,7 @@ class TestMemoryUsageProfiling:
         # Trigger cleanup
         mock_wallet_monitor._clean_cache()  # Clean market cache
         # Simulate processed transaction cleanup
-        old_count = len(mock_wallet_monitor.processed_transactions)
+        len(mock_wallet_monitor.processed_transactions)
         cutoff_time = datetime.now() - timedelta(hours=25)
         mock_wallet_monitor._get_recent_transaction_hashes(cutoff_time)
 
@@ -254,17 +263,15 @@ class TestMemoryUsageProfiling:
 
         # Add many trades to history
         for i in range(200):
-            trade = {
-                'tx_hash': f'0x{i:064x}',
-                'timestamp': datetime.now(),
-                'amount': 10.0
-            }
+            trade = {"tx_hash": f"0x{i:064x}", "timestamp": datetime.now(), "amount": 10.0}
             mock_wallet_monitor.wallet_trade_history[wallet].append(trade)
 
         memory_after_addition = process.memory_info().rss / 1024 / 1024  # MB
 
         # Apply memory limit (simulate cleanup)
-        mock_wallet_monitor.wallet_trade_history[wallet] = mock_wallet_monitor.wallet_trade_history[wallet][-100:]
+        mock_wallet_monitor.wallet_trade_history[wallet] = mock_wallet_monitor.wallet_trade_history[
+            wallet
+        ][-100:]
 
         memory_after_cleanup = process.memory_info().rss / 1024 / 1024  # MB
 
@@ -277,14 +284,16 @@ class TestAPIRateLimitStress:
     """API rate limit stress testing."""
 
     @pytest.mark.asyncio
-    async def test_polygonscan_rate_limit_handling(self, mock_wallet_monitor, mock_aiohttp_session, performance_monitor):
+    async def test_polygonscan_rate_limit_handling(
+        self, mock_wallet_monitor, mock_aiohttp_session, performance_monitor
+    ):
         """Test handling of Polygonscan API rate limits."""
         mock_wallet_monitor.polygonscan_api_key = "test-api-key"
 
         # Mock rate limit response
         rate_limit_response = AsyncMock()
         rate_limit_response.status = 429  # Too Many Requests
-        rate_limit_response.json = AsyncMock(return_value={'message': 'Rate limit exceeded'})
+        rate_limit_response.json = AsyncMock(return_value={"message": "Rate limit exceeded"})
 
         mock_aiohttp_session.get.return_value.__aenter__.return_value = rate_limit_response
 
@@ -408,11 +417,7 @@ class TestDatabaseAndCachePerformance:
 
         # Add many trades
         for i in range(1000):
-            trade = {
-                'tx_hash': f'0x{i:064x}',
-                'timestamp': datetime.now(),
-                'amount': 10.0
-            }
+            trade = {"tx_hash": f"0x{i:064x}", "timestamp": datetime.now(), "amount": 10.0}
             mock_wallet_monitor.wallet_trade_history[wallet].append(trade)
 
         # Test history access performance
@@ -436,12 +441,13 @@ class TestSystemResourceStress:
     @pytest.mark.asyncio
     async def test_cpu_usage_under_load(self, mock_trade_executor, performance_monitor):
         """Test CPU usage under concurrent load."""
+
         # Create many concurrent operations
         async def cpu_intensive_task(task_id):
             # Simulate CPU-intensive work
             result = 0
             for i in range(10000):
-                result += i ** 2
+                result += i**2
             return result
 
         performance_monitor.start("cpu_stress_test")
@@ -462,6 +468,7 @@ class TestSystemResourceStress:
     @pytest.mark.asyncio
     async def test_network_io_stress(self, mock_wallet_monitor, performance_monitor):
         """Test network I/O stress."""
+
         # Mock network calls with delays
         async def network_call(wallet):
             await asyncio.sleep(0.01)  # 10ms network delay
@@ -497,15 +504,15 @@ class TestSystemResourceStress:
             transactions = []
             for i in range(1000):
                 tx = {
-                    'hash': f'0x{cycle*1000+i:064x}',
-                    'from': f'0x{i:040x}',
-                    'to': mock_wallet_monitor.polymarket_contracts[0],
-                    'value': '0',
-                    'gasUsed': '150000',
-                    'gasPrice': '50000000000',
-                    'timeStamp': str(int((datetime.now() - timedelta(hours=cycle)).timestamp())),
-                    'input': f'0x1234567890abcdef{i:016x}',
-                    'blockNumber': str(50000000 + cycle*1000 + i)
+                    "hash": f"0x{cycle*1000+i:064x}",
+                    "from": f"0x{i:040x}",
+                    "to": mock_wallet_monitor.polymarket_contracts[0],
+                    "value": "0",
+                    "gasUsed": "150000",
+                    "gasPrice": "50000000000",
+                    "timeStamp": str(int((datetime.now() - timedelta(hours=cycle)).timestamp())),
+                    "input": f"0x1234567890abcdef{i:016x}",
+                    "blockNumber": str(50000000 + cycle * 1000 + i),
                 }
                 transactions.append(tx)
 
@@ -528,7 +535,9 @@ class TestScalabilityTesting:
 
     @pytest.mark.parametrize("wallet_count", [5, 10, 25, 50])
     @pytest.mark.asyncio
-    async def test_scalability_with_wallet_count(self, mock_wallet_monitor, performance_monitor, wallet_count):
+    async def test_scalability_with_wallet_count(
+        self, mock_wallet_monitor, performance_monitor, wallet_count
+    ):
         """Test scalability as wallet count increases."""
         wallets = [f"0x{i:040x}" for i in range(wallet_count)]
         mock_wallet_monitor.target_wallets = wallets
@@ -538,7 +547,7 @@ class TestScalabilityTesting:
 
         performance_monitor.start(f"scalability_{wallet_count}_wallets")
 
-        detected_trades = await mock_wallet_monitor.monitor_wallets()
+        await mock_wallet_monitor.monitor_wallets()
 
         duration = performance_monitor.end(f"scalability_{wallet_count}_wallets")
 
@@ -547,27 +556,29 @@ class TestScalabilityTesting:
         assert mock_wallet_monitor.get_wallet_transactions.call_count == wallet_count
 
     @pytest.mark.parametrize("transaction_count", [100, 500, 1000, 5000])
-    def test_transaction_processing_scalability(self, mock_wallet_monitor, performance_monitor, transaction_count):
+    def test_transaction_processing_scalability(
+        self, mock_wallet_monitor, performance_monitor, transaction_count
+    ):
         """Test scalability with transaction volume."""
         # Create transactions
         transactions = []
         for i in range(transaction_count):
             tx = {
-                'hash': f'0x{i:064x}',
-                'from': '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-                'to': mock_wallet_monitor.polymarket_contracts[0],
-                'value': '0',
-                'gasUsed': '150000',
-                'gasPrice': '50000000000',
-                'timeStamp': str(int((datetime.now() - timedelta(hours=i%24)).timestamp())),
-                'input': f'0x1234567890abcdef{i:016x}',
-                'blockNumber': str(50000000 + i)
+                "hash": f"0x{i:064x}",
+                "from": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+                "to": mock_wallet_monitor.polymarket_contracts[0],
+                "value": "0",
+                "gasUsed": "150000",
+                "gasPrice": "50000000000",
+                "timeStamp": str(int((datetime.now() - timedelta(hours=i % 24)).timestamp())),
+                "input": f"0x1234567890abcdef{i:016x}",
+                "blockNumber": str(50000000 + i),
             }
             transactions.append(tx)
 
         performance_monitor.start(f"transaction_scalability_{transaction_count}")
 
-        trades = mock_wallet_monitor.detect_polymarket_trades(transactions)
+        mock_wallet_monitor.detect_polymarket_trades(transactions)
 
         duration = performance_monitor.end(f"transaction_scalability_{transaction_count}")
 

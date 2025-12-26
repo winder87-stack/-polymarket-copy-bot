@@ -4,9 +4,8 @@ Simplified System Validation for Polymarket Copy Trading Bot
 """
 import os
 import sys
-import json
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 
 def check_file_exists(file_path, description):
@@ -42,7 +41,7 @@ def check_config_validation():
     """Check configuration validation."""
     print("\n🔧 CONFIGURATION VALIDATION:")
     try:
-        sys.path.insert(0, '.')
+        sys.path.insert(0, ".")
         from config.settings import settings
 
         # Test basic validation
@@ -59,15 +58,15 @@ def check_imports():
     print("\n📦 IMPORT VALIDATION:")
 
     imports_to_test = [
-        ('config.settings', 'Configuration module'),
-        ('core.clob_client', 'CLOB client module'),
-        ('core.wallet_monitor', 'Wallet monitor module'),
-        ('core.trade_executor', 'Trade executor module'),
-        ('utils.helpers', 'Helper utilities'),
-        ('utils.security', 'Security utilities'),
-        ('utils.logging_utils', 'Logging utilities'),
-        ('utils.alerts', 'Alert system'),
-        ('main', 'Main application'),
+        ("config.settings", "Configuration module"),
+        ("core.clob_client", "CLOB client module"),
+        ("core.wallet_monitor", "Wallet monitor module"),
+        ("core.trade_executor", "Trade executor module"),
+        ("utils.helpers", "Helper utilities"),
+        ("utils.security", "Security utilities"),
+        ("utils.logging_utils", "Logging utilities"),
+        ("utils.alerts", "Alert system"),
+        ("main", "Main application"),
     ]
 
     success_count = 0
@@ -90,26 +89,26 @@ def check_file_structure():
     print("\n📁 FILE STRUCTURE VALIDATION:")
 
     files_to_check = [
-        ('main.py', 'Main application script'),
-        ('config/settings.py', 'Configuration settings'),
-        ('core/clob_client.py', 'CLOB client implementation'),
-        ('core/wallet_monitor.py', 'Wallet monitor implementation'),
-        ('core/trade_executor.py', 'Trade executor implementation'),
-        ('utils/helpers.py', 'Helper utilities'),
-        ('utils/security.py', 'Security utilities'),
-        ('utils/logging_utils.py', 'Logging utilities'),
-        ('utils/alerts.py', 'Alert system'),
-        ('requirements.txt', 'Python dependencies'),
-        ('README.md', 'Documentation'),
+        ("main.py", "Main application script"),
+        ("config/settings.py", "Configuration settings"),
+        ("core/clob_client.py", "CLOB client implementation"),
+        ("core/wallet_monitor.py", "Wallet monitor implementation"),
+        ("core/trade_executor.py", "Trade executor implementation"),
+        ("utils/helpers.py", "Helper utilities"),
+        ("utils/security.py", "Security utilities"),
+        ("utils/logging_utils.py", "Logging utilities"),
+        ("utils/alerts.py", "Alert system"),
+        ("requirements.txt", "Python dependencies"),
+        ("README.md", "Documentation"),
     ]
 
     directories_to_check = [
-        ('config', 'Configuration directory'),
-        ('core', 'Core modules directory'),
-        ('utils', 'Utilities directory'),
-        ('tests', 'Test directory'),
-        ('logs', 'Logs directory'),
-        ('data', 'Data directory'),
+        ("config", "Configuration directory"),
+        ("core", "Core modules directory"),
+        ("utils", "Utilities directory"),
+        ("tests", "Test directory"),
+        ("logs", "Logs directory"),
+        ("data", "Data directory"),
     ]
 
     file_checks_passed = 0
@@ -123,7 +122,9 @@ def check_file_structure():
         if check_directory_exists(dir_path, description):
             dir_checks_passed += 1
 
-    return file_checks_passed == len(files_to_check) and dir_checks_passed == len(directories_to_check)
+    return file_checks_passed == len(files_to_check) and dir_checks_passed == len(
+        directories_to_check
+    )
 
 
 def check_deployment_readiness():
@@ -131,8 +132,8 @@ def check_deployment_readiness():
     print("\n🚀 DEPLOYMENT READINESS:")
 
     deployment_checks = [
-        ('systemd/polymarket-bot.service', 'Systemd service file'),
-        ('scripts/setup_ubuntu.sh', 'Ubuntu setup script'),
+        ("systemd/polymarket-bot.service", "Systemd service file"),
+        ("scripts/setup_ubuntu.sh", "Ubuntu setup script"),
     ]
 
     checks_passed = 0
@@ -142,7 +143,7 @@ def check_deployment_readiness():
             checks_passed += 1
 
     # Check if setup script is executable
-    if check_file_executable('scripts/setup_ubuntu.sh', 'Setup script'):
+    if check_file_executable("scripts/setup_ubuntu.sh", "Setup script"):
         checks_passed += 1
 
     return checks_passed == len(deployment_checks) + 1
@@ -153,26 +154,26 @@ def check_test_coverage():
     print("\n🧪 TEST COVERAGE:")
 
     test_files = [
-        'tests/conftest.py',
-        'tests/unit/test_settings.py',
-        'tests/unit/test_clob_client.py',
-        'tests/unit/test_wallet_monitor.py',
-        'tests/unit/test_trade_executor.py',
-        'tests/unit/test_security.py',
-        'tests/unit/test_helpers.py',
-        'tests/integration/test_end_to_end.py',
-        'tests/integration/test_security_integration.py',
-        'tests/integration/test_edge_cases.py',
-        'tests/performance/test_performance.py',
-        'tests/mocks/polygonscan_mock.py',
-        'tests/mocks/clob_api_mock.py',
-        'tests/mocks/web3_mock.py',
-        'tests/README.md',
+        "tests/conftest.py",
+        "tests/unit/test_settings.py",
+        "tests/unit/test_clob_client.py",
+        "tests/unit/test_wallet_monitor.py",
+        "tests/unit/test_trade_executor.py",
+        "tests/unit/test_security.py",
+        "tests/unit/test_helpers.py",
+        "tests/integration/test_end_to_end.py",
+        "tests/integration/test_security_integration.py",
+        "tests/integration/test_edge_cases.py",
+        "tests/performance/test_performance.py",
+        "tests/mocks/polygonscan_mock.py",
+        "tests/mocks/clob_api_mock.py",
+        "tests/mocks/web3_mock.py",
+        "tests/README.md",
     ]
 
     test_checks_passed = 0
     for test_file in test_files:
-        if check_file_exists(test_file, f'Test file'):
+        if check_file_exists(test_file, f"Test file"):
             test_checks_passed += 1
 
     return test_checks_passed == len(test_files)
@@ -181,12 +182,12 @@ def check_test_coverage():
 def calculate_score(results):
     """Calculate overall system health score."""
     weights = {
-        'file_structure': 0.15,
-        'imports': 0.20,
-        'configuration': 0.20,
-        'deployment': 0.15,
-        'tests': 0.20,
-        'security': 0.10,  # Basic security check
+        "file_structure": 0.15,
+        "imports": 0.20,
+        "configuration": 0.20,
+        "deployment": 0.15,
+        "tests": 0.20,
+        "security": 0.10,  # Basic security check
     }
 
     score = 0
@@ -219,14 +220,16 @@ def main():
     results = {}
 
     # Run all checks
-    results['file_structure'] = check_file_structure()
-    results['imports'] = check_imports()
-    results['configuration'] = check_config_validation()
-    results['deployment'] = check_deployment_readiness()
-    results['tests'] = check_test_coverage()
+    results["file_structure"] = check_file_structure()
+    results["imports"] = check_imports()
+    results["configuration"] = check_config_validation()
+    results["deployment"] = check_deployment_readiness()
+    results["tests"] = check_test_coverage()
 
     # Basic security check
-    results['security'] = check_file_exists('.env', 'Environment file') and not check_file_exists('.env', 'World-readable .env')
+    results["security"] = check_file_exists(".env", "Environment file") and not check_file_exists(
+        ".env", "World-readable .env"
+    )
 
     # Calculate final score
     final_score = calculate_score(results)
@@ -238,8 +241,8 @@ def main():
     print(f"🎯 Final Score: {final_score}/100")
     print(f"📋 Recommendation: {recommendation}")
 
-    print("
-🔍 Detailed Results:"    for check_name, passed in results.items():
+    print("\n🔍 Detailed Results:")
+    for check_name, passed in results.items():
         status = "✅ PASSED" if passed else "❌ FAILED"
         print(f"   {check_name.replace('_', ' ').title()}: {status}")
 
@@ -283,13 +286,13 @@ def main():
 """
 
     critical_issues = []
-    if not results['file_structure']:
+    if not results["file_structure"]:
         critical_issues.append("- Missing required files or directories")
-    if not results['imports']:
+    if not results["imports"]:
         critical_issues.append("- Module import failures")
-    if not results['configuration']:
+    if not results["configuration"]:
         critical_issues.append("- Configuration validation failures")
-    if not results['security']:
+    if not results["security"]:
         critical_issues.append("- Security configuration issues")
 
     if critical_issues:
@@ -299,9 +302,9 @@ def main():
 
     report_content += "\n\n## Minor Improvements\n\n"
     improvements = []
-    if not results['deployment']:
+    if not results["deployment"]:
         improvements.append("- Complete deployment configuration")
-    if not results['tests']:
+    if not results["tests"]:
         improvements.append("- Expand test coverage")
 
     if improvements:

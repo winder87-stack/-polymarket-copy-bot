@@ -33,8 +33,7 @@ from utils.helpers import normalize_address
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -59,7 +58,7 @@ class MarketMakerDetectionRunner:
         try:
             wallets_file = Path("config/wallets.json")
             if wallets_file.exists():
-                with open(wallets_file, 'r') as f:
+                with open(wallets_file, "r") as f:
                     data = json.load(f)
                     return [normalize_address(wallet) for wallet in data.get("target_wallets", [])]
             else:
@@ -108,27 +107,27 @@ class MarketMakerDetectionRunner:
             trades_per_day = random.randint(50, 200)  # High frequency
             balance_ratio = random.uniform(0.45, 0.55)  # Very balanced
             markets_used = random.randint(3, 5)  # Multi-market
-            holding_time_hours = random.uniform(0.5, 4)  # Short holding
+            random.uniform(0.5, 4)  # Short holding
         elif wallet_type == "directional_trader":
             trades_per_day = random.randint(5, 20)  # Low frequency
             balance_ratio = random.uniform(0.2, 0.4)  # Directional bias
             markets_used = random.randint(1, 2)  # Single market focus
-            holding_time_hours = random.uniform(12, 48)  # Longer holding
+            random.uniform(12, 48)  # Longer holding
         elif wallet_type == "high_frequency_trader":
             trades_per_day = random.randint(30, 100)  # Very high frequency
             balance_ratio = random.uniform(0.3, 0.6)  # Some directional bias
             markets_used = random.randint(2, 4)  # Multi-market
-            holding_time_hours = random.uniform(0.1, 2)  # Very short holding
+            random.uniform(0.1, 2)  # Very short holding
         else:  # mixed_trader
             trades_per_day = random.randint(10, 40)  # Moderate frequency
             balance_ratio = random.uniform(0.4, 0.6)  # Somewhat balanced
             markets_used = random.randint(2, 3)  # Moderate markets
-            holding_time_hours = random.uniform(2, 12)  # Medium holding
+            random.uniform(2, 12)  # Medium holding
 
         # Generate trades
         total_trades = trades_per_day * days
         buy_count = int(total_trades * balance_ratio)
-        sell_count = total_trades - buy_count
+        total_trades - buy_count
 
         # Generate timestamps with realistic distribution
         current_time = start_time
@@ -139,7 +138,9 @@ class MarketMakerDetectionRunner:
                 if wallet_type == "market_maker":
                     interval_minutes = random.expovariate(1 / (24 * 60 / trades_per_day))
                 else:
-                    interval_minutes = random.expovariate(1 / (24 * 60 / trades_per_day)) * random.uniform(0.5, 3)
+                    interval_minutes = random.expovariate(
+                        1 / (24 * 60 / trades_per_day)
+                    ) * random.uniform(0.5, 3)
 
                 current_time += timedelta(minutes=interval_minutes)
 
@@ -174,21 +175,19 @@ class MarketMakerDetectionRunner:
                 "contract_address": market_id,
                 "price": random.uniform(0.1, 0.9),  # Mock price
                 "fee": amount * 0.001,  # 0.1% fee
-                "wallet_address": wallet_address
+                "wallet_address": wallet_address,
             }
 
             trades.append(trade)
 
         # Sort trades by timestamp
-        trades.sort(key=lambda x: x['timestamp'])
+        trades.sort(key=lambda x: x["timestamp"])
 
         logger.info(f"📊 Generated {len(trades)} trades for {wallet_type} wallet")
         return trades
 
     async def run_detection_on_wallet(
-        self,
-        wallet_address: str,
-        use_mock_data: bool = True
+        self, wallet_address: str, use_mock_data: bool = True
     ) -> Optional[Dict[str, Any]]:
         """Run market maker detection analysis on a single wallet"""
 
@@ -207,8 +206,7 @@ class MarketMakerDetectionRunner:
 
             # Run analysis
             analysis = await self.detector.analyze_wallet_behavior(
-                wallet_address=wallet_address,
-                trades=trades
+                wallet_address=wallet_address, trades=trades
             )
 
             self.analysis_results[wallet_address] = analysis
@@ -256,10 +254,12 @@ class MarketMakerDetectionRunner:
             "failed_analyses": failed_analyses,
             "analysis_timestamp": datetime.now().isoformat(),
             "mock_data_used": use_mock_data,
-            "results_summary": self._generate_results_summary()
+            "results_summary": self._generate_results_summary(),
         }
 
-        logger.info(f"🎯 Detection completed: {successful_analyses}/{len(self.wallets)} wallets analyzed successfully")
+        logger.info(
+            f"🎯 Detection completed: {successful_analyses}/{len(self.wallets)} wallets analyzed successfully"
+        )
 
         return summary
 
@@ -274,18 +274,22 @@ class MarketMakerDetectionRunner:
         confidences = []
 
         for analysis in self.analysis_results.values():
-            classification = analysis.get('classification', 'unknown')
+            classification = analysis.get("classification", "unknown")
             classifications[classification] = classifications.get(classification, 0) + 1
 
-            probabilities.append(analysis.get('market_maker_probability', 0))
-            confidences.append(analysis.get('confidence_score', 0))
+            probabilities.append(analysis.get("market_maker_probability", 0))
+            confidences.append(analysis.get("confidence_score", 0))
 
         return {
             "classification_distribution": classifications,
-            "average_mm_probability": sum(probabilities) / len(probabilities) if probabilities else 0,
+            "average_mm_probability": (
+                sum(probabilities) / len(probabilities) if probabilities else 0
+            ),
             "average_confidence": sum(confidences) / len(confidences) if confidences else 0,
-            "market_maker_percentage": classifications.get('market_maker', 0) / len(self.analysis_results) * 100,
-            "high_confidence_classifications": sum(1 for c in confidences if c >= 0.8)
+            "market_maker_percentage": classifications.get("market_maker", 0)
+            / len(self.analysis_results)
+            * 100,
+            "high_confidence_classifications": sum(1 for c in confidences if c >= 0.8),
         }
 
     async def generate_dashboard(self) -> Dict[str, Any]:
@@ -307,33 +311,37 @@ class MarketMakerDetectionRunner:
     def print_analysis_summary(self, summary: Dict[str, Any]):
         """Print a formatted summary of the analysis results"""
 
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("🎯 MARKET MAKER DETECTION ANALYSIS COMPLETE")
-        print("="*60)
+        print("=" * 60)
 
-        print(f"\n📊 Analysis Summary:")
+        print("\n📊 Analysis Summary:")
         print(f"   Total Wallets: {summary['total_wallets']}")
         print(f"   Successful Analyses: {summary['successful_analyses']}")
         print(f"   Failed Analyses: {summary['failed_analyses']}")
         print(f"   Mock Data Used: {summary['mock_data_used']}")
 
-        results = summary.get('results_summary', {})
+        results = summary.get("results_summary", {})
         if results:
-            print(f"\n🎯 Results Summary:")
+            print("\n🎯 Results Summary:")
             print(f"   Average MM Probability: {results.get('average_mm_probability', 0):.3f}")
             print(f"   Average Confidence: {results.get('average_confidence', 0):.3f}")
             print(f"   Market Maker Percentage: {results.get('market_maker_percentage', 0):.1f}%")
-            print(f"   High Confidence Classifications: {results.get('high_confidence_classifications', 0)}")
+            print(
+                f"   High Confidence Classifications: {results.get('high_confidence_classifications', 0)}"
+            )
 
-            print(f"\n📈 Classification Distribution:")
-            for classification, count in results.get('classification_distribution', {}).items():
-                percentage = count / sum(results['classification_distribution'].values()) * 100
+            print("\n📈 Classification Distribution:")
+            for classification, count in results.get("classification_distribution", {}).items():
+                percentage = count / sum(results["classification_distribution"].values()) * 100
                 print(f"   {classification.replace('_', ' ').title()}: {count} ({percentage:.1f}%)")
 
-        print(f"\n📁 Dashboard generated at: monitoring/dashboard/market_maker/market_maker_dashboard.html")
-        print(f"📄 Results saved to: data/wallet_behavior/classifications.json.gz")
+        print(
+            "\n📁 Dashboard generated at: monitoring/dashboard/market_maker/market_maker_dashboard.html"
+        )
+        print("📄 Results saved to: data/wallet_behavior/classifications.json.gz")
 
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
 
 
 async def main():
@@ -346,18 +354,14 @@ async def main():
         "--mock-data",
         action="store_true",
         default=True,
-        help="Generate mock trade data for analysis (default: True)"
+        help="Generate mock trade data for analysis (default: True)",
     )
     parser.add_argument(
         "--dashboard-only",
         action="store_true",
-        help="Generate dashboard from existing data only (skip analysis)"
+        help="Generate dashboard from existing data only (skip analysis)",
     )
-    parser.add_argument(
-        "--no-dashboard",
-        action="store_true",
-        help="Skip dashboard generation"
-    )
+    parser.add_argument("--no-dashboard", action="store_true", help="Skip dashboard generation")
 
     args = parser.parse_args()
 
@@ -371,7 +375,7 @@ async def main():
         if args.dashboard_only:
             # Generate dashboard from existing data only
             logger.info("📊 Generating dashboard from existing data...")
-            dashboard_data = await runner.generate_dashboard()
+            await runner.generate_dashboard()
         else:
             # Run full analysis
             summary = await runner.run_detection_on_all_wallets(use_mock_data=args.mock_data)
@@ -381,7 +385,7 @@ async def main():
 
             # Generate dashboard unless disabled
             if not args.no_dashboard:
-                dashboard_data = await runner.generate_dashboard()
+                await runner.generate_dashboard()
             else:
                 logger.info("📊 Dashboard generation skipped (--no-dashboard)")
 

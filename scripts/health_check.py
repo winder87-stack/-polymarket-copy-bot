@@ -16,15 +16,14 @@ Options:
     --json      JSON output format
 """
 
+import asyncio
+import json
+import logging
 import os
 import sys
-import json
-import asyncio
-import time
+from datetime import datetime
 from pathlib import Path
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional
-import logging
+from typing import Any, Dict, List
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -32,6 +31,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from config.settings import settings
 
 logger = logging.getLogger(__name__)
+
 
 class HealthChecker:
     """Comprehensive health checker for the trading bot"""
@@ -71,7 +71,9 @@ class HealthChecker:
                 if result.get("status") == "error":
                     self.errors.append(f"{check_name}: {result.get('message', 'Unknown error')}")
                 elif result.get("status") == "warning":
-                    self.warnings.append(f"{check_name}: {result.get('message', 'Unknown warning')}")
+                    self.warnings.append(
+                        f"{check_name}: {result.get('message', 'Unknown warning')}"
+                    )
 
                 if self.verbose:
                     logger.info(f"✅ {check_name} check completed")
@@ -81,7 +83,7 @@ class HealthChecker:
                 self.results[check_name] = {
                     "status": "error",
                     "message": str(e),
-                    "timestamp": datetime.now().isoformat()
+                    "timestamp": datetime.now().isoformat(),
                 }
                 self.errors.append(f"{check_name}: {str(e)}")
 
@@ -96,7 +98,7 @@ class HealthChecker:
             "results": self.results,
             "warnings": self.warnings,
             "errors": self.errors,
-            "recommendations": self._generate_recommendations()
+            "recommendations": self._generate_recommendations(),
         }
 
         logger.info(f"🏥 Health check completed: {overall_health.upper()}")
@@ -104,10 +106,7 @@ class HealthChecker:
 
     async def _check_configuration(self) -> Dict[str, Any]:
         """Check configuration validity"""
-        result = {
-            "status": "healthy",
-            "timestamp": datetime.now().isoformat()
-        }
+        result = {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
         try:
             # Test configuration loading
@@ -121,7 +120,7 @@ class HealthChecker:
                 ".env",
                 "config/settings.py",
                 "config/wallets.json",
-                "requirements.txt"
+                "requirements.txt",
             ]
 
             missing_files = []
@@ -143,20 +142,11 @@ class HealthChecker:
 
     async def _check_dependencies(self) -> Dict[str, Any]:
         """Check Python dependencies"""
-        result = {
-            "status": "healthy",
-            "timestamp": datetime.now().isoformat()
-        }
+        result = {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
         try:
             # Check critical imports
-            critical_imports = [
-                "web3",
-                "polymarket",
-                "telegram",
-                "psutil",
-                "aiohttp"
-            ]
+            critical_imports = ["web3", "polymarket", "telegram", "psutil", "aiohttp"]
 
             failed_imports = []
             for module in critical_imports:
@@ -179,11 +169,7 @@ class HealthChecker:
 
     async def _check_network_connectivity(self) -> Dict[str, Any]:
         """Check network connectivity to required services"""
-        result = {
-            "status": "healthy",
-            "timestamp": datetime.now().isoformat(),
-            "services": {}
-        }
+        result = {"status": "healthy", "timestamp": datetime.now().isoformat(), "services": {}}
 
         services_to_check = [
             ("polygon_rpc", settings.network.polygon_rpc_url, 443),
@@ -196,9 +182,12 @@ class HealthChecker:
             try:
                 # Simple connectivity check
                 import socket
+
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 sock.settimeout(5)
-                result_check = sock.connect_ex((host.replace("https://", "").replace("http://", ""), port))
+                result_check = sock.connect_ex(
+                    (host.replace("https://", "").replace("http://", ""), port)
+                )
                 sock.close()
 
                 if result_check == 0:
@@ -221,10 +210,7 @@ class HealthChecker:
 
     async def _check_wallet_status(self) -> Dict[str, Any]:
         """Check wallet connectivity and balance"""
-        result = {
-            "status": "healthy",
-            "timestamp": datetime.now().isoformat()
-        }
+        result = {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
         try:
             from web3 import Web3
@@ -248,7 +234,9 @@ class HealthChecker:
             # Check minimum balance (0.1 POL for gas)
             if balance_usdc < 0.1:
                 result["status"] = "warning"
-                result["message"] = f"Low wallet balance: {balance_usdc:.4f} POL (recommended: >0.1 POL)"
+                result["message"] = (
+                    f"Low wallet balance: {balance_usdc:.4f} POL (recommended: >0.1 POL)"
+                )
             else:
                 result["message"] = f"Wallet balance healthy: {balance_usdc:.4f} POL"
 
@@ -260,20 +248,14 @@ class HealthChecker:
 
     async def _check_service_status(self) -> Dict[str, Any]:
         """Check systemd service status"""
-        result = {
-            "status": "healthy",
-            "timestamp": datetime.now().isoformat()
-        }
+        result = {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
         try:
-            import subprocess
 
             # Check service status
             cmd = ["systemctl", "is-active", "polymarket-bot"]
             process = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
             )
             stdout, stderr = await process.communicate()
 
@@ -299,10 +281,7 @@ class HealthChecker:
 
     async def _check_performance_metrics(self) -> Dict[str, Any]:
         """Check current performance metrics"""
-        result = {
-            "status": "healthy",
-            "timestamp": datetime.now().isoformat()
-        }
+        result = {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
         try:
             import psutil
@@ -327,7 +306,9 @@ class HealthChecker:
                 result["status"] = "warning"
                 result["message"] = "; ".join(issues)
             else:
-                result["message"] = f"Performance healthy (CPU: {cpu_percent:.1f}%, Memory: {memory_mb:.1f}MB)"
+                result["message"] = (
+                    f"Performance healthy (CPU: {cpu_percent:.1f}%, Memory: {memory_mb:.1f}MB)"
+                )
 
         except Exception as e:
             result["status"] = "error"
@@ -337,10 +318,7 @@ class HealthChecker:
 
     async def _check_security_status(self) -> Dict[str, Any]:
         """Check basic security status"""
-        result = {
-            "status": "healthy",
-            "timestamp": datetime.now().isoformat()
-        }
+        result = {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
         issues = []
 
@@ -377,17 +355,14 @@ class HealthChecker:
 
     async def _check_monitoring_system(self) -> Dict[str, Any]:
         """Check monitoring system status"""
-        result = {
-            "status": "healthy",
-            "timestamp": datetime.now().isoformat()
-        }
+        result = {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
         try:
             # Check if monitoring components exist
             monitoring_components = [
                 "monitoring/monitor_all.py",
                 "monitoring/security_scanner.py",
-                "monitoring/performance_benchmark.py"
+                "monitoring/performance_benchmark.py",
             ]
 
             missing_components = []
@@ -397,7 +372,9 @@ class HealthChecker:
 
             if missing_components:
                 result["status"] = "warning"
-                result["message"] = f"Missing monitoring components: {', '.join(missing_components)}"
+                result["message"] = (
+                    f"Missing monitoring components: {', '.join(missing_components)}"
+                )
             else:
                 result["message"] = "Monitoring system components present"
 
@@ -427,7 +404,10 @@ class HealthChecker:
             recommendations.append("⚠️ Review and address warnings")
 
         # Specific recommendations based on results
-        if "configuration" in self.results and self.results["configuration"].get("status") == "error":
+        if (
+            "configuration" in self.results
+            and self.results["configuration"].get("status") == "error"
+        ):
             recommendations.append("🔧 Fix configuration issues before proceeding")
 
         if "network" in self.results and self.results["network"].get("status") == "error":
@@ -440,6 +420,7 @@ class HealthChecker:
             recommendations.append("✅ System health is good")
 
         return recommendations
+
 
 async def main():
     """Main entry point"""
@@ -454,7 +435,7 @@ async def main():
 
     # Setup logging
     log_level = logging.DEBUG if args.verbose else logging.INFO
-    logging.basicConfig(level=log_level, format='%(asctime)s - %(levelname)s - %(message)s')
+    logging.basicConfig(level=log_level, format="%(asctime)s - %(levelname)s - %(message)s")
 
     try:
         checker = HealthChecker(verbose=args.verbose)
@@ -464,11 +445,7 @@ async def main():
             print(json.dumps(report, indent=2, default=str))
         else:
             # Pretty console output
-            health_emoji = {
-                "healthy": "✅",
-                "warning": "⚠️",
-                "critical": "🚨"
-            }
+            health_emoji = {"healthy": "✅", "warning": "⚠️", "critical": "🚨"}
 
             print(f"\n{health_emoji.get(report['overall_health'], '❓')} Health Check Results")
             print("=" * 50)
@@ -476,26 +453,26 @@ async def main():
             print(f"Duration: {report['duration_seconds']:.1f}s")
             print(f"Timestamp: {report['timestamp'][:19].replace('T', ' ')}")
 
-            if report['errors']:
+            if report["errors"]:
                 print(f"\n🚨 Errors ({len(report['errors'])}):")
-                for error in report['errors']:
+                for error in report["errors"]:
                     print(f"  • {error}")
 
-            if report['warnings']:
+            if report["warnings"]:
                 print(f"\n⚠️ Warnings ({len(report['warnings'])}):")
-                for warning in report['warnings']:
+                for warning in report["warnings"]:
                     print(f"  • {warning}")
 
-            if report['recommendations']:
-                print(f"\n💡 Recommendations:")
-                for rec in report['recommendations']:
+            if report["recommendations"]:
+                print("\n💡 Recommendations:")
+                for rec in report["recommendations"]:
                     print(f"  • {rec}")
 
         # Exit codes for CI
         if args.ci:
-            if report['overall_health'] == "critical":
+            if report["overall_health"] == "critical":
                 sys.exit(2)
-            elif report['overall_health'] == "warning":
+            elif report["overall_health"] == "warning":
                 sys.exit(1)
             else:
                 sys.exit(0)
@@ -506,6 +483,7 @@ async def main():
             sys.exit(2)
         else:
             sys.exit(1)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

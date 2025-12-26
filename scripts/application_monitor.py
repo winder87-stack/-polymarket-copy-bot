@@ -10,25 +10,24 @@ Tracks application-level performance metrics including:
 - Wallet balance and transaction monitoring
 """
 
-import os
-import sys
-import time
 import json
-import asyncio
-import threading
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass, asdict
-from pathlib import Path
 import logging
+import threading
+import time
+from dataclasses import asdict, dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, List, Optional
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class TradeMetrics:
     """Trade execution metrics"""
+
     timestamp: datetime
     total_trades: int
     successful_trades: int
@@ -40,9 +39,11 @@ class TradeMetrics:
     success_rate_percent: float
     trades_per_minute: float
 
+
 @dataclass
 class APIMetrics:
     """API usage metrics"""
+
     timestamp: datetime
     total_requests: int
     successful_requests: int
@@ -53,9 +54,11 @@ class APIMetrics:
     rate_limit_remaining: int
     rate_limit_reset_time: Optional[datetime]
 
+
 @dataclass
 class CircuitBreakerMetrics:
     """Circuit breaker status"""
+
     timestamp: datetime
     is_active: bool
     activation_count: int
@@ -64,9 +67,11 @@ class CircuitBreakerMetrics:
     last_deactivation_time: Optional[datetime]
     failure_threshold_breaches: int
 
+
 @dataclass
 class WalletMetrics:
     """Wallet balance and transaction metrics"""
+
     timestamp: datetime
     wallet_address: str
     balance_matic: float
@@ -75,6 +80,7 @@ class WalletMetrics:
     pending_transactions: int
     failed_transactions: int
     gas_used_24h: int
+
 
 class ApplicationMonitor:
     """Application-level performance monitoring"""
@@ -91,13 +97,9 @@ class ApplicationMonitor:
         self.wallet_metrics: List[WalletMetrics] = []
 
         # Current metrics state
-        self.current_trade_counts = {
-            'total': 0, 'successful': 0, 'failed': 0, 'pending': 0
-        }
+        self.current_trade_counts = {"total": 0, "successful": 0, "failed": 0, "pending": 0}
         self.trade_latencies: List[float] = []
-        self.api_call_counts = {
-            'total': 0, 'successful': 0, 'failed': 0, 'rate_limited': 0
-        }
+        self.api_call_counts = {"total": 0, "successful": 0, "failed": 0, "rate_limited": 0}
         self.api_response_times: List[float] = []
 
         # Circuit breaker state
@@ -116,9 +118,7 @@ class ApplicationMonitor:
 
         self.monitoring_active = True
         self.monitor_thread = threading.Thread(
-            target=self._monitoring_loop,
-            args=(interval,),
-            daemon=True
+            target=self._monitoring_loop, args=(interval,), daemon=True
         )
         self.monitor_thread.start()
         logger.info(f"Application monitoring started with {interval}s interval")
@@ -130,19 +130,21 @@ class ApplicationMonitor:
             self.monitor_thread.join(timeout=5.0)
         logger.info("Application monitoring stopped")
 
-    def record_trade_execution(self, success: bool, latency_ms: float, pending: bool = False) -> None:
+    def record_trade_execution(
+        self, success: bool, latency_ms: float, pending: bool = False
+    ) -> None:
         """Record a trade execution"""
-        self.current_trade_counts['total'] += 1
+        self.current_trade_counts["total"] += 1
 
         if success:
-            self.current_trade_counts['successful'] += 1
+            self.current_trade_counts["successful"] += 1
         else:
-            self.current_trade_counts['failed'] += 1
+            self.current_trade_counts["failed"] += 1
 
         if pending:
-            self.current_trade_counts['pending'] += 1
+            self.current_trade_counts["pending"] += 1
         elif success:
-            self.current_trade_counts['pending'] = max(0, self.current_trade_counts['pending'] - 1)
+            self.current_trade_counts["pending"] = max(0, self.current_trade_counts["pending"] - 1)
 
         if latency_ms > 0:
             self.trade_latencies.append(latency_ms)
@@ -150,16 +152,18 @@ class ApplicationMonitor:
             if len(self.trade_latencies) > 1000:
                 self.trade_latencies = self.trade_latencies[-1000:]
 
-    def record_api_call(self, success: bool, response_time_ms: float, rate_limited: bool = False) -> None:
+    def record_api_call(
+        self, success: bool, response_time_ms: float, rate_limited: bool = False
+    ) -> None:
         """Record an API call"""
-        self.api_call_counts['total'] += 1
+        self.api_call_counts["total"] += 1
 
         if rate_limited:
-            self.api_call_counts['rate_limited'] += 1
+            self.api_call_counts["rate_limited"] += 1
         elif success:
-            self.api_call_counts['successful'] += 1
+            self.api_call_counts["successful"] += 1
         else:
-            self.api_call_counts['failed'] += 1
+            self.api_call_counts["failed"] += 1
 
         if response_time_ms > 0:
             self.api_response_times.append(response_time_ms)
@@ -183,54 +187,66 @@ class ApplicationMonitor:
 
     def get_current_trade_metrics(self) -> TradeMetrics:
         """Get current trade metrics"""
-        total_trades = self.current_trade_counts['total']
-        successful_trades = self.current_trade_counts['successful']
+        total_trades = self.current_trade_counts["total"]
+        successful_trades = self.current_trade_counts["successful"]
 
         # Calculate success rate
         success_rate = (successful_trades / total_trades * 100) if total_trades > 0 else 0.0
 
         # Calculate latency statistics
-        avg_latency = sum(self.trade_latencies) / len(self.trade_latencies) if self.trade_latencies else 0.0
+        avg_latency = (
+            sum(self.trade_latencies) / len(self.trade_latencies) if self.trade_latencies else 0.0
+        )
         min_latency = min(self.trade_latencies) if self.trade_latencies else 0.0
         max_latency = max(self.trade_latencies) if self.trade_latencies else 0.0
 
         # Calculate trades per minute (rough estimate)
-        trades_per_minute = total_trades / max(1, (datetime.now() - datetime.today().replace(hour=0, minute=0, second=0, microsecond=0)).seconds / 60)
+        trades_per_minute = total_trades / max(
+            1,
+            (
+                datetime.now() - datetime.today().replace(hour=0, minute=0, second=0, microsecond=0)
+            ).seconds
+            / 60,
+        )
 
         return TradeMetrics(
             timestamp=datetime.now(),
             total_trades=total_trades,
             successful_trades=successful_trades,
-            failed_trades=self.current_trade_counts['failed'],
-            pending_trades=self.current_trade_counts['pending'],
+            failed_trades=self.current_trade_counts["failed"],
+            pending_trades=self.current_trade_counts["pending"],
             average_latency_ms=avg_latency,
             min_latency_ms=min_latency,
             max_latency_ms=max_latency,
             success_rate_percent=success_rate,
-            trades_per_minute=trades_per_minute
+            trades_per_minute=trades_per_minute,
         )
 
     def get_current_api_metrics(self) -> APIMetrics:
         """Get current API metrics"""
-        total_requests = self.api_call_counts['total']
+        total_requests = self.api_call_counts["total"]
 
         # Calculate average response time
-        avg_response_time = sum(self.api_response_times) / len(self.api_response_times) if self.api_response_times else 0.0
+        avg_response_time = (
+            sum(self.api_response_times) / len(self.api_response_times)
+            if self.api_response_times
+            else 0.0
+        )
 
         # Mock rate limit data (would come from actual API client)
-        current_rate_limit_usage = min(100, int((self.api_call_counts['total'] % 100)))
+        current_rate_limit_usage = min(100, int((self.api_call_counts["total"] % 100)))
         rate_limit_remaining = 100 - current_rate_limit_usage
 
         return APIMetrics(
             timestamp=datetime.now(),
             total_requests=total_requests,
-            successful_requests=self.api_call_counts['successful'],
-            failed_requests=self.api_call_counts['failed'],
-            rate_limited_requests=self.api_call_counts['rate_limited'],
+            successful_requests=self.api_call_counts["successful"],
+            failed_requests=self.api_call_counts["failed"],
+            rate_limited_requests=self.api_call_counts["rate_limited"],
             average_response_time_ms=avg_response_time,
             current_rate_limit_usage=current_rate_limit_usage,
             rate_limit_remaining=rate_limit_remaining,
-            rate_limit_reset_time=None  # Would be set by API client
+            rate_limit_reset_time=None,  # Would be set by API client
         )
 
     def get_current_circuit_breaker_metrics(self) -> CircuitBreakerMetrics:
@@ -242,7 +258,7 @@ class ApplicationMonitor:
             last_activation_time=self.circuit_breaker_last_activation,
             deactivation_count=self.circuit_breaker_activations,  # Simplified
             last_deactivation_time=None,  # Would track separately
-            failure_threshold_breaches=self.circuit_breaker_activations
+            failure_threshold_breaches=self.circuit_breaker_activations,
         )
 
     def get_wallet_metrics(self, wallet_address: str) -> WalletMetrics:
@@ -256,7 +272,7 @@ class ApplicationMonitor:
             total_transactions=150,
             pending_transactions=2,
             failed_transactions=3,
-            gas_used_24h=50000
+            gas_used_24h=50000,
         )
 
     def get_performance_alerts(self) -> Dict[str, str]:
@@ -267,25 +283,37 @@ class ApplicationMonitor:
 
         # Trade success rate alerts
         if trade_metrics.success_rate_percent < 80:
-            alerts['trade_success'] = f"CRITICAL: Trade success rate at {trade_metrics.success_rate_percent:.1f}%"
+            alerts["trade_success"] = (
+                f"CRITICAL: Trade success rate at {trade_metrics.success_rate_percent:.1f}%"
+            )
         elif trade_metrics.success_rate_percent < 90:
-            alerts['trade_success'] = f"WARNING: Trade success rate at {trade_metrics.success_rate_percent:.1f}%"
+            alerts["trade_success"] = (
+                f"WARNING: Trade success rate at {trade_metrics.success_rate_percent:.1f}%"
+            )
 
         # Trade latency alerts
         if trade_metrics.average_latency_ms > 10000:  # 10 seconds
-            alerts['trade_latency'] = f"CRITICAL: Average trade latency {trade_metrics.average_latency_ms:.0f}ms"
+            alerts["trade_latency"] = (
+                f"CRITICAL: Average trade latency {trade_metrics.average_latency_ms:.0f}ms"
+            )
         elif trade_metrics.average_latency_ms > 5000:  # 5 seconds
-            alerts['trade_latency'] = f"WARNING: Average trade latency {trade_metrics.average_latency_ms:.0f}ms"
+            alerts["trade_latency"] = (
+                f"WARNING: Average trade latency {trade_metrics.average_latency_ms:.0f}ms"
+            )
 
         # API rate limit alerts
         if api_metrics.current_rate_limit_usage > 90:
-            alerts['api_rate_limit'] = f"CRITICAL: API rate limit at {api_metrics.current_rate_limit_usage}%"
+            alerts["api_rate_limit"] = (
+                f"CRITICAL: API rate limit at {api_metrics.current_rate_limit_usage}%"
+            )
         elif api_metrics.current_rate_limit_usage > 75:
-            alerts['api_rate_limit'] = f"WARNING: API rate limit at {api_metrics.current_rate_limit_usage}%"
+            alerts["api_rate_limit"] = (
+                f"WARNING: API rate limit at {api_metrics.current_rate_limit_usage}%"
+            )
 
         # Circuit breaker alerts
         if self.circuit_breaker_active:
-            alerts['circuit_breaker'] = "CRITICAL: Circuit breaker is active"
+            alerts["circuit_breaker"] = "CRITICAL: Circuit breaker is active"
 
         return alerts
 
@@ -304,9 +332,13 @@ class ApplicationMonitor:
                 self.circuit_breaker_metrics.append(cb_metrics)
 
                 # Maintain history size
-                for history_list in [self.trade_metrics, self.api_metrics, self.circuit_breaker_metrics]:
+                for history_list in [
+                    self.trade_metrics,
+                    self.api_metrics,
+                    self.circuit_breaker_metrics,
+                ]:
                     if len(history_list) > self.max_history:
-                        history_list[:] = history_list[-self.max_history:]
+                        history_list[:] = history_list[-self.max_history :]
 
                 # Check for alerts
                 alerts = self.get_performance_alerts()
@@ -319,13 +351,18 @@ class ApplicationMonitor:
 
             time.sleep(interval)
 
+
 def main():
     """CLI interface for application monitoring"""
     import argparse
 
     parser = argparse.ArgumentParser(description="Application Monitor for Polymarket Copy Bot")
-    parser.add_argument("action", choices=["snapshot", "monitor", "alerts", "trades", "api", "circuit-breaker"])
-    parser.add_argument("--interval", type=float, default=10.0, help="Monitoring interval in seconds")
+    parser.add_argument(
+        "action", choices=["snapshot", "monitor", "alerts", "trades", "api", "circuit-breaker"]
+    )
+    parser.add_argument(
+        "--interval", type=float, default=10.0, help="Monitoring interval in seconds"
+    )
     parser.add_argument("--wallet", help="Wallet address for wallet metrics")
     parser.add_argument("--json", action="store_true", help="Output in JSON format")
 
@@ -342,14 +379,18 @@ def main():
             output = {
                 "trade_metrics": asdict(trade_metrics),
                 "api_metrics": asdict(api_metrics),
-                "circuit_breaker": asdict(cb_metrics)
+                "circuit_breaker": asdict(cb_metrics),
             }
             print(json.dumps(output, default=str, indent=2))
         else:
             print("Application Metrics Snapshot:")
-            print(f"  Trades: {trade_metrics.total_trades} total, {trade_metrics.success_rate_percent:.1f}% success")
+            print(
+                f"  Trades: {trade_metrics.total_trades} total, {trade_metrics.success_rate_percent:.1f}% success"
+            )
             print(f"  Latency: {trade_metrics.average_latency_ms:.0f}ms avg")
-            print(f"  API: {api_metrics.total_requests} requests, {api_metrics.current_rate_limit_usage}% rate limit")
+            print(
+                f"  API: {api_metrics.total_requests} requests, {api_metrics.current_rate_limit_usage}% rate limit"
+            )
             print(f"  Circuit Breaker: {'ACTIVE' if cb_metrics.is_active else 'INACTIVE'}")
 
     elif args.action == "monitor":
@@ -393,7 +434,11 @@ def main():
         else:
             print("API Metrics:")
             print(f"  Total Requests: {metrics.total_requests}")
-            print(f"  Success Rate: {(metrics.successful_requests/metrics.total_requests*100):.1f}%" if metrics.total_requests > 0 else 0)
+            print(
+                f"  Success Rate: {(metrics.successful_requests/metrics.total_requests*100):.1f}%"
+                if metrics.total_requests > 0
+                else 0
+            )
             print(f"  Rate Limit Usage: {metrics.current_rate_limit_usage}%")
             print(f"  Average Response Time: {metrics.average_response_time_ms:.0f}ms")
 
@@ -407,6 +452,7 @@ def main():
             print(f"  Activation Count: {metrics.activation_count}")
             if metrics.last_activation_time:
                 print(f"  Last Activation: {metrics.last_activation_time}")
+
 
 if __name__ == "__main__":
     main()

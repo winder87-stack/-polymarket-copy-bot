@@ -16,8 +16,7 @@ from typing import Any, Dict, List
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -42,7 +41,9 @@ class SimpleMarketMakerDetector:
             "consistency_threshold": 0.8,
         }
 
-    def analyze_wallet_behavior(self, wallet_address: str, trades: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def analyze_wallet_behavior(
+        self, wallet_address: str, trades: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """
         Analyze wallet behavior and calculate market maker probability score.
         """
@@ -50,8 +51,10 @@ class SimpleMarketMakerDetector:
         # Filter trades for analysis window
         analysis_cutoff = datetime.now() - timedelta(days=self.analysis_window_days)
         recent_trades = [
-            trade for trade in trades
-            if datetime.fromisoformat(trade.get('timestamp', datetime.now().isoformat())) > analysis_cutoff
+            trade
+            for trade in trades
+            if datetime.fromisoformat(trade.get("timestamp", datetime.now().isoformat()))
+            > analysis_cutoff
         ]
 
         if len(recent_trades) < self.min_trades_for_analysis:
@@ -97,11 +100,11 @@ class SimpleMarketMakerDetector:
             "directional_metrics": {},
             "position_metrics": {},
             "market_metrics": {},
-            "consistency_metrics": {}
+            "consistency_metrics": {},
         }
 
         # Sort trades by timestamp
-        sorted_trades = sorted(trades, key=lambda x: x.get('timestamp', ''))
+        sorted_trades = sorted(trades, key=lambda x: x.get("timestamp", ""))
 
         # Temporal Analysis
         metrics["temporal_metrics"] = self._analyze_temporal_patterns(sorted_trades)
@@ -127,7 +130,7 @@ class SimpleMarketMakerDetector:
             return {}
 
         timestamps = [
-            datetime.fromisoformat(trade.get('timestamp', datetime.now().isoformat()))
+            datetime.fromisoformat(trade.get("timestamp", datetime.now().isoformat()))
             for trade in trades
         ]
 
@@ -138,14 +141,14 @@ class SimpleMarketMakerDetector:
         return {
             "trades_per_hour": trades_per_hour,
             "trading_span_hours": total_duration / 3600,
-            "trading_hours_uniformity": 0.8  # Simplified
+            "trading_hours_uniformity": 0.8,  # Simplified
         }
 
     def _analyze_directional_patterns(self, trades: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Analyze buy/sell directional patterns"""
 
-        buy_count = sum(1 for trade in trades if trade.get('side', '').upper() == 'BUY')
-        sell_count = sum(1 for trade in trades if trade.get('side', '').upper() == 'SELL')
+        buy_count = sum(1 for trade in trades if trade.get("side", "").upper() == "BUY")
+        sell_count = sum(1 for trade in trades if trade.get("side", "").upper() == "SELL")
 
         total_trades = len(trades)
         buy_ratio = buy_count / total_trades if total_trades > 0 else 0
@@ -163,12 +166,14 @@ class SimpleMarketMakerDetector:
     def _analyze_position_patterns(self, trades: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Analyze position sizing patterns"""
 
-        amounts = [abs(float(trade.get('amount', 0))) for trade in trades if trade.get('amount')]
+        amounts = [abs(float(trade.get("amount", 0))) for trade in trades if trade.get("amount")]
 
         # Position size analysis
         if amounts:
             avg_position_size = sum(amounts) / len(amounts)
-            position_size_consistency = 1 / (1 + (max(amounts) - min(amounts)) / max(avg_position_size, 1))
+            position_size_consistency = 1 / (
+                1 + (max(amounts) - min(amounts)) / max(avg_position_size, 1)
+            )
         else:
             avg_position_size = 0
             position_size_consistency = 0
@@ -187,7 +192,11 @@ class SimpleMarketMakerDetector:
 
         markets_traded = set()
         for trade in trades:
-            market_id = trade.get('market_id') or trade.get('condition_id') or trade.get('contract_address', 'unknown')
+            market_id = (
+                trade.get("market_id")
+                or trade.get("condition_id")
+                or trade.get("contract_address", "unknown")
+            )
             markets_traded.add(market_id)
 
         num_markets = len(markets_traded)
@@ -218,28 +227,30 @@ class SimpleMarketMakerDetector:
         total_weight = 0.0
 
         # High-frequency trading (weight: 0.25)
-        trades_per_hour = metrics.get('temporal_metrics', {}).get('trades_per_hour', 0)
-        freq_score = min(trades_per_hour / self.thresholds['high_frequency_threshold'], 1.0)
+        trades_per_hour = metrics.get("temporal_metrics", {}).get("trades_per_hour", 0)
+        freq_score = min(trades_per_hour / self.thresholds["high_frequency_threshold"], 1.0)
         score += freq_score * 0.25
         total_weight += 0.25
 
         # Buy/sell balance (weight: 0.20)
-        balance_score = metrics.get('directional_metrics', {}).get('balance_score', 0)
-        balance_threshold = 1 - self.thresholds['balance_ratio_threshold']
+        balance_score = metrics.get("directional_metrics", {}).get("balance_score", 0)
+        balance_threshold = 1 - self.thresholds["balance_ratio_threshold"]
         balance_contribution = max(0, (balance_score - balance_threshold) / (1 - balance_threshold))
         score += balance_contribution * 0.20
         total_weight += 0.20
 
         # Multi-market trading (weight: 0.15)
-        markets_count = metrics.get('market_metrics', {}).get('markets_traded_count', 0)
-        market_score = min(markets_count / self.thresholds['multi_market_threshold'], 1.0)
+        markets_count = metrics.get("market_metrics", {}).get("markets_traded_count", 0)
+        market_score = min(markets_count / self.thresholds["multi_market_threshold"], 1.0)
         score += market_score * 0.15
         total_weight += 0.15
 
         # Volume consistency (weight: 0.10)
-        volume_consistency = metrics.get('consistency_metrics', {}).get('volume_consistency', 0)
-        consistency_threshold = self.thresholds['consistency_threshold']
-        consistency_contribution = max(0, (volume_consistency - consistency_threshold) / (1 - consistency_threshold))
+        volume_consistency = metrics.get("consistency_metrics", {}).get("volume_consistency", 0)
+        consistency_threshold = self.thresholds["consistency_threshold"]
+        consistency_contribution = max(
+            0, (volume_consistency - consistency_threshold) / (1 - consistency_threshold)
+        )
         score += consistency_contribution * 0.10
         total_weight += 0.10
 
@@ -255,15 +266,15 @@ class SimpleMarketMakerDetector:
             return "market_maker"
 
         # Check for other patterns
-        trades_per_hour = metrics.get('temporal_metrics', {}).get('trades_per_hour', 0)
-        balance_score = metrics.get('directional_metrics', {}).get('balance_score', 0)
-        markets_count = metrics.get('market_metrics', {}).get('markets_traded_count', 0)
+        trades_per_hour = metrics.get("temporal_metrics", {}).get("trades_per_hour", 0)
+        balance_score = metrics.get("directional_metrics", {}).get("balance_score", 0)
+        markets_count = metrics.get("market_metrics", {}).get("markets_traded_count", 0)
 
         # High frequency but unbalanced = potential scalper/arbitrageur
-        if trades_per_hour >= self.thresholds['high_frequency_threshold'] * 0.5:
+        if trades_per_hour >= self.thresholds["high_frequency_threshold"] * 0.5:
             if balance_score < 0.6:  # Unbalanced
                 return "high_frequency_trader"
-            elif markets_count >= self.thresholds['multi_market_threshold']:
+            elif markets_count >= self.thresholds["multi_market_threshold"]:
                 return "arbitrage_trader"
 
         # Low frequency, directional trading
@@ -277,7 +288,9 @@ class SimpleMarketMakerDetector:
         # Very low activity or insufficient data
         return "low_activity"
 
-    def _calculate_confidence_score(self, metrics: Dict[str, Any], trades: List[Dict[str, Any]]) -> float:
+    def _calculate_confidence_score(
+        self, metrics: Dict[str, Any], trades: List[Dict[str, Any]]
+    ) -> float:
         """Calculate confidence score for the classification"""
 
         confidence_factors = []
@@ -292,9 +305,9 @@ class SimpleMarketMakerDetector:
         confidence_factors.append(time_confidence)
 
         # Metric consistency confidence
-        consistency = metrics.get('consistency_metrics', {})
-        volume_consistency = consistency.get('volume_consistency', 0)
-        activity_consistency = consistency.get('activity_consistency', 0)
+        consistency = metrics.get("consistency_metrics", {})
+        volume_consistency = consistency.get("volume_consistency", 0)
+        activity_consistency = consistency.get("activity_consistency", 0)
         consistency_confidence = (volume_consistency + activity_consistency) / 2
         confidence_factors.append(consistency_confidence)
 
@@ -322,7 +335,7 @@ class MarketMakerDetectionRunner:
         try:
             wallets_file = Path("config/wallets.json")
             if wallets_file.exists():
-                with open(wallets_file, 'r') as f:
+                with open(wallets_file, "r") as f:
                     data = json.load(f)
                     return data.get("target_wallets", [])
             else:
@@ -354,24 +367,24 @@ class MarketMakerDetectionRunner:
         if wallet_type == "market_maker":
             trades_per_day = random.randint(50, 200)
             balance_ratio = random.uniform(0.45, 0.55)
-            markets_used = random.randint(3, 5)
+            random.randint(3, 5)
         elif wallet_type == "directional_trader":
             trades_per_day = random.randint(5, 20)
             balance_ratio = random.uniform(0.2, 0.4)
-            markets_used = random.randint(1, 2)
+            random.randint(1, 2)
         elif wallet_type == "high_frequency_trader":
             trades_per_day = random.randint(30, 100)
             balance_ratio = random.uniform(0.3, 0.6)
-            markets_used = random.randint(2, 4)
+            random.randint(2, 4)
         else:  # mixed_trader
             trades_per_day = random.randint(10, 40)
             balance_ratio = random.uniform(0.4, 0.6)
-            markets_used = random.randint(2, 3)
+            random.randint(2, 3)
 
         # Generate trades
         total_trades = trades_per_day * days
         buy_count = int(total_trades * balance_ratio)
-        sell_count = total_trades - buy_count
+        total_trades - buy_count
 
         trades = []
         current_time = datetime.now() - timedelta(days=days)
@@ -405,13 +418,13 @@ class MarketMakerDetectionRunner:
                 "contract_address": market_id,
                 "price": random.uniform(0.1, 0.9),
                 "fee": amount * 0.001,
-                "wallet_address": wallet_address
+                "wallet_address": wallet_address,
             }
 
             trades.append(trade)
 
         # Sort trades by timestamp
-        trades.sort(key=lambda x: x['timestamp'])
+        trades.sort(key=lambda x: x["timestamp"])
 
         logger.info(f"📊 Generated {len(trades)} trades for {wallet_type} wallet")
         return trades
@@ -467,10 +480,12 @@ class MarketMakerDetectionRunner:
             "successful_analyses": successful_analyses,
             "failed_analyses": failed_analyses,
             "analysis_timestamp": datetime.now().isoformat(),
-            "results_summary": self._generate_results_summary()
+            "results_summary": self._generate_results_summary(),
         }
 
-        logger.info(f"🎯 Detection completed: {successful_analyses}/{len(self.wallets)} wallets analyzed successfully")
+        logger.info(
+            f"🎯 Detection completed: {successful_analyses}/{len(self.wallets)} wallets analyzed successfully"
+        )
 
         return summary
 
@@ -485,46 +500,52 @@ class MarketMakerDetectionRunner:
         confidences = []
 
         for analysis in self.analysis_results.values():
-            classification = analysis.get('classification', 'unknown')
+            classification = analysis.get("classification", "unknown")
             classifications[classification] = classifications.get(classification, 0) + 1
 
-            probabilities.append(analysis.get('market_maker_probability', 0))
-            confidences.append(analysis.get('confidence_score', 0))
+            probabilities.append(analysis.get("market_maker_probability", 0))
+            confidences.append(analysis.get("confidence_score", 0))
 
         return {
             "classification_distribution": classifications,
-            "average_mm_probability": sum(probabilities) / len(probabilities) if probabilities else 0,
+            "average_mm_probability": (
+                sum(probabilities) / len(probabilities) if probabilities else 0
+            ),
             "average_confidence": sum(confidences) / len(confidences) if confidences else 0,
-            "market_maker_percentage": classifications.get('market_maker', 0) / len(self.analysis_results) * 100,
-            "high_confidence_classifications": sum(1 for c in confidences if c >= 0.8)
+            "market_maker_percentage": classifications.get("market_maker", 0)
+            / len(self.analysis_results)
+            * 100,
+            "high_confidence_classifications": sum(1 for c in confidences if c >= 0.8),
         }
 
     def print_analysis_summary(self, summary: Dict[str, Any]):
         """Print a formatted summary of the analysis results"""
 
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("🎯 MARKET MAKER DETECTION ANALYSIS COMPLETE")
-        print("="*60)
+        print("=" * 60)
 
-        print(f"\n📊 Analysis Summary:")
+        print("\n📊 Analysis Summary:")
         print(f"   Total Wallets: {summary['total_wallets']}")
         print(f"   Successful Analyses: {summary['successful_analyses']}")
         print(f"   Failed Analyses: {summary['failed_analyses']}")
 
-        results = summary.get('results_summary', {})
+        results = summary.get("results_summary", {})
         if results:
-            print(f"\n🎯 Results Summary:")
+            print("\n🎯 Results Summary:")
             print(f"   Average MM Probability: {results.get('average_mm_probability', 0):.3f}")
             print(f"   Average Confidence: {results.get('average_confidence', 0):.3f}")
             print(f"   Market Maker Percentage: {results.get('market_maker_percentage', 0):.1f}%")
-            print(f"   High Confidence Classifications: {results.get('high_confidence_classifications', 0)}")
+            print(
+                f"   High Confidence Classifications: {results.get('high_confidence_classifications', 0)}"
+            )
 
-            print(f"\n📈 Classification Distribution:")
-            for classification, count in results.get('classification_distribution', {}).items():
-                percentage = count / sum(results['classification_distribution'].values()) * 100
+            print("\n📈 Classification Distribution:")
+            for classification, count in results.get("classification_distribution", {}).items():
+                percentage = count / sum(results["classification_distribution"].values()) * 100
                 print(f"   {classification.replace('_', ' ').title()}: {count} ({percentage:.1f}%)")
 
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
 
 
 async def main():
@@ -545,11 +566,13 @@ async def main():
 
         # Save results to JSON
         results_file = Path("market_maker_detection_results.json")
-        with open(results_file, 'w') as f:
-            json.dump({
-                "summary": summary,
-                "detailed_results": runner.analysis_results
-            }, f, indent=2, default=str)
+        with open(results_file, "w") as f:
+            json.dump(
+                {"summary": summary, "detailed_results": runner.analysis_results},
+                f,
+                indent=2,
+                default=str,
+            )
 
         print(f"\n💾 Results saved to: {results_file}")
 

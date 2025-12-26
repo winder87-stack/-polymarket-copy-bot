@@ -14,23 +14,17 @@ Key Features:
 - False positive mitigation strategies
 """
 
-import asyncio
-import json
 import logging
 import math
 import time
-from collections import defaultdict, deque
+from collections import defaultdict
 from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
-from scipy import stats
 
-from config.settings import settings
 from core.wallet_behavior_store import WalletBehaviorStore
-from utils.helpers import normalize_address, format_currency
-from utils.security import secure_log
+from utils.helpers import normalize_address
 
 logger = logging.getLogger(__name__)
 
@@ -63,11 +57,11 @@ class MarketMakerDetector:
         # Classification thresholds (configurable)
         self.thresholds = {
             "high_frequency_threshold": 5.0,  # Trades per hour
-            "balance_ratio_threshold": 0.3,   # Buy/sell balance deviation
-            "holding_time_threshold": 3600,   # Max holding time in seconds (1 hour)
+            "balance_ratio_threshold": 0.3,  # Buy/sell balance deviation
+            "holding_time_threshold": 3600,  # Max holding time in seconds (1 hour)
             "spread_tightness_threshold": 0.02,  # Max spread as fraction
-            "multi_market_threshold": 3,       # Min markets traded in
-            "consistency_threshold": 0.8,      # Volume consistency score
+            "multi_market_threshold": 3,  # Min markets traded in
+            "consistency_threshold": 0.8,  # Volume consistency score
         }
 
         # Performance optimization
@@ -105,7 +99,9 @@ class MarketMakerDetector:
                     saved_count += 1
 
             # Behavior history is saved incrementally in _store_behavior_history
-            logger.info(f"💾 Saved {saved_count}/{len(self.wallet_behaviors)} wallet classifications")
+            logger.info(
+                f"💾 Saved {saved_count}/{len(self.wallet_behaviors)} wallet classifications"
+            )
 
         except Exception as e:
             logger.error(f"Error saving data: {e}")
@@ -114,7 +110,7 @@ class MarketMakerDetector:
         self,
         wallet_address: str,
         trades: List[Dict[str, Any]],
-        market_data: Optional[Dict[str, Any]] = None
+        market_data: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Analyze wallet behavior and calculate market maker probability score.
@@ -142,8 +138,10 @@ class MarketMakerDetector:
         # Filter trades for analysis window
         analysis_cutoff = datetime.now() - timedelta(days=self.analysis_window_days)
         recent_trades = [
-            trade for trade in trades
-            if datetime.fromisoformat(trade.get('timestamp', datetime.now().isoformat())) > analysis_cutoff
+            trade
+            for trade in trades
+            if datetime.fromisoformat(trade.get("timestamp", datetime.now().isoformat()))
+            > analysis_cutoff
         ]
 
         if len(recent_trades) < self.min_trades_for_analysis:
@@ -158,7 +156,7 @@ class MarketMakerDetector:
                 "analysis_window_days": self.analysis_window_days,
                 "min_trades_required": self.min_trades_for_analysis,
                 "metrics": {},
-                "recommendation": "Need more trading data for reliable classification"
+                "recommendation": "Need more trading data for reliable classification",
             }
 
             self.behavior_cache[cache_key] = (analysis, now)
@@ -190,7 +188,7 @@ class MarketMakerDetector:
             "metrics": metrics,
             "insights": insights,
             "risk_assessment": self._assess_trading_risks(metrics),
-            "performance_comparison": self._compare_to_benchmarks(metrics)
+            "performance_comparison": self._compare_to_benchmarks(metrics),
         }
 
         # Store analysis in behavior history
@@ -203,7 +201,7 @@ class MarketMakerDetector:
             "market_maker_probability": mm_probability,
             "confidence_score": confidence,
             "trade_count": len(recent_trades),
-            "metrics_snapshot": metrics
+            "metrics_snapshot": metrics,
         }
 
         # Cache result
@@ -217,9 +215,7 @@ class MarketMakerDetector:
         return analysis
 
     async def _calculate_behavioral_metrics(
-        self,
-        trades: List[Dict[str, Any]],
-        market_data: Optional[Dict[str, Any]] = None
+        self, trades: List[Dict[str, Any]], market_data: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """Calculate comprehensive behavioral metrics"""
 
@@ -229,11 +225,11 @@ class MarketMakerDetector:
             "position_metrics": {},
             "market_metrics": {},
             "risk_metrics": {},
-            "consistency_metrics": {}
+            "consistency_metrics": {},
         }
 
         # Sort trades by timestamp
-        sorted_trades = sorted(trades, key=lambda x: x.get('timestamp', ''))
+        sorted_trades = sorted(trades, key=lambda x: x.get("timestamp", ""))
 
         # 1. Temporal Analysis
         metrics["temporal_metrics"] = self._analyze_temporal_patterns(sorted_trades)
@@ -262,14 +258,14 @@ class MarketMakerDetector:
             return {}
 
         timestamps = [
-            datetime.fromisoformat(trade.get('timestamp', datetime.now().isoformat()))
+            datetime.fromisoformat(trade.get("timestamp", datetime.now().isoformat()))
             for trade in trades
         ]
 
         # Calculate time intervals between trades
         intervals = []
         for i in range(1, len(timestamps)):
-            interval = (timestamps[i] - timestamps[i-1]).total_seconds()
+            interval = (timestamps[i] - timestamps[i - 1]).total_seconds()
             intervals.append(interval)
 
         # Trading frequency metrics
@@ -318,27 +314,29 @@ class MarketMakerDetector:
             "hourly_distribution": dict(hourly_distribution),
             "trading_hour_uniformity": hour_uniformity,
             "trading_span_hours": total_duration / 3600,
-            "interval_std_dev": np.std(intervals) if intervals else 0
+            "interval_std_dev": np.std(intervals) if intervals else 0,
         }
 
     def _analyze_directional_patterns(self, trades: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Analyze buy/sell directional patterns"""
 
-        buy_count = sum(1 for trade in trades if trade.get('side', '').upper() == 'BUY')
-        sell_count = sum(1 for trade in trades if trade.get('side', '').upper() == 'SELL')
+        buy_count = sum(1 for trade in trades if trade.get("side", "").upper() == "BUY")
+        sell_count = sum(1 for trade in trades if trade.get("side", "").upper() == "SELL")
 
         total_trades = len(trades)
         buy_ratio = buy_count / total_trades if total_trades > 0 else 0
         sell_ratio = sell_count / total_trades if total_trades > 0 else 0
 
         # Balance score (how close buy/sell ratio is to 50/50)
-        balance_score = 1 - abs(buy_ratio - 0.5) * 2  # 0 = completely unbalanced, 1 = perfectly balanced
+        balance_score = (
+            1 - abs(buy_ratio - 0.5) * 2
+        )  # 0 = completely unbalanced, 1 = perfectly balanced
 
         # Alternation analysis (buy-sell-buy-sell pattern)
-        directions = [trade.get('side', '').upper() for trade in trades]
+        directions = [trade.get("side", "").upper() for trade in trades]
         alternations = 0
         for i in range(1, len(directions)):
-            if directions[i] != directions[i-1] and directions[i-1] in ['BUY', 'SELL']:
+            if directions[i] != directions[i - 1] and directions[i - 1] in ["BUY", "SELL"]:
                 alternations += 1
 
         alternation_ratio = alternations / max(len(directions) - 1, 1)
@@ -347,7 +345,7 @@ class MarketMakerDetector:
         direction_streaks = []
         current_streak = 1
         for i in range(1, len(directions)):
-            if directions[i] == directions[i-1]:
+            if directions[i] == directions[i - 1]:
                 current_streak += 1
             else:
                 direction_streaks.append(current_streak)
@@ -364,31 +362,31 @@ class MarketMakerDetector:
             "balance_score": balance_score,
             "alternation_ratio": alternation_ratio,
             "avg_direction_streak": avg_direction_streak,
-            "max_direction_streak": max(direction_streaks) if direction_streaks else 0
+            "max_direction_streak": max(direction_streaks) if direction_streaks else 0,
         }
 
     def _analyze_position_patterns(self, trades: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Analyze position sizing and holding patterns"""
 
-        amounts = [abs(float(trade.get('amount', 0))) for trade in trades if trade.get('amount')]
+        amounts = [abs(float(trade.get("amount", 0))) for trade in trades if trade.get("amount")]
         holding_times = []
 
         # Calculate holding times between opposite trades (simplified position tracking)
         position_stack = []  # (amount, timestamp, direction)
 
         for trade in trades:
-            amount = abs(float(trade.get('amount', 0)))
-            timestamp = datetime.fromisoformat(trade.get('timestamp', datetime.now().isoformat()))
-            direction = trade.get('side', '').upper()
+            amount = abs(float(trade.get("amount", 0)))
+            timestamp = datetime.fromisoformat(trade.get("timestamp", datetime.now().isoformat()))
+            direction = trade.get("side", "").upper()
 
-            if not amount or direction not in ['BUY', 'SELL']:
+            if not amount or direction not in ["BUY", "SELL"]:
                 continue
 
             # Simplified position matching (this is a basic approximation)
             # In production, this would use actual position tracking from exchange
-            if direction == 'BUY':
-                position_stack.append((amount, timestamp, 'BUY'))
-            elif direction == 'SELL' and position_stack:
+            if direction == "BUY":
+                position_stack.append((amount, timestamp, "BUY"))
+            elif direction == "SELL" and position_stack:
                 # Match with oldest unfilled position
                 buy_amount, buy_time, _ = position_stack.pop(0)
                 holding_time = (timestamp - buy_time).total_seconds()
@@ -404,7 +402,9 @@ class MarketMakerDetector:
             # Size consistency (coefficient of variation)
             size_consistency = 1 / (1 + position_size_cv)  # Higher = more consistent
         else:
-            avg_position_size = median_position_size = position_size_std = position_size_cv = size_consistency = 0
+            avg_position_size = median_position_size = position_size_std = position_size_cv = (
+                size_consistency
+            ) = 0
 
         # Holding time analysis
         if holding_times:
@@ -423,7 +423,7 @@ class MarketMakerDetector:
             "median_holding_time_seconds": median_holding_time,
             "holding_time_std": holding_time_std,
             "positions_closed": len(holding_times),
-            "total_trades": len(trades)
+            "total_trades": len(trades),
         }
 
     def _analyze_market_patterns(self, trades: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -433,8 +433,12 @@ class MarketMakerDetector:
         market_volumes = defaultdict(float)
 
         for trade in trades:
-            market_id = trade.get('market_id') or trade.get('condition_id') or trade.get('contract_address', 'unknown')
-            amount = abs(float(trade.get('amount', 0)))
+            market_id = (
+                trade.get("market_id")
+                or trade.get("condition_id")
+                or trade.get("contract_address", "unknown")
+            )
+            amount = abs(float(trade.get("amount", 0)))
 
             markets_traded.add(market_id)
             market_volumes[market_id] += amount
@@ -447,27 +451,30 @@ class MarketMakerDetector:
         if total_volume > 0:
             for volume in market_volumes.values():
                 share = volume / total_volume
-                market_concentration += share ** 2
+                market_concentration += share**2
 
         # Market diversity score (lower concentration = higher diversity)
         market_diversity = 1 - market_concentration
 
         # Simultaneous trading detection (trades in multiple markets within short timeframes)
-        time_window = 3600  # 1 hour
         simultaneous_events = 0
 
         if num_markets > 1:
             # Group trades by time windows
             time_groups = defaultdict(list)
             for trade in trades:
-                ts = datetime.fromisoformat(trade.get('timestamp', datetime.now().isoformat()))
+                ts = datetime.fromisoformat(trade.get("timestamp", datetime.now().isoformat()))
                 window_start = ts.replace(minute=0, second=0, microsecond=0)
                 time_groups[window_start].append(trade)
 
             for trades_in_window in time_groups.values():
                 markets_in_window = set()
                 for trade in trades_in_window:
-                    market_id = trade.get('market_id') or trade.get('condition_id') or trade.get('contract_address', 'unknown')
+                    market_id = (
+                        trade.get("market_id")
+                        or trade.get("condition_id")
+                        or trade.get("contract_address", "unknown")
+                    )
                     markets_in_window.add(market_id)
 
                 if len(markets_in_window) > 1:
@@ -480,20 +487,18 @@ class MarketMakerDetector:
             "market_diversity": market_diversity,
             "simultaneous_trading_events": simultaneous_events,
             "market_volume_distribution": dict(market_volumes),
-            "avg_markets_per_hour": num_markets / max(len(trades) / 10, 1)  # Rough estimate
+            "avg_markets_per_hour": num_markets / max(len(trades) / 10, 1),  # Rough estimate
         }
 
     def _analyze_risk_patterns(
-        self,
-        trades: List[Dict[str, Any]],
-        market_data: Optional[Dict[str, Any]] = None
+        self, trades: List[Dict[str, Any]], market_data: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """Analyze risk-related trading patterns"""
 
         # Price impact analysis (simplified - would need market depth data)
         price_impacts = []
         for trade in trades:
-            amount = abs(float(trade.get('amount', 0)))
+            amount = abs(float(trade.get("amount", 0)))
             # Simplified price impact calculation
             # In production, this would use actual market depth and slippage data
             if amount > 0:
@@ -505,19 +510,22 @@ class MarketMakerDetector:
         spreads_maintained = 0
         for i in range(1, len(trades), 2):
             if i + 1 < len(trades):
-                trade1 = trades[i-1]
+                trade1 = trades[i - 1]
                 trade2 = trades[i]
 
                 # Check for potential spread maintenance (buy then sell, or vice versa)
-                if (trade1.get('side', '').upper() == 'BUY' and
-                    trade2.get('side', '').upper() == 'SELL'):
+                if (
+                    trade1.get("side", "").upper() == "BUY"
+                    and trade2.get("side", "").upper() == "SELL"
+                ):
                     spreads_maintained += 1
-                elif (trade1.get('side', '').upper() == 'SELL' and
-                      trade2.get('side', '').upper() == 'BUY'):
+                elif (
+                    trade1.get("side", "").upper() == "SELL"
+                    and trade2.get("side", "").upper() == "BUY"
+                ):
                     spreads_maintained += 1
 
         # Loss absorption analysis (trades against adverse price movements)
-        adverse_trades = 0
         if market_data:
             # This would require price feed data to detect trades against market direction
             pass
@@ -529,10 +537,10 @@ class MarketMakerDetector:
         # Simplified position tracking
         net_position = 0
         for trade in trades:
-            amount = float(trade.get('amount', 0))
-            if trade.get('side', '').upper() == 'BUY':
+            amount = float(trade.get("amount", 0))
+            if trade.get("side", "").upper() == "BUY":
                 net_position += amount
-            elif trade.get('side', '').upper() == 'SELL':
+            elif trade.get("side", "").upper() == "SELL":
                 net_position -= amount
 
             if abs(net_position) > max_position_limit:
@@ -544,7 +552,8 @@ class MarketMakerDetector:
             "spread_maintenance_actions": spreads_maintained,
             "position_limit_breaches": position_limit_breaches,
             "net_position_drift": net_position,
-            "risk_adjusted_volume": sum(abs(float(t.get('amount', 0))) for t in trades) / max(len(trades), 1)
+            "risk_adjusted_volume": sum(abs(float(t.get("amount", 0))) for t in trades)
+            / max(len(trades), 1),
         }
 
     def _analyze_consistency_patterns(self, trades: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -553,9 +562,9 @@ class MarketMakerDetector:
         # Volume consistency over time
         daily_volumes = defaultdict(float)
         for trade in trades:
-            ts = datetime.fromisoformat(trade.get('timestamp', datetime.now().isoformat()))
+            ts = datetime.fromisoformat(trade.get("timestamp", datetime.now().isoformat()))
             day_key = ts.date().isoformat()
-            amount = abs(float(trade.get('amount', 0)))
+            amount = abs(float(trade.get("amount", 0)))
             daily_volumes[day_key] += amount
 
         if daily_volumes:
@@ -572,7 +581,7 @@ class MarketMakerDetector:
         # Trading schedule consistency
         trading_days = set()
         for trade in trades:
-            ts = datetime.fromisoformat(trade.get('timestamp', datetime.now().isoformat()))
+            ts = datetime.fromisoformat(trade.get("timestamp", datetime.now().isoformat()))
             trading_days.add(ts.date())
 
         total_days = len(trading_days)
@@ -582,7 +591,7 @@ class MarketMakerDetector:
         # Activity pattern consistency (coefficient of variation of trades per day)
         trades_per_day = defaultdict(int)
         for trade in trades:
-            ts = datetime.fromisoformat(trade.get('timestamp', datetime.now().isoformat()))
+            ts = datetime.fromisoformat(trade.get("timestamp", datetime.now().isoformat()))
             day_key = ts.date().isoformat()
             trades_per_day[day_key] += 1
 
@@ -603,13 +612,13 @@ class MarketMakerDetector:
             "daily_volume_stats": {
                 "mean": np.mean(list(daily_volumes.values())) if daily_volumes else 0,
                 "std": np.std(list(daily_volumes.values())) if daily_volumes else 0,
-                "days_traded": total_days
+                "days_traded": total_days,
             },
             "daily_activity_stats": {
                 "mean": np.mean(list(trades_per_day.values())) if trades_per_day else 0,
                 "std": np.std(list(trades_per_day.values())) if trades_per_day else 0,
-                "max_trades_per_day": max(trades_per_day.values()) if trades_per_day else 0
-            }
+                "max_trades_per_day": max(trades_per_day.values()) if trades_per_day else 0,
+            },
         }
 
     def _calculate_market_maker_probability(self, metrics: Dict[str, Any]) -> float:
@@ -619,48 +628,58 @@ class MarketMakerDetector:
         total_weight = 0.0
 
         # High-frequency trading (weight: 0.25)
-        trades_per_hour = metrics.get('temporal_metrics', {}).get('trades_per_hour', 0)
-        freq_score = min(trades_per_hour / self.thresholds['high_frequency_threshold'], 1.0)
+        trades_per_hour = metrics.get("temporal_metrics", {}).get("trades_per_hour", 0)
+        freq_score = min(trades_per_hour / self.thresholds["high_frequency_threshold"], 1.0)
         score += freq_score * 0.25
         total_weight += 0.25
 
         # Buy/sell balance (weight: 0.20)
-        balance_score = metrics.get('directional_metrics', {}).get('balance_score', 0)
-        balance_threshold = 1 - self.thresholds['balance_ratio_threshold']  # 0.7 minimum balance score
+        balance_score = metrics.get("directional_metrics", {}).get("balance_score", 0)
+        balance_threshold = (
+            1 - self.thresholds["balance_ratio_threshold"]
+        )  # 0.7 minimum balance score
         balance_contribution = max(0, (balance_score - balance_threshold) / (1 - balance_threshold))
         score += balance_contribution * 0.20
         total_weight += 0.20
 
         # Short holding periods (weight: 0.15)
-        avg_holding_time = metrics.get('position_metrics', {}).get('avg_holding_time_seconds', 0)
+        avg_holding_time = metrics.get("position_metrics", {}).get("avg_holding_time_seconds", 0)
         if avg_holding_time > 0:
-            holding_score = max(0, 1 - (avg_holding_time / self.thresholds['holding_time_threshold']))
+            holding_score = max(
+                0, 1 - (avg_holding_time / self.thresholds["holding_time_threshold"])
+            )
             score += holding_score * 0.15
             total_weight += 0.15
 
         # Multi-market trading (weight: 0.15)
-        markets_count = metrics.get('market_metrics', {}).get('markets_traded_count', 0)
-        market_score = min(markets_count / self.thresholds['multi_market_threshold'], 1.0)
+        markets_count = metrics.get("market_metrics", {}).get("markets_traded_count", 0)
+        market_score = min(markets_count / self.thresholds["multi_market_threshold"], 1.0)
         score += market_score * 0.15
         total_weight += 0.15
 
         # Volume consistency (weight: 0.10)
-        volume_consistency = metrics.get('consistency_metrics', {}).get('volume_consistency', 0)
-        consistency_threshold = self.thresholds['consistency_threshold']
-        consistency_contribution = max(0, (volume_consistency - consistency_threshold) / (1 - consistency_threshold))
+        volume_consistency = metrics.get("consistency_metrics", {}).get("volume_consistency", 0)
+        consistency_threshold = self.thresholds["consistency_threshold"]
+        consistency_contribution = max(
+            0, (volume_consistency - consistency_threshold) / (1 - consistency_threshold)
+        )
         score += consistency_contribution * 0.10
         total_weight += 0.10
 
         # Spread maintenance patterns (weight: 0.10)
-        spread_actions = metrics.get('risk_metrics', {}).get('spread_maintenance_actions', 0)
-        total_trades = len(metrics.get('temporal_metrics', {}).get('trades_per_hour', 0) * 24)  # Rough estimate
+        spread_actions = metrics.get("risk_metrics", {}).get("spread_maintenance_actions", 0)
+        total_trades = len(
+            metrics.get("temporal_metrics", {}).get("trades_per_hour", 0) * 24
+        )  # Rough estimate
         if total_trades > 0:
-            spread_score = min(spread_actions / (total_trades * 0.1), 1.0)  # Expect 10% spread trades
+            spread_score = min(
+                spread_actions / (total_trades * 0.1), 1.0
+            )  # Expect 10% spread trades
             score += spread_score * 0.10
             total_weight += 0.10
 
         # Burst trading patterns (weight: 0.05)
-        burst_events = metrics.get('temporal_metrics', {}).get('burst_trading_events', 0)
+        burst_events = metrics.get("temporal_metrics", {}).get("burst_trading_events", 0)
         burst_score = min(burst_events / 5, 1.0)  # 5+ burst events = high MM probability
         score += burst_score * 0.05
         total_weight += 0.05
@@ -677,15 +696,15 @@ class MarketMakerDetector:
             return "market_maker"
 
         # Check for other patterns
-        trades_per_hour = metrics.get('temporal_metrics', {}).get('trades_per_hour', 0)
-        balance_score = metrics.get('directional_metrics', {}).get('balance_score', 0)
-        markets_count = metrics.get('market_metrics', {}).get('markets_traded_count', 0)
+        trades_per_hour = metrics.get("temporal_metrics", {}).get("trades_per_hour", 0)
+        balance_score = metrics.get("directional_metrics", {}).get("balance_score", 0)
+        markets_count = metrics.get("market_metrics", {}).get("markets_traded_count", 0)
 
         # High frequency but unbalanced = potential scalper/arbitrageur
-        if trades_per_hour >= self.thresholds['high_frequency_threshold'] * 0.5:
+        if trades_per_hour >= self.thresholds["high_frequency_threshold"] * 0.5:
             if balance_score < 0.6:  # Unbalanced
                 return "high_frequency_trader"
-            elif markets_count >= self.thresholds['multi_market_threshold']:
+            elif markets_count >= self.thresholds["multi_market_threshold"]:
                 return "arbitrage_trader"
 
         # Low frequency, directional trading
@@ -699,7 +718,9 @@ class MarketMakerDetector:
         # Very low activity or insufficient data
         return "low_activity"
 
-    def _calculate_confidence_score(self, metrics: Dict[str, Any], trades: List[Dict[str, Any]]) -> float:
+    def _calculate_confidence_score(
+        self, metrics: Dict[str, Any], trades: List[Dict[str, Any]]
+    ) -> float:
         """Calculate confidence score for the classification"""
 
         confidence_factors = []
@@ -710,21 +731,21 @@ class MarketMakerDetector:
         confidence_factors.append(sample_confidence)
 
         # Time span confidence
-        temporal = metrics.get('temporal_metrics', {})
-        time_span_hours = temporal.get('trading_span_hours', 0)
+        temporal = metrics.get("temporal_metrics", {})
+        time_span_hours = temporal.get("trading_span_hours", 0)
         time_confidence = min(time_span_hours / 168, 1.0)  # 1 week = full confidence
         confidence_factors.append(time_confidence)
 
         # Metric consistency confidence
-        consistency = metrics.get('consistency_metrics', {})
-        volume_consistency = consistency.get('volume_consistency', 0)
-        activity_consistency = consistency.get('activity_consistency', 0)
+        consistency = metrics.get("consistency_metrics", {})
+        volume_consistency = consistency.get("volume_consistency", 0)
+        activity_consistency = consistency.get("activity_consistency", 0)
         consistency_confidence = (volume_consistency + activity_consistency) / 2
         confidence_factors.append(consistency_confidence)
 
         # Market diversity confidence
-        market = metrics.get('market_metrics', {})
-        market_diversity = market.get('market_diversity', 0)
+        market = metrics.get("market_metrics", {})
+        market_diversity = market.get("market_diversity", 0)
         diversity_confidence = market_diversity
         confidence_factors.append(diversity_confidence)
 
@@ -734,19 +755,21 @@ class MarketMakerDetector:
 
         return min(confidence, 1.0)
 
-    def _generate_behavioral_insights(self, metrics: Dict[str, Any], classification: str) -> List[str]:
+    def _generate_behavioral_insights(
+        self, metrics: Dict[str, Any], classification: str
+    ) -> List[str]:
         """Generate human-readable insights about wallet behavior"""
 
         insights = []
 
-        temporal = metrics.get('temporal_metrics', {})
-        directional = metrics.get('directional_metrics', {})
-        position = metrics.get('position_metrics', {})
-        market = metrics.get('market_metrics', {})
-        consistency = metrics.get('consistency_metrics', {})
+        temporal = metrics.get("temporal_metrics", {})
+        directional = metrics.get("directional_metrics", {})
+        position = metrics.get("position_metrics", {})
+        market = metrics.get("market_metrics", {})
+        consistency = metrics.get("consistency_metrics", {})
 
         # Trading frequency insights
-        trades_per_hour = temporal.get('trades_per_hour', 0)
+        trades_per_hour = temporal.get("trades_per_hour", 0)
         if trades_per_hour >= 5:
             insights.append(f"Very high trading frequency: {trades_per_hour:.2f} trades/hour")
         elif trades_per_hour >= 1:
@@ -754,13 +777,13 @@ class MarketMakerDetector:
         else:
             insights.append(f"Low trading frequency: {trades_per_hour:.2f} trades/hour")
         # Balance insights
-        balance_score = directional.get('balance_score', 0)
+        balance_score = directional.get("balance_score", 0)
         if balance_score >= 0.8:
             insights.append(f"Highly balanced trading: {balance_score:.2f} balance score")
         elif balance_score <= 0.3:
             insights.append(f"Strong directional bias: {balance_score:.2f} balance score")
         # Holding time insights
-        avg_holding_time = position.get('avg_holding_time_seconds', 0)
+        avg_holding_time = position.get("avg_holding_time_seconds", 0)
         if avg_holding_time <= 3600:  # 1 hour
             insights.append(f"Average position holding time: {avg_holding_time/60:.1f} minutes")
         elif avg_holding_time <= 86400:  # 1 day
@@ -769,14 +792,14 @@ class MarketMakerDetector:
             insights.append(f"Average position holding time: {avg_holding_time/86400:.1f} days")
 
         # Market diversity insights
-        markets_count = market.get('markets_traded_count', 0)
+        markets_count = market.get("markets_traded_count", 0)
         if markets_count >= 5:
             insights.append(f"Actively trades in {markets_count} different markets")
         elif markets_count >= 2:
             insights.append(f"Trades in {markets_count} different markets")
 
         # Consistency insights
-        volume_consistency = consistency.get('volume_consistency', 0)
+        volume_consistency = consistency.get("volume_consistency", 0)
         if volume_consistency >= 0.8:
             insights.append("Highly consistent trading volume across time periods")
         elif volume_consistency <= 0.4:
@@ -785,7 +808,7 @@ class MarketMakerDetector:
         # Classification-specific insights
         if classification == "market_maker":
             insights.append("Behavior strongly indicates market making activities")
-            if temporal.get('burst_trading_events', 0) >= 3:
+            if temporal.get("burst_trading_events", 0) >= 3:
                 insights.append("Frequent burst trading patterns typical of market makers")
         elif classification == "high_frequency_trader":
             insights.append("High-frequency trading with directional bias")
@@ -802,15 +825,15 @@ class MarketMakerDetector:
             "market_exposure": "low",
             "liquidity_risk": "low",
             "volatility_exposure": "medium",
-            "overall_risk": "low"
+            "overall_risk": "low",
         }
 
-        market = metrics.get('market_metrics', {})
-        position = metrics.get('position_metrics', {})
-        consistency = metrics.get('consistency_metrics', {})
+        market = metrics.get("market_metrics", {})
+        position = metrics.get("position_metrics", {})
+        consistency = metrics.get("consistency_metrics", {})
 
         # Market concentration risk
-        concentration = market.get('market_concentration', 0)
+        concentration = market.get("market_concentration", 0)
         if concentration >= 0.8:
             risk_factors["market_exposure"] = "high"
             risk_factors["position_concentration"] = "high"
@@ -819,12 +842,12 @@ class MarketMakerDetector:
             risk_factors["position_concentration"] = "medium"
 
         # Position size consistency risk
-        size_consistency = position.get('position_size_consistency', 0)
+        size_consistency = position.get("position_size_consistency", 0)
         if size_consistency <= 0.5:
             risk_factors["volatility_exposure"] = "high"
 
         # Volume consistency risk
-        volume_consistency = consistency.get('volume_consistency', 0)
+        volume_consistency = consistency.get("volume_consistency", 0)
         if volume_consistency <= 0.4:
             risk_factors["liquidity_risk"] = "medium"
 
@@ -848,39 +871,43 @@ class MarketMakerDetector:
             "avg_balance_score": 0.65,
             "avg_holding_time_hours": 12,
             "avg_markets_traded": 2.8,
-            "avg_volume_consistency": 0.7
+            "avg_volume_consistency": 0.7,
         }
 
         comparisons = {}
 
-        temporal = metrics.get('temporal_metrics', {})
-        directional = metrics.get('directional_metrics', {})
-        position = metrics.get('position_metrics', {})
-        market = metrics.get('market_metrics', {})
-        consistency = metrics.get('consistency_metrics', {})
+        temporal = metrics.get("temporal_metrics", {})
+        directional = metrics.get("directional_metrics", {})
+        position = metrics.get("position_metrics", {})
+        metrics.get("market_metrics", {})
+        metrics.get("consistency_metrics", {})
 
         # Trading frequency comparison
-        actual_freq = temporal.get('trades_per_hour', 0)
+        actual_freq = temporal.get("trades_per_hour", 0)
         comparisons["trading_frequency"] = {
             "actual": actual_freq,
             "benchmark": benchmarks["avg_trades_per_hour"],
-            "percentile": min(actual_freq / benchmarks["avg_trades_per_hour"], 2.0)
+            "percentile": min(actual_freq / benchmarks["avg_trades_per_hour"], 2.0),
         }
 
         # Balance score comparison
-        actual_balance = directional.get('balance_score', 0)
+        actual_balance = directional.get("balance_score", 0)
         comparisons["balance_score"] = {
             "actual": actual_balance,
             "benchmark": benchmarks["avg_balance_score"],
-            "percentile": actual_balance / benchmarks["avg_balance_score"] if benchmarks["avg_balance_score"] > 0 else 0
+            "percentile": (
+                actual_balance / benchmarks["avg_balance_score"]
+                if benchmarks["avg_balance_score"] > 0
+                else 0
+            ),
         }
 
         # Holding time comparison
-        actual_holding = position.get('avg_holding_time_seconds', 0) / 3600  # Convert to hours
+        actual_holding = position.get("avg_holding_time_seconds", 0) / 3600  # Convert to hours
         comparisons["holding_time"] = {
             "actual": actual_holding,
             "benchmark": benchmarks["avg_holding_time_hours"],
-            "percentile": benchmarks["avg_holding_time_hours"] / max(actual_holding, 0.1)
+            "percentile": benchmarks["avg_holding_time_hours"] / max(actual_holding, 0.1),
         }
 
         return comparisons
@@ -895,11 +922,17 @@ class MarketMakerDetector:
             "confidence_score": analysis["confidence_score"],
             "trade_count": analysis["trade_count"],
             "key_metrics": {
-                "trades_per_hour": analysis["metrics"]["temporal_metrics"].get("trades_per_hour", 0),
+                "trades_per_hour": analysis["metrics"]["temporal_metrics"].get(
+                    "trades_per_hour", 0
+                ),
                 "balance_score": analysis["metrics"]["directional_metrics"].get("balance_score", 0),
-                "markets_traded": analysis["metrics"]["market_metrics"].get("markets_traded_count", 0),
-                "volume_consistency": analysis["metrics"]["consistency_metrics"].get("volume_consistency", 0)
-            }
+                "markets_traded": analysis["metrics"]["market_metrics"].get(
+                    "markets_traded_count", 0
+                ),
+                "volume_consistency": analysis["metrics"]["consistency_metrics"].get(
+                    "volume_consistency", 0
+                ),
+            },
         }
 
         # Store using the storage system
@@ -916,7 +949,7 @@ class MarketMakerDetector:
         if not behavior:
             return {
                 "error": "Wallet not found in classification database",
-                "wallet_address": normalized_wallet
+                "wallet_address": normalized_wallet,
             }
 
         # Get behavior history for trends
@@ -935,7 +968,7 @@ class MarketMakerDetector:
             "trade_count": behavior["trade_count"],
             "trends": trends,
             "behavior_summary": self._generate_behavior_summary(behavior["metrics_snapshot"]),
-            "recommendations": self._generate_trading_recommendations(behavior)
+            "recommendations": self._generate_trading_recommendations(behavior),
         }
 
         return report
@@ -950,7 +983,9 @@ class MarketMakerDetector:
         probabilities = [entry["market_maker_probability"] for entry in history]
         if len(probabilities) >= 2:
             recent_avg = np.mean(probabilities[-3:])  # Last 3 entries
-            earlier_avg = np.mean(probabilities[:-3]) if len(probabilities) > 3 else probabilities[0]
+            earlier_avg = (
+                np.mean(probabilities[:-3]) if len(probabilities) > 3 else probabilities[0]
+            )
 
             if recent_avg > earlier_avg + 0.1:
                 trend = "increasing_mm_probability"
@@ -971,7 +1006,7 @@ class MarketMakerDetector:
             "stability": stability,
             "most_common_classification": most_common,
             "recent_probability_avg": np.mean(probabilities[-3:]) if probabilities else 0,
-            "overall_probability_avg": np.mean(probabilities) if probabilities else 0
+            "overall_probability_avg": np.mean(probabilities) if probabilities else 0,
         }
 
     def _generate_behavior_summary(self, metrics: Dict[str, Any]) -> Dict[str, Any]:
@@ -981,16 +1016,16 @@ class MarketMakerDetector:
             "trading_style": "",
             "key_characteristics": [],
             "strengths": [],
-            "risk_factors": []
+            "risk_factors": [],
         }
 
-        temporal = metrics.get('temporal_metrics', {})
-        directional = metrics.get('directional_metrics', {})
-        market = metrics.get('market_metrics', {})
+        temporal = metrics.get("temporal_metrics", {})
+        directional = metrics.get("directional_metrics", {})
+        market = metrics.get("market_metrics", {})
 
-        trades_per_hour = temporal.get('trades_per_hour', 0)
-        balance_score = directional.get('balance_score', 0)
-        markets_count = market.get('markets_traded_count', 0)
+        trades_per_hour = temporal.get("trades_per_hour", 0)
+        balance_score = directional.get("balance_score", 0)
+        markets_count = market.get("markets_traded_count", 0)
 
         # Determine trading style
         if trades_per_hour >= 5 and balance_score >= 0.7:
@@ -1030,29 +1065,37 @@ class MarketMakerDetector:
         mm_probability = behavior["market_maker_probability"]
 
         if classification == "market_maker":
-            recommendations.extend([
-                "Consider copying trades with tight stop-losses due to high volatility",
-                "Monitor for spread opportunities when this wallet is active",
-                "Be prepared for quick position reversals",
-                "Consider smaller position sizes to match market maker behavior"
-            ])
+            recommendations.extend(
+                [
+                    "Consider copying trades with tight stop-losses due to high volatility",
+                    "Monitor for spread opportunities when this wallet is active",
+                    "Be prepared for quick position reversals",
+                    "Consider smaller position sizes to match market maker behavior",
+                ]
+            )
         elif classification == "directional_trader":
-            recommendations.extend([
-                "This wallet shows strong directional conviction",
-                "Consider following larger trades for trend confirmation",
-                "Longer holding periods may be appropriate",
-                "Monitor for breakout signals when this wallet trades heavily"
-            ])
+            recommendations.extend(
+                [
+                    "This wallet shows strong directional conviction",
+                    "Consider following larger trades for trend confirmation",
+                    "Longer holding periods may be appropriate",
+                    "Monitor for breakout signals when this wallet trades heavily",
+                ]
+            )
         elif classification == "high_frequency_trader":
-            recommendations.extend([
-                "High-frequency activity suggests scalping strategy",
-                "Use tight stop-losses and quick profit taking",
-                "Monitor for momentum signals",
-                "Consider automated execution for similar trade timing"
-            ])
+            recommendations.extend(
+                [
+                    "High-frequency activity suggests scalping strategy",
+                    "Use tight stop-losses and quick profit taking",
+                    "Monitor for momentum signals",
+                    "Consider automated execution for similar trade timing",
+                ]
+            )
 
         if mm_probability >= 0.8:
-            recommendations.append("High market maker probability - excellent for arbitrage opportunities")
+            recommendations.append(
+                "High market maker probability - excellent for arbitrage opportunities"
+            )
 
         return recommendations
 

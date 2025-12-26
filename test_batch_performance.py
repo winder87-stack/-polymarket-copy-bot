@@ -5,21 +5,24 @@ Tests the optimized batch processing against legacy single-transaction processin
 """
 
 import asyncio
-import time
-import sys
 import random
 import re
-import numpy as np
-from typing import List, Dict, Any, Optional
+import sys
+import time
 from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
+
+import numpy as np
 
 # Add the core directory to path for imports
-sys.path.insert(0, 'core')
+sys.path.insert(0, "core")
 
 # Import only the BatchTransactionProcessor class directly
 import importlib.util
+
 spec = importlib.util.spec_from_file_location("wallet_monitor", "core/wallet_monitor.py")
 wallet_module = importlib.util.module_from_spec(spec)
+
 
 # Extract only the BatchTransactionProcessor class
 class BatchTransactionProcessor:
@@ -29,21 +32,22 @@ class BatchTransactionProcessor:
         self.monitor = monitor
         self._batch_cache = {}
         self._batch_stats = {
-            'total_processed': 0,
-            'filtered_out': 0,
-            'trades_detected': 0,
-            'avg_processing_time': 0.0
+            "total_processed": 0,
+            "filtered_out": 0,
+            "trades_detected": 0,
+            "avg_processing_time": 0.0,
         }
 
-    async def process_transaction_batch(self, transactions: List[Dict[str, Any]],
-                                       wallet_address: str) -> List[Dict[str, Any]]:
+    async def process_transaction_batch(
+        self, transactions: List[Dict[str, Any]], wallet_address: str
+    ) -> List[Dict[str, Any]]:
         """Process a batch of transactions efficiently"""
         start_time = time.time()
 
         try:
             # Phase 1: Pre-filter transactions (fast operations)
             filtered_txs = await self._pre_filter_transactions(transactions)
-            self._batch_stats['filtered_out'] += len(transactions) - len(filtered_txs)
+            self._batch_stats["filtered_out"] += len(transactions) - len(filtered_txs)
 
             if not filtered_txs:
                 print(f"🧹 All transactions filtered out for {wallet_address}")
@@ -57,17 +61,18 @@ class BatchTransactionProcessor:
 
             # Phase 4: Batch deduplication and processing
             unique_trades = self._deduplicate_trades(trades)
-            self._batch_stats['trades_detected'] += len(unique_trades)
+            self._batch_stats["trades_detected"] += len(unique_trades)
 
             # Phase 5: Batch update processed transactions in batch
             await self._batch_update_processed_transactions(unique_trades)
 
             processing_time = time.time() - start_time
-            self._batch_stats['total_processed'] += len(transactions)
-            self._batch_stats['avg_processing_time'] = (
-                (self._batch_stats['avg_processing_time'] * (self._batch_stats['total_processed'] - len(transactions)) +
-                 processing_time * len(transactions)) / self._batch_stats['total_processed']
-            )
+            self._batch_stats["total_processed"] += len(transactions)
+            self._batch_stats["avg_processing_time"] = (
+                self._batch_stats["avg_processing_time"]
+                * (self._batch_stats["total_processed"] - len(transactions))
+                + processing_time * len(transactions)
+            ) / self._batch_stats["total_processed"]
 
             print(
                 f"⚡ Batch processed {len(transactions)} txs -> {len(unique_trades)} trades "
@@ -81,26 +86,29 @@ class BatchTransactionProcessor:
             print(f"❌ Error processing transaction batch: {e}")
             return []
 
-    async def _pre_filter_transactions(self, transactions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    async def _pre_filter_transactions(
+        self, transactions: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """Fast pre-filtering of transactions before deep processing"""
         # Filter 1: Skip already processed transactions
         unprocessed_txs = [
-            tx for tx in transactions
-            if tx['hash'] not in self.monitor.processed_transactions
+            tx for tx in transactions if tx["hash"] not in self.monitor.processed_transactions
         ]
 
         # Filter 2: Skip transactions to non-Polymarket contracts
         polymarket_contract_set = {normalize_address(c) for c in self.monitor.polymarket_contracts}
         relevant_txs = [
-            tx for tx in unprocessed_txs
-            if normalize_address(tx.get('to', '')) in polymarket_contract_set
+            tx
+            for tx in unprocessed_txs
+            if normalize_address(tx.get("to", "")) in polymarket_contract_set
         ]
 
         # Filter 3: Skip very old transactions
         current_time = int(time.time())
         recent_txs = [
-            tx for tx in relevant_txs
-            if abs(current_time - int(tx.get('timeStamp', current_time))) < 3600  # Last hour
+            tx
+            for tx in relevant_txs
+            if abs(current_time - int(tx.get("timeStamp", current_time))) < 3600  # Last hour
         ]
 
         print(
@@ -110,23 +118,25 @@ class BatchTransactionProcessor:
 
         return recent_txs
 
-    async def _batch_confidence_scoring(self, transactions: List[Dict[str, Any]]) -> Dict[str, float]:
+    async def _batch_confidence_scoring(
+        self, transactions: List[Dict[str, Any]]
+    ) -> Dict[str, float]:
         """Calculate confidence scores for a batch of transactions efficiently"""
         # Prepare transaction data for vectorized processing
         tx_data = [
             {
-                'value': float(tx.get('value', 0)),
-                'gas_used': int(tx.get('gasUsed', 0)),
-                'input_length': len(tx.get('input', '')),
-                'timestamp': int(tx.get('timeStamp', time.time()))
+                "value": float(tx.get("value", 0)),
+                "gas_used": int(tx.get("gasUsed", 0)),
+                "input_length": len(tx.get("input", "")),
+                "timestamp": int(tx.get("timeStamp", time.time())),
             }
             for tx in transactions
         ]
 
         # Vectorized confidence scoring using numpy
-        values = np.array([d['value'] for d in tx_data])
-        gas_used = np.array([d['gas_used'] for d in tx_data])
-        input_lengths = np.array([d['input_length'] for d in tx_data])
+        values = np.array([d["value"] for d in tx_data])
+        gas_used = np.array([d["gas_used"] for d in tx_data])
+        input_lengths = np.array([d["input_length"] for d in tx_data])
 
         # Base scores
         scores = np.full(len(transactions), 0.3)
@@ -148,7 +158,7 @@ class BatchTransactionProcessor:
         # Clip to 0.0-1.0 range
         scores = np.clip(scores, 0.0, 1.0)
 
-        return {tx['hash']: float(score) for tx, score in zip(transactions, scores)}
+        return {tx["hash"]: float(score) for tx, score in zip(transactions, scores)}
 
     async def _batch_pattern_scoring(self, transactions: List[Dict[str, Any]]) -> np.ndarray:
         """Batch pattern matching for trade detection"""
@@ -160,31 +170,30 @@ class BatchTransactionProcessor:
         # Process in chunks to avoid memory issues
         chunk_size = 50
         for i in range(0, len(transactions), chunk_size):
-            chunk = transactions[i:i+chunk_size]
-            chunk_inputs = [tx.get('input', '').lower() for tx in chunk]
+            chunk = transactions[i : i + chunk_size]
+            chunk_inputs = [tx.get("input", "").lower() for tx in chunk]
 
             for pattern in patterns:
                 matches = np.array([bool(pattern.search(inp)) for inp in chunk_inputs])
-                pattern_scores[i:i+len(chunk)] += np.where(matches, 0.1, 0)
+                pattern_scores[i : i + len(chunk)] += np.where(matches, 0.1, 0)
 
         return pattern_scores
 
-    async def _parallel_trade_detection(self, transactions: List[Dict[str, Any]],
-                                      confidence_scores: Dict[str, float]) -> List[Dict[str, Any]]:
+    async def _parallel_trade_detection(
+        self, transactions: List[Dict[str, Any]], confidence_scores: Dict[str, float]
+    ) -> List[Dict[str, Any]]:
         """Detect trades in parallel using asyncio.gather"""
         # Prepare tasks
         tasks = []
         for tx in transactions:
-            tx_hash = tx['hash']
+            tx_hash = tx["hash"]
             confidence_score = confidence_scores.get(tx_hash, 0.0)
 
             # Skip low confidence transactions early
             if confidence_score < self.monitor.settings.monitoring.min_confidence_score:
                 continue
 
-            task = asyncio.create_task(
-                self._detect_single_trade(tx, confidence_score)
-            )
+            task = asyncio.create_task(self._detect_single_trade(tx, confidence_score))
             tasks.append(task)
 
         # Execute in parallel with rate limiting
@@ -203,10 +212,12 @@ class BatchTransactionProcessor:
 
         return trades
 
-    async def _detect_single_trade(self, tx: Dict[str, Any], confidence_score: float) -> Optional[Dict[str, Any]]:
+    async def _detect_single_trade(
+        self, tx: Dict[str, Any], confidence_score: float
+    ) -> Optional[Dict[str, Any]]:
         """Detect a single trade with confidence score"""
         try:
-            timestamp = datetime.fromtimestamp(int(tx.get('timeStamp', time.time())))
+            timestamp = datetime.fromtimestamp(int(tx.get("timeStamp", time.time())))
 
             # Skip recent transactions to avoid reorgs
             if timestamp > datetime.now() - timedelta(seconds=30):
@@ -214,24 +225,23 @@ class BatchTransactionProcessor:
 
             # Parse trade (optimized version)
             trade = {
-                'tx_hash': tx['hash'],
-                'timestamp': timestamp,
-                'block_number': int(tx.get('blockNumber', 0)),
-                'wallet_address': normalize_address(tx['from']),
-                'contract_address': normalize_address(tx['to']),
-                'value_eth': float(tx.get('value', 0)) / 10**18 if tx.get('value') else 0,
-                'gas_used': int(tx.get('gasUsed', 0)),
-                'gas_price': int(tx.get('gasPrice', 0)),
-                'input_data': tx.get('input', '')[:200],  # Truncate for performance
-
-                'condition_id': self._extract_condition_id(tx),
-                'market_id': self._derive_market_id(tx),
-                'outcome_index': self._extract_outcome_index(tx),
-                'side': self._determine_trade_side_batch(tx),
-                'amount': self._extract_trade_amount_batch(tx),
-                'price': self._extract_trade_price_batch(tx),
-                'token_id': self._extract_token_id(tx),
-                'confidence_score': confidence_score
+                "tx_hash": tx["hash"],
+                "timestamp": timestamp,
+                "block_number": int(tx.get("blockNumber", 0)),
+                "wallet_address": normalize_address(tx["from"]),
+                "contract_address": normalize_address(tx["to"]),
+                "value_eth": float(tx.get("value", 0)) / 10**18 if tx.get("value") else 0,
+                "gas_used": int(tx.get("gasUsed", 0)),
+                "gas_price": int(tx.get("gasPrice", 0)),
+                "input_data": tx.get("input", "")[:200],  # Truncate for performance
+                "condition_id": self._extract_condition_id(tx),
+                "market_id": self._derive_market_id(tx),
+                "outcome_index": self._extract_outcome_index(tx),
+                "side": self._determine_trade_side_batch(tx),
+                "amount": self._extract_trade_amount_batch(tx),
+                "price": self._extract_trade_price_batch(tx),
+                "token_id": self._extract_token_id(tx),
+                "confidence_score": confidence_score,
             }
 
             return trade
@@ -246,9 +256,9 @@ class BatchTransactionProcessor:
         unique_trades = []
 
         for trade in trades:
-            if trade['tx_hash'] in seen_hashes:
+            if trade["tx_hash"] in seen_hashes:
                 continue
-            seen_hashes.add(trade['tx_hash'])
+            seen_hashes.add(trade["tx_hash"])
             unique_trades.append(trade)
 
         if len(trades) != len(unique_trades):
@@ -258,7 +268,7 @@ class BatchTransactionProcessor:
 
     async def _batch_update_processed_transactions(self, trades: List[Dict[str, Any]]):
         """Update processed transactions in batch"""
-        new_hashes = {trade['tx_hash'] for trade in trades}
+        new_hashes = {trade["tx_hash"] for trade in trades}
         self.monitor.processed_transactions.update(new_hashes)
 
         # Periodic cleanup
@@ -268,11 +278,11 @@ class BatchTransactionProcessor:
     def _extract_condition_id(self, tx: Dict[str, Any]) -> str:
         """Extract condition ID from transaction"""
         # This is a placeholder - in production this would decode the actual transaction
-        input_data = tx.get('input', '')
+        input_data = tx.get("input", "")
         if len(input_data) > 10:
             # Simple heuristic - extract first 64 chars after method signature
             return input_data[10:74] if len(input_data) > 74 else input_data[10:]
-        return tx.get('to', '')
+        return tx.get("to", "")
 
     def _derive_market_id(self, tx: Dict[str, Any]) -> str:
         """Derive market ID from transaction data"""
@@ -282,24 +292,24 @@ class BatchTransactionProcessor:
     def _extract_outcome_index(self, tx: Dict[str, Any]) -> int:
         """Extract outcome index from transaction"""
         # Placeholder - would decode from actual transaction data
-        input_data = tx.get('input', '')
+        input_data = tx.get("input", "")
         return hash(input_data) % 2  # Simple heuristic
 
     def _determine_trade_side_batch(self, tx: Dict[str, Any]) -> str:
         """Determine trade side (BUY/SELL)"""
         # Simple heuristic based on gas price patterns
-        gas_price = int(tx.get('gasPrice', 0))
+        gas_price = int(tx.get("gasPrice", 0))
         return "BUY" if gas_price > 50000000000 else "SELL"  # 50 gwei threshold
 
     def _extract_trade_amount_batch(self, tx: Dict[str, Any]) -> float:
         """Extract trade amount"""
-        value = float(tx.get('value', 0))
+        value = float(tx.get("value", 0))
         return value / 10**18 if value > 0 else 1.0  # Default to 1 if no value
 
     def _extract_trade_price_batch(self, tx: Dict[str, Any]) -> float:
         """Extract trade price"""
         # Placeholder - would decode from actual transaction data
-        return 0.5 + (hash(tx.get('hash', '')) % 100) / 200  # Random-ish price
+        return 0.5 + (hash(tx.get("hash", "")) % 100) / 200  # Random-ish price
 
     def _extract_token_id(self, tx: Dict[str, Any]) -> str:
         """Extract token ID from transaction"""
@@ -323,8 +333,10 @@ def normalize_address(address: str) -> str:
 
 class MockSettings:
     """Mock settings for testing"""
+
     class Monitoring:
         min_confidence_score = 0.3
+
     monitoring = Monitoring()
 
 
@@ -358,8 +370,8 @@ class MockWalletMonitor:
         """Mock trade parsing for testing"""
         try:
             # Simple mock - check if transaction looks like a Polymarket trade
-            input_data = tx.get('input', '')
-            if '0x8a8c523c' in input_data.lower():  # Mock Polymarket signature
+            input_data = tx.get("input", "")
+            if "0x8a8c523c" in input_data.lower():  # Mock Polymarket signature
                 timestamp = datetime.fromtimestamp(int(tx.get("timeStamp", time.time())))
 
                 # Skip recent transactions to avoid reorgs
@@ -397,23 +409,25 @@ def generate_mock_transactions(count: int, wallet_address: str) -> List[Dict[str
 
     for i in range(count):
         # Create varied transaction types
-        tx_types = ['polymarket_trade', 'regular_transfer', 'contract_call', 'old_transaction']
+        tx_types = ["polymarket_trade", "regular_transfer", "contract_call", "old_transaction"]
         tx_type = random.choice(tx_types)
 
-        if tx_type == 'polymarket_trade':
-            to_address = random.choice([
-                "0x4D97DCc4e5c36A3b0c9072A2F5B3C1b1C1B1B1B1",
-                "0x8c16f85a4d5f8f23d29e9c7e3d4a3a5a6e4f2b2e"
-            ])
+        if tx_type == "polymarket_trade":
+            to_address = random.choice(
+                [
+                    "0x4D97DCc4e5c36A3b0c9072A2F5B3C1b1C1B1B1B1",
+                    "0x8c16f85a4d5f8f23d29e9c7e3d4a3a5a6e4f2b2e",
+                ]
+            )
             input_data = f"0x8a8c523c{random.randint(0, 2**256):064x}"  # Mock Polymarket input
             gas_used = random.randint(100000, 300000)
             value = str(random.randint(10**16, 10**18))  # 0.01 to 1 ETH
-        elif tx_type == 'regular_transfer':
+        elif tx_type == "regular_transfer":
             to_address = f"0x{random.randint(0, 2**160):040x}"
             input_data = "0x"
             gas_used = random.randint(21000, 25000)
             value = str(random.randint(10**15, 10**17))
-        elif tx_type == 'contract_call':
+        elif tx_type == "contract_call":
             to_address = f"0x{random.randint(0, 2**160):040x}"
             input_data = f"0x{random.randint(0, 2**224):056x}"  # Longer input
             gas_used = random.randint(50000, 150000)
@@ -425,15 +439,15 @@ def generate_mock_transactions(count: int, wallet_address: str) -> List[Dict[str
             value = str(random.randint(10**15, 10**17))
 
         transaction = {
-            'hash': f"0x{random.randint(0, 2**256):064x}",
-            'from': wallet_address,
-            'to': to_address,
-            'value': value,
-            'gasUsed': str(gas_used),
-            'gasPrice': str(random.randint(10**10, 10**11)),  # 10-100 gwei
-            'timeStamp': str(base_time + random.randint(0, 3600)),  # Within last hour
-            'blockNumber': str(50000000 - random.randint(0, 1000)),
-            'input': input_data,
+            "hash": f"0x{random.randint(0, 2**256):064x}",
+            "from": wallet_address,
+            "to": to_address,
+            "value": value,
+            "gasUsed": str(gas_used),
+            "gasPrice": str(random.randint(10**10, 10**11)),  # 10-100 gwei
+            "timeStamp": str(base_time + random.randint(0, 3600)),  # Within last hour
+            "blockNumber": str(50000000 - random.randint(0, 1000)),
+            "input": input_data,
         }
 
         transactions.append(transaction)
@@ -441,7 +455,9 @@ def generate_mock_transactions(count: int, wallet_address: str) -> List[Dict[str
     return transactions
 
 
-def legacy_detect_polymarket_trades(transactions: List[Dict[str, Any]], monitor: MockWalletMonitor) -> List[Dict[str, Any]]:
+def legacy_detect_polymarket_trades(
+    transactions: List[Dict[str, Any]], monitor: MockWalletMonitor
+) -> List[Dict[str, Any]]:
     """Legacy single-transaction processing for comparison"""
     polymarket_trades = []
 
@@ -508,19 +524,19 @@ async def benchmark_batch_processing():
         batch_time = time.time() - batch_start
 
         # Calculate metrics
-        speedup = legacy_time / batch_time if batch_time > 0 else float('inf')
+        speedup = legacy_time / batch_time if batch_time > 0 else float("inf")
         accuracy_diff = abs(len(legacy_trades) - len(batch_trades))
 
         result = {
-            'test_name': test_name,
-            'tx_count': tx_count,
-            'legacy_time': legacy_time,
-            'batch_time': batch_time,
-            'speedup': speedup,
-            'legacy_trades': len(legacy_trades),
-            'batch_trades': len(batch_trades),
-            'accuracy_diff': accuracy_diff,
-            'batch_stats': batch_processor.get_batch_stats()
+            "test_name": test_name,
+            "tx_count": tx_count,
+            "legacy_time": legacy_time,
+            "batch_time": batch_time,
+            "speedup": speedup,
+            "legacy_trades": len(legacy_trades),
+            "batch_trades": len(batch_trades),
+            "accuracy_diff": accuracy_diff,
+            "batch_stats": batch_processor.get_batch_stats(),
         }
 
         results.append(result)
@@ -536,9 +552,9 @@ async def benchmark_batch_processing():
     print("\n🎯 PERFORMANCE SUMMARY")
     print("=" * 60)
 
-    total_legacy_time = sum(r['legacy_time'] for r in results)
-    total_batch_time = sum(r['batch_time'] for r in results)
-    avg_speedup = total_legacy_time / total_batch_time if total_batch_time > 0 else float('inf')
+    total_legacy_time = sum(r["legacy_time"] for r in results)
+    total_batch_time = sum(r["batch_time"] for r in results)
+    total_legacy_time / total_batch_time if total_batch_time > 0 else float("inf")
 
     print(".2f")
     print(".2f")
@@ -546,10 +562,13 @@ async def benchmark_batch_processing():
 
     # Success criteria check
     success_criteria = {
-        'High Throughput': results[-1]['tx_count'] / results[-1]['batch_time'] > 1000,  # XL batch >1000 req/sec
-        'Memory Efficiency': True,  # Batch processing uses constant memory
-        'High Accuracy': sum(r['accuracy_diff'] for r in results) <= 1,  # Allow small accuracy differences
-        'Scalable Processing': len(results) == 4 and all(r['batch_trades'] > 0 for r in results),  # All batch sizes work
+        "High Throughput": results[-1]["tx_count"] / results[-1]["batch_time"]
+        > 1000,  # XL batch >1000 req/sec
+        "Memory Efficiency": True,  # Batch processing uses constant memory
+        "High Accuracy": sum(r["accuracy_diff"] for r in results)
+        <= 1,  # Allow small accuracy differences
+        "Scalable Processing": len(results) == 4
+        and all(r["batch_trades"] > 0 for r in results),  # All batch sizes work
     }
 
     print("\n✅ SUCCESS CRITERIA:")
@@ -626,5 +645,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ Benchmark failed with error: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

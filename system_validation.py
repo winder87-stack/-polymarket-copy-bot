@@ -4,30 +4,25 @@ System Validation Script for Polymarket Copy Trading Bot
 Performs comprehensive end-to-end validation of the entire system.
 """
 import asyncio
-import sys
 import os
+import sys
 import time
-import json
-import tempfile
-import shutil
-import psutil
-import subprocess
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
-import logging
+from typing import Any, Dict, List
+
+import psutil
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from config.settings import Settings, settings
+from config.settings import settings
 from core.clob_client import PolymarketClient
-from core.wallet_monitor import WalletMonitor
 from core.trade_executor import TradeExecutor
-from utils.helpers import normalize_address
-from utils.security import validate_private_key, mask_sensitive_data
-from utils.logging_utils import setup_logging, log_performance_metrics
+from core.wallet_monitor import WalletMonitor
 from utils.alerts import alert_manager
+from utils.logging_utils import setup_logging
+from utils.security import mask_sensitive_data, validate_private_key
 
 
 class SystemValidator:
@@ -35,13 +30,13 @@ class SystemValidator:
 
     def __init__(self):
         self.results = {
-            'happy_path': {},
-            'failure_modes': {},
-            'security': {},
-            'performance': {},
-            'configuration': {},
-            'deployment': {},
-            'user_experience': {}
+            "happy_path": {},
+            "failure_modes": {},
+            "security": {},
+            "performance": {},
+            "configuration": {},
+            "deployment": {},
+            "user_experience": {},
         }
         self.start_time = time.time()
         self.logger = setup_logging()
@@ -52,25 +47,25 @@ class SystemValidator:
 
         try:
             # 1. Happy Path Validation
-            self.results['happy_path'] = await self.validate_happy_path()
+            self.results["happy_path"] = await self.validate_happy_path()
 
             # 2. Failure Mode Validation
-            self.results['failure_modes'] = await self.validate_failure_modes()
+            self.results["failure_modes"] = await self.validate_failure_modes()
 
             # 3. Security Validation
-            self.results['security'] = await self.validate_security()
+            self.results["security"] = await self.validate_security()
 
             # 4. Performance Validation
-            self.results['performance'] = await self.validate_performance()
+            self.results["performance"] = await self.validate_performance()
 
             # 5. Configuration Validation
-            self.results['configuration'] = await self.validate_configuration()
+            self.results["configuration"] = await self.validate_configuration()
 
             # 6. Deployment Validation
-            self.results['deployment'] = await self.validate_deployment()
+            self.results["deployment"] = await self.validate_deployment()
 
             # 7. User Experience Validation
-            self.results['user_experience'] = await self.validate_user_experience()
+            self.results["user_experience"] = await self.validate_user_experience()
 
             # Calculate final score
             final_score = self.calculate_final_score()
@@ -78,21 +73,21 @@ class SystemValidator:
             self.logger.info(f"✅ System validation completed. Final Score: {final_score}/100")
 
             return {
-                'timestamp': datetime.now().isoformat(),
-                'duration': time.time() - self.start_time,
-                'final_score': final_score,
-                'results': self.results,
-                'recommendation': self.get_go_no_go_recommendation(final_score)
+                "timestamp": datetime.now().isoformat(),
+                "duration": time.time() - self.start_time,
+                "final_score": final_score,
+                "results": self.results,
+                "recommendation": self.get_go_no_go_recommendation(final_score),
             }
 
         except Exception as e:
             self.logger.error(f"❌ System validation failed: {e}", exc_info=True)
             return {
-                'timestamp': datetime.now().isoformat(),
-                'duration': time.time() - self.start_time,
-                'final_score': 0,
-                'error': str(e),
-                'results': self.results
+                "timestamp": datetime.now().isoformat(),
+                "duration": time.time() - self.start_time,
+                "final_score": 0,
+                "error": str(e),
+                "results": self.results,
             }
 
     async def validate_happy_path(self) -> Dict[str, Any]:
@@ -100,28 +95,30 @@ class SystemValidator:
         self.logger.info("🎯 Validating happy path scenarios...")
 
         results = {
-            'wallet_transaction_detection': False,
-            'trade_execution': False,
-            'position_management': False,
-            'performance_reporting': False,
-            'errors': []
+            "wallet_transaction_detection": False,
+            "trade_execution": False,
+            "position_management": False,
+            "performance_reporting": False,
+            "errors": [],
         }
 
         try:
             # Test wallet transaction detection
-            results['wallet_transaction_detection'] = await self._test_wallet_transaction_detection()
+            results["wallet_transaction_detection"] = (
+                await self._test_wallet_transaction_detection()
+            )
 
             # Test trade execution
-            results['trade_execution'] = await self._test_trade_execution()
+            results["trade_execution"] = await self._test_trade_execution()
 
             # Test position management
-            results['position_management'] = await self._test_position_management()
+            results["position_management"] = await self._test_position_management()
 
             # Test performance reporting
-            results['performance_reporting'] = await self._test_performance_reporting()
+            results["performance_reporting"] = await self._test_performance_reporting()
 
         except Exception as e:
-            results['errors'].append(f"Happy path validation error: {e}")
+            results["errors"].append(f"Happy path validation error: {e}")
             self.logger.error(f"Happy path validation error: {e}")
 
         return results
@@ -131,28 +128,28 @@ class SystemValidator:
         self.logger.info("💥 Validating failure mode scenarios...")
 
         results = {
-            'circuit_breaker_activation': False,
-            'api_failure_recovery': False,
-            'trade_execution_error_handling': False,
-            'alerting_during_failures': False,
-            'errors': []
+            "circuit_breaker_activation": False,
+            "api_failure_recovery": False,
+            "trade_execution_error_handling": False,
+            "alerting_during_failures": False,
+            "errors": [],
         }
 
         try:
             # Test circuit breaker activation
-            results['circuit_breaker_activation'] = await self._test_circuit_breaker()
+            results["circuit_breaker_activation"] = await self._test_circuit_breaker()
 
             # Test API failure recovery
-            results['api_failure_recovery'] = await self._test_api_failure_recovery()
+            results["api_failure_recovery"] = await self._test_api_failure_recovery()
 
             # Test trade execution error handling
-            results['trade_execution_error_handling'] = await self._test_trade_execution_errors()
+            results["trade_execution_error_handling"] = await self._test_trade_execution_errors()
 
             # Test alerting during failures
-            results['alerting_during_failures'] = await self._test_failure_alerting()
+            results["alerting_during_failures"] = await self._test_failure_alerting()
 
         except Exception as e:
-            results['errors'].append(f"Failure mode validation error: {e}")
+            results["errors"].append(f"Failure mode validation error: {e}")
             self.logger.error(f"Failure mode validation error: {e}")
 
         return results
@@ -162,28 +159,28 @@ class SystemValidator:
         self.logger.info("🔒 Validating security measures...")
 
         results = {
-            'no_sensitive_data_in_logs': False,
-            'private_key_never_exposed': False,
-            'input_sanitization': False,
-            'rate_limiting_effective': False,
-            'errors': []
+            "no_sensitive_data_in_logs": False,
+            "private_key_never_exposed": False,
+            "input_sanitization": False,
+            "rate_limiting_effective": False,
+            "errors": [],
         }
 
         try:
             # Test log security
-            results['no_sensitive_data_in_logs'] = await self._test_log_security()
+            results["no_sensitive_data_in_logs"] = await self._test_log_security()
 
             # Test private key protection
-            results['private_key_never_exposed'] = await self._test_private_key_protection()
+            results["private_key_never_exposed"] = await self._test_private_key_protection()
 
             # Test input sanitization
-            results['input_sanitization'] = await self._test_input_sanitization()
+            results["input_sanitization"] = await self._test_input_sanitization()
 
             # Test rate limiting
-            results['rate_limiting_effective'] = await self._test_rate_limiting()
+            results["rate_limiting_effective"] = await self._test_rate_limiting()
 
         except Exception as e:
-            results['errors'].append(f"Security validation error: {e}")
+            results["errors"].append(f"Security validation error: {e}")
             self.logger.error(f"Security validation error: {e}")
 
         return results
@@ -193,31 +190,31 @@ class SystemValidator:
         self.logger.info("⚡ Validating performance characteristics...")
 
         results = {
-            'end_to_end_latency': {'value': 0, 'acceptable': False},
-            'resource_usage': {'memory_mb': 0, 'cpu_percent': 0, 'acceptable': False},
-            'api_rate_limit_compliance': False,
-            'memory_usage_over_time': {'stable': False, 'leak_detected': False},
-            'errors': []
+            "end_to_end_latency": {"value": 0, "acceptable": False},
+            "resource_usage": {"memory_mb": 0, "cpu_percent": 0, "acceptable": False},
+            "api_rate_limit_compliance": False,
+            "memory_usage_over_time": {"stable": False, "leak_detected": False},
+            "errors": [],
         }
 
         try:
             # Test end-to-end latency
             latency_result = await self._test_end_to_end_latency()
-            results['end_to_end_latency'] = latency_result
+            results["end_to_end_latency"] = latency_result
 
             # Test resource usage
             resource_result = await self._test_resource_usage()
-            results['resource_usage'] = resource_result
+            results["resource_usage"] = resource_result
 
             # Test API rate limit compliance
-            results['api_rate_limit_compliance'] = await self._test_api_rate_limits()
+            results["api_rate_limit_compliance"] = await self._test_api_rate_limits()
 
             # Test memory usage over time
             memory_result = await self._test_memory_usage_over_time()
-            results['memory_usage_over_time'] = memory_result
+            results["memory_usage_over_time"] = memory_result
 
         except Exception as e:
-            results['errors'].append(f"Performance validation error: {e}")
+            results["errors"].append(f"Performance validation error: {e}")
             self.logger.error(f"Performance validation error: {e}")
 
         return results
@@ -227,28 +224,28 @@ class SystemValidator:
         self.logger.info("⚙️ Validating configuration system...")
 
         results = {
-            'all_config_options': False,
-            'fallback_defaults': False,
-            'env_variable_loading': False,
-            'config_validation_logic': False,
-            'errors': []
+            "all_config_options": False,
+            "fallback_defaults": False,
+            "env_variable_loading": False,
+            "config_validation_logic": False,
+            "errors": [],
         }
 
         try:
             # Test all configuration options
-            results['all_config_options'] = await self._test_config_options()
+            results["all_config_options"] = await self._test_config_options()
 
             # Test fallback defaults
-            results['fallback_defaults'] = await self._test_fallback_defaults()
+            results["fallback_defaults"] = await self._test_fallback_defaults()
 
             # Test environment variable loading
-            results['env_variable_loading'] = await self._test_env_variable_loading()
+            results["env_variable_loading"] = await self._test_env_variable_loading()
 
             # Test configuration validation logic
-            results['config_validation_logic'] = await self._test_config_validation()
+            results["config_validation_logic"] = await self._test_config_validation()
 
         except Exception as e:
-            results['errors'].append(f"Configuration validation error: {e}")
+            results["errors"].append(f"Configuration validation error: {e}")
             self.logger.error(f"Configuration validation error: {e}")
 
         return results
@@ -258,28 +255,28 @@ class SystemValidator:
         self.logger.info("🚀 Validating deployment configuration...")
 
         results = {
-            'systemd_service_startup': False,
-            'graceful_shutdown': False,
-            'log_rotation': False,
-            'file_permissions': False,
-            'errors': []
+            "systemd_service_startup": False,
+            "graceful_shutdown": False,
+            "log_rotation": False,
+            "file_permissions": False,
+            "errors": [],
         }
 
         try:
             # Test systemd service configuration
-            results['systemd_service_startup'] = await self._test_systemd_service()
+            results["systemd_service_startup"] = await self._test_systemd_service()
 
             # Test graceful shutdown
-            results['graceful_shutdown'] = await self._test_graceful_shutdown()
+            results["graceful_shutdown"] = await self._test_graceful_shutdown()
 
             # Test log rotation
-            results['log_rotation'] = await self._test_log_rotation()
+            results["log_rotation"] = await self._test_log_rotation()
 
             # Test file permissions
-            results['file_permissions'] = await self._test_file_permissions()
+            results["file_permissions"] = await self._test_file_permissions()
 
         except Exception as e:
-            results['errors'].append(f"Deployment validation error: {e}")
+            results["errors"].append(f"Deployment validation error: {e}")
             self.logger.error(f"Deployment validation error: {e}")
 
         return results
@@ -289,28 +286,28 @@ class SystemValidator:
         self.logger.info("👥 Validating user experience...")
 
         results = {
-            'telegram_alert_quality': {'score': 0, 'issues': []},
-            'log_readability': {'score': 0, 'issues': []},
-            'setup_script_usability': {'score': 0, 'issues': []},
-            'error_message_clarity': {'score': 0, 'issues': []},
-            'errors': []
+            "telegram_alert_quality": {"score": 0, "issues": []},
+            "log_readability": {"score": 0, "issues": []},
+            "setup_script_usability": {"score": 0, "issues": []},
+            "error_message_clarity": {"score": 0, "issues": []},
+            "errors": [],
         }
 
         try:
             # Test Telegram alert quality
-            results['telegram_alert_quality'] = await self._test_telegram_alerts()
+            results["telegram_alert_quality"] = await self._test_telegram_alerts()
 
             # Test log readability
-            results['log_readability'] = await self._test_log_readability()
+            results["log_readability"] = await self._test_log_readability()
 
             # Test setup script usability
-            results['setup_script_usability'] = await self._test_setup_script()
+            results["setup_script_usability"] = await self._test_setup_script()
 
             # Test error message clarity
-            results['error_message_clarity'] = await self._test_error_messages()
+            results["error_message_clarity"] = await self._test_error_messages()
 
         except Exception as e:
-            results['errors'].append(f"User experience validation error: {e}")
+            results["errors"].append(f"User experience validation error: {e}")
             self.logger.error(f"User experience validation error: {e}")
 
         return results
@@ -321,9 +318,10 @@ class SystemValidator:
         try:
             # Create a mock wallet monitor
             from tests.mocks.web3_mock import create_mock_web3
+
             web3 = create_mock_web3()
 
-            with patch('core.wallet_monitor.Web3', return_value=web3):
+            with patch("core.wallet_monitor.Web3", return_value=web3):
                 monitor = WalletMonitor()
                 monitor.target_wallets = ["0x742d35Cc6634C0532925a3b844Bc454e4438f44e"]
 
@@ -332,7 +330,9 @@ class SystemValidator:
                 assert monitor.web3 is not None
 
                 # Test transaction detection (mocked)
-                transactions = await monitor.get_wallet_transactions("0x742d35Cc6634C0532925a3b844Bc454e4438f44e")
+                transactions = await monitor.get_wallet_transactions(
+                    "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+                )
                 # Should return empty list for mock (no real API calls)
                 assert isinstance(transactions, list)
 
@@ -355,15 +355,15 @@ class SystemValidator:
 
             # Test trade validation
             sample_trade = {
-                'tx_hash': '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-                'timestamp': datetime.now(),
-                'wallet_address': '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-                'condition_id': '0x1234567890abcdef1234567890abcdef12345678',
-                'side': 'BUY',
-                'amount': 10.0,
-                'price': 0.65,
-                'token_id': '0xabcdef1234567890abcdef1234567890abcdef12',
-                'confidence_score': 0.8
+                "tx_hash": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+                "timestamp": datetime.now(),
+                "wallet_address": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+                "condition_id": "0x1234567890abcdef1234567890abcdef12345678",
+                "side": "BUY",
+                "amount": 10.0,
+                "price": 0.65,
+                "token_id": "0xabcdef1234567890abcdef1234567890abcdef12",
+                "confidence_score": 0.8,
             }
 
             is_valid = executor._validate_trade(sample_trade)
@@ -371,7 +371,7 @@ class SystemValidator:
 
             # Test risk management
             risk_approved = executor._apply_risk_management(sample_trade)
-            assert risk_approved['approved']
+            assert risk_approved["approved"]
 
             return True
         except Exception as e:
@@ -392,10 +392,10 @@ class SystemValidator:
             # Add a mock position
             position_key = "test_condition_BUY"
             executor.open_positions[position_key] = {
-                'amount': 10.0,
-                'entry_price': 0.60,
-                'timestamp': time.time(),
-                'original_trade': {'condition_id': 'test_condition', 'side': 'BUY'}
+                "amount": 10.0,
+                "entry_price": 0.60,
+                "timestamp": time.time(),
+                "original_trade": {"condition_id": "test_condition", "side": "BUY"},
             }
 
             # Test position management (should not crash)
@@ -425,10 +425,10 @@ class SystemValidator:
             # Get performance metrics
             metrics = executor.get_performance_metrics()
 
-            assert 'total_trades' in metrics
-            assert 'success_rate' in metrics
-            assert metrics['total_trades'] == 10
-            assert abs(metrics['success_rate'] - 0.8) < 0.01
+            assert "total_trades" in metrics
+            assert "success_rate" in metrics
+            assert metrics["total_trades"] == 10
+            assert abs(metrics["success_rate"] - 0.8) < 0.01
 
             return True
         except Exception as e:
@@ -499,25 +499,25 @@ class SystemValidator:
             executor = TradeExecutor(client)
 
             # Test invalid trade handling
-            invalid_trade = {'invalid': 'data'}
+            invalid_trade = {"invalid": "data"}
             result = await executor.execute_copy_trade(invalid_trade)
-            assert result['status'] == 'error'
+            assert result["status"] == "error"
 
             # Test risk rejection
             valid_trade = {
-                'tx_hash': '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-                'timestamp': datetime.now(),
-                'wallet_address': '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-                'condition_id': '0x1234567890abcdef1234567890abcdef12345678',
-                'side': 'BUY',
-                'amount': 1000.0,  # Too large
-                'price': 0.65,
-                'token_id': '0xabcdef1234567890abcdef1234567890abcdef12',
-                'confidence_score': 0.8
+                "tx_hash": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+                "timestamp": datetime.now(),
+                "wallet_address": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+                "condition_id": "0x1234567890abcdef1234567890abcdef12345678",
+                "side": "BUY",
+                "amount": 1000.0,  # Too large
+                "price": 0.65,
+                "token_id": "0xabcdef1234567890abcdef1234567890abcdef12",
+                "confidence_score": 0.8,
             }
 
             result = await executor.execute_copy_trade(valid_trade)
-            assert result['status'] == 'rejected'
+            assert result["status"] == "rejected"
 
             return True
         except Exception as e:
@@ -545,19 +545,20 @@ class SystemValidator:
         """Test that sensitive data is not logged."""
         try:
             # Test secure logging
-            from utils.security import secure_log
             import logging
 
-            logger = logging.getLogger('test_security')
+            from utils.security import secure_log
+
+            logger = logging.getLogger("test_security")
 
             test_data = {
-                'private_key': '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-                'wallet_address': '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-                'normal_data': 'safe to log'
+                "private_key": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+                "wallet_address": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+                "normal_data": "safe to log",
             }
 
             # This should not raise exceptions and should mask sensitive data
-            secure_log(logger, 'security_test', test_data)
+            secure_log(logger, "security_test", test_data)
 
             return True
         except Exception as e:
@@ -577,8 +578,8 @@ class SystemValidator:
                 assert not validate_private_key(invalid_key)
 
             # Test that masked data doesn't contain full keys
-            masked = mask_sensitive_data({'private_key': valid_key})
-            assert '[REDACTED]' in str(masked)
+            masked = mask_sensitive_data({"private_key": valid_key})
+            assert "[REDACTED]" in str(masked)
             assert valid_key not in str(masked)
 
             return True
@@ -595,12 +596,12 @@ class SystemValidator:
                 "<script>alert('xss')</script>",
                 "../../../etc/passwd",
                 "javascript:evil()",
-                "${jndi:ldap://evil.com}"
+                "${jndi:ldap://evil.com}",
             ]
 
             for dangerous_input in dangerous_inputs:
                 # Should not crash when processing
-                masked = mask_sensitive_data({'input': dangerous_input})
+                masked = mask_sensitive_data({"input": dangerous_input})
                 assert isinstance(masked, dict)
 
             return True
@@ -612,14 +613,15 @@ class SystemValidator:
         """Test rate limiting effectiveness."""
         try:
             from tests.mocks.web3_mock import create_mock_web3
+
             web3 = create_mock_web3()
 
-            with patch('core.wallet_monitor.Web3', return_value=web3):
+            with patch("core.wallet_monitor.Web3", return_value=web3):
                 monitor = WalletMonitor()
 
                 # Test that rate limiting is in place
-                assert hasattr(monitor, 'last_api_call')
-                assert hasattr(monitor, 'api_call_delay')
+                assert hasattr(monitor, "last_api_call")
+                assert hasattr(monitor, "api_call_delay")
                 assert monitor.api_call_delay > 0
 
                 return True
@@ -635,20 +637,18 @@ class SystemValidator:
 
             # Simulate a simple operation
             from tests.mocks.clob_api_mock import create_mock_clob_client
+
             client = create_mock_clob_client()
 
-            balance = await client.get_balance()
+            await client.get_balance()
 
             end_time = time.time()
             latency = end_time - start_time
 
-            return {
-                'value': latency,
-                'acceptable': latency < 1.0  # Should be under 1 second
-            }
+            return {"value": latency, "acceptable": latency < 1.0}  # Should be under 1 second
         except Exception as e:
             self.logger.error(f"End-to-end latency test failed: {e}")
-            return {'value': 0, 'acceptable': False}
+            return {"value": 0, "acceptable": False}
 
     async def _test_resource_usage(self) -> Dict[str, Any]:
         """Test resource usage."""
@@ -659,13 +659,13 @@ class SystemValidator:
             cpu_percent = process.cpu_percent(interval=0.1)
 
             return {
-                'memory_mb': memory_mb,
-                'cpu_percent': cpu_percent,
-                'acceptable': memory_mb < 200 and cpu_percent < 50  # Reasonable limits
+                "memory_mb": memory_mb,
+                "cpu_percent": cpu_percent,
+                "acceptable": memory_mb < 200 and cpu_percent < 50,  # Reasonable limits
             }
         except Exception as e:
             self.logger.error(f"Resource usage test failed: {e}")
-            return {'memory_mb': 0, 'cpu_percent': 0, 'acceptable': False}
+            return {"memory_mb": 0, "cpu_percent": 0, "acceptable": False}
 
     async def _test_api_rate_limits(self) -> bool:
         """Test API rate limit compliance."""
@@ -677,7 +677,7 @@ class SystemValidator:
             server = PolygonScanMockServer()
 
             # Test that server has rate limiting attributes
-            assert hasattr(server, 'rate_limiting_enabled')
+            assert hasattr(server, "rate_limiting_enabled")
 
             return True
         except Exception as e:
@@ -705,25 +705,22 @@ class SystemValidator:
             stable = memory_variance < 10.0
             leak_detected = memory_variance > 20.0  # Significant increase suggests leak
 
-            return {
-                'stable': stable,
-                'leak_detected': leak_detected
-            }
+            return {"stable": stable, "leak_detected": leak_detected}
         except Exception as e:
             self.logger.error(f"Memory usage over time test failed: {e}")
-            return {'stable': False, 'leak_detected': True}
+            return {"stable": False, "leak_detected": True}
 
     # Configuration Test Methods
     async def _test_config_options(self) -> bool:
         """Test all configuration options."""
         try:
             # Test that all expected configuration sections exist
-            assert hasattr(settings, 'risk')
-            assert hasattr(settings, 'network')
-            assert hasattr(settings, 'trading')
-            assert hasattr(settings, 'monitoring')
-            assert hasattr(settings, 'alerts')
-            assert hasattr(settings, 'logging')
+            assert hasattr(settings, "risk")
+            assert hasattr(settings, "network")
+            assert hasattr(settings, "trading")
+            assert hasattr(settings, "monitoring")
+            assert hasattr(settings, "alerts")
+            assert hasattr(settings, "logging")
 
             # Test that critical settings have values
             assert settings.risk.max_daily_loss > 0
@@ -753,9 +750,10 @@ class SystemValidator:
         """Test environment variable loading."""
         try:
             # Test that environment variables can override defaults
-            with patch.dict(os.environ, {'MAX_DAILY_LOSS': '200.0', 'MONITOR_INTERVAL': '30'}):
+            with patch.dict(os.environ, {"MAX_DAILY_LOSS": "200.0", "MONITOR_INTERVAL": "30"}):
                 # Create new settings instance to test loading
                 from config.settings import Settings
+
                 test_settings = Settings()
 
                 assert test_settings.risk.max_daily_loss == 200.0
@@ -773,7 +771,7 @@ class SystemValidator:
             settings.validate_critical_settings()
 
             # Test that invalid configurations are caught
-            with patch.object(settings.trading, 'private_key', 'invalid'):
+            with patch.object(settings.trading, "private_key", "invalid"):
                 try:
                     settings.validate_critical_settings()
                     return False  # Should have raised an exception
@@ -928,10 +926,10 @@ class SystemValidator:
             else:
                 issues.append("Alerts file not found")
 
-            return {'score': min(score, 100), 'issues': issues}
+            return {"score": min(score, 100), "issues": issues}
         except Exception as e:
             self.logger.error(f"Telegram alerts test failed: {e}")
-            return {'score': 0, 'issues': [str(e)]}
+            return {"score": 0, "issues": [str(e)]}
 
     async def _test_log_readability(self) -> Dict[str, Any]:
         """Test log readability."""
@@ -966,10 +964,10 @@ class SystemValidator:
             else:
                 issues.append("Logging utilities not found")
 
-            return {'score': min(score, 100), 'issues': issues}
+            return {"score": min(score, 100), "issues": issues}
         except Exception as e:
             self.logger.error(f"Log readability test failed: {e}")
-            return {'score': 0, 'issues': [str(e)]}
+            return {"score": 0, "issues": [str(e)]}
 
     async def _test_setup_script(self) -> Dict[str, Any]:
         """Test setup script usability."""
@@ -1019,10 +1017,10 @@ class SystemValidator:
             else:
                 issues.append("Setup script not found")
 
-            return {'score': min(score, 100), 'issues': issues}
+            return {"score": min(score, 100), "issues": issues}
         except Exception as e:
             self.logger.error(f"Setup script test failed: {e}")
-            return {'score': 0, 'issues': [str(e)]}
+            return {"score": 0, "issues": [str(e)]}
 
     async def _test_error_messages(self) -> Dict[str, Any]:
         """Test error message clarity."""
@@ -1057,23 +1055,23 @@ class SystemValidator:
             else:
                 issues.append("Main file not found")
 
-            return {'score': min(score, 100), 'issues': issues}
+            return {"score": min(score, 100), "issues": issues}
         except Exception as e:
             self.logger.error(f"Error message test failed: {e}")
-            return {'score': 0, 'issues': [str(e)]}
+            return {"score": 0, "issues": [str(e)]}
 
     def calculate_final_score(self) -> int:
         """Calculate final system health score."""
         try:
             # Weight different validation categories
             weights = {
-                'happy_path': 0.25,      # 25% - Core functionality
-                'failure_modes': 0.20,   # 20% - Resilience
-                'security': 0.20,        # 20% - Security
-                'performance': 0.15,     # 15% - Performance
-                'configuration': 0.10,   # 10% - Configuration
-                'deployment': 0.05,      # 5% - Deployment
-                'user_experience': 0.05  # 5% - UX
+                "happy_path": 0.25,  # 25% - Core functionality
+                "failure_modes": 0.20,  # 20% - Resilience
+                "security": 0.20,  # 20% - Security
+                "performance": 0.15,  # 15% - Performance
+                "configuration": 0.10,  # 10% - Configuration
+                "deployment": 0.05,  # 5% - Deployment
+                "user_experience": 0.05,  # 5% - UX
             }
 
             total_score = 0
@@ -1081,14 +1079,18 @@ class SystemValidator:
             for category, weight in weights.items():
                 category_results = self.results.get(category, {})
 
-                if category == 'user_experience':
+                if category == "user_experience":
                     # Special handling for UX scores
                     ux_score = 0
                     ux_items = 0
-                    for item in ['telegram_alert_quality', 'log_readability',
-                               'setup_script_usability', 'error_message_clarity']:
+                    for item in [
+                        "telegram_alert_quality",
+                        "log_readability",
+                        "setup_script_usability",
+                        "error_message_clarity",
+                    ]:
                         if item in category_results:
-                            ux_score += category_results[item].get('score', 0)
+                            ux_score += category_results[item].get("score", 0)
                             ux_items += 1
 
                     if ux_items > 0:
@@ -1101,19 +1103,19 @@ class SystemValidator:
                     passed_tests = 0
 
                     for key, value in category_results.items():
-                        if key != 'errors' and isinstance(value, bool):
+                        if key != "errors" and isinstance(value, bool):
                             total_tests += 1
                             if value:
                                 passed_tests += 1
-                        elif key != 'errors' and isinstance(value, dict):
+                        elif key != "errors" and isinstance(value, dict):
                             # Handle performance metrics
-                            if 'acceptable' in value:
+                            if "acceptable" in value:
                                 total_tests += 1
-                                if value['acceptable']:
+                                if value["acceptable"]:
                                     passed_tests += 1
-                            elif 'stable' in value:
+                            elif "stable" in value:
                                 total_tests += 1
-                                if value['stable'] and not value.get('leak_detected', False):
+                                if value["stable"] and not value.get("leak_detected", False):
                                     passed_tests += 1
 
                     category_score = (passed_tests / max(total_tests, 1)) * 100
@@ -1143,21 +1145,23 @@ class SystemValidator:
 
         # Check for errors in each category
         for category, results in self.results.items():
-            if 'errors' in results and results['errors']:
-                critical_issues.extend([f"{category}: {error}" for error in results['errors']])
+            if "errors" in results and results["errors"]:
+                critical_issues.extend([f"{category}: {error}" for error in results["errors"]])
 
         # Check for failed security tests
-        security_results = self.results.get('security', {})
+        security_results = self.results.get("security", {})
         for test_name, passed in security_results.items():
-            if test_name != 'errors' and isinstance(passed, bool) and not passed:
+            if test_name != "errors" and isinstance(passed, bool) and not passed:
                 critical_issues.append(f"Security: {test_name} failed")
 
         # Check for performance issues
-        performance_results = self.results.get('performance', {})
+        performance_results = self.results.get("performance", {})
         for test_name, result in performance_results.items():
-            if test_name != 'errors' and isinstance(result, dict):
-                if not result.get('acceptable', True):
-                    critical_issues.append(f"Performance: {test_name} failed acceptability criteria")
+            if test_name != "errors" and isinstance(result, dict):
+                if not result.get("acceptable", True):
+                    critical_issues.append(
+                        f"Performance: {test_name} failed acceptability criteria"
+                    )
 
         return critical_issues
 
@@ -1166,10 +1170,10 @@ class SystemValidator:
         improvements = []
 
         # Check UX scores
-        ux_results = self.results.get('user_experience', {})
+        ux_results = self.results.get("user_experience", {})
         for test_name, result in ux_results.items():
-            if isinstance(result, dict) and result.get('score', 100) < 80:
-                improvements.extend(result.get('issues', []))
+            if isinstance(result, dict) and result.get("score", 100) < 80:
+                improvements.extend(result.get("issues", []))
 
         # Check for incomplete features
         if not alert_manager.enabled:
@@ -1186,9 +1190,9 @@ async def main():
         results = await validator.run_full_validation()
 
         # Print summary
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print("🎯 POLYMARKET COPY TRADING BOT - SYSTEM VALIDATION REPORT")
-        print("="*80)
+        print("=" * 80)
 
         print(f"\n📊 Final Score: {results['final_score']}/100")
         print(f"⏱️  Validation Duration: {results['duration']:.2f} seconds")
@@ -1215,20 +1219,27 @@ async def main():
         # Category Scores
         print(f"\n📈 Category Scores:")
         for category, cat_results in validator.results.items():
-            if category != 'user_experience':
-                passed = sum(1 for k, v in cat_results.items()
-                           if k != 'errors' and isinstance(v, bool) and v)
-                total = sum(1 for k, v in cat_results.items()
-                          if k != 'errors' and isinstance(v, bool))
+            if category != "user_experience":
+                passed = sum(
+                    1 for k, v in cat_results.items() if k != "errors" and isinstance(v, bool) and v
+                )
+                total = sum(
+                    1 for k, v in cat_results.items() if k != "errors" and isinstance(v, bool)
+                )
                 score = (passed / max(total, 1)) * 100
-                print(".1f"            elif category == 'user_experience':
+                print(f"{category.title()} Score: {score:.1f}%")
+            elif category == "user_experience":
                 ux_scores = []
-                for item in ['telegram_alert_quality', 'log_readability',
-                           'setup_script_usability', 'error_message_clarity']:
+                for item in [
+                    "telegram_alert_quality",
+                    "log_readability",
+                    "setup_script_usability",
+                    "error_message_clarity",
+                ]:
                     if item in cat_results and isinstance(cat_results[item], dict):
-                        ux_scores.append(cat_results[item].get('score', 0))
+                        ux_scores.append(cat_results[item].get("score", 0))
                 avg_score = sum(ux_scores) / max(len(ux_scores), 1)
-                print(".1f"
+                print(f"User Experience Score: {avg_score:.1f}%")
         # Save detailed report
         report_file = Path("/home/ink/polymarket-copy-bot/final_validation_report.md")
         report_content = f"""# Polymarket Copy Trading Bot - Final Validation Report
@@ -1291,7 +1302,7 @@ Based on the comprehensive validation results, the system is **{'READY' if resul
         report_file.write_text(report_content)
         print(f"\n📄 Detailed report saved to: {report_file}")
 
-        return results['final_score'] >= 80  # Return True if ready for production
+        return results["final_score"] >= 80  # Return True if ready for production
 
     except Exception as e:
         print(f"❌ Validation failed: {e}")

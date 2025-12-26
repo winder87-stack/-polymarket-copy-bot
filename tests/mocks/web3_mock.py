@@ -1,12 +1,10 @@
 """
 Mock Web3 provider for testing blockchain interactions.
 """
-import json
-import asyncio
-from typing import Dict, List, Any, Optional, Union
-from datetime import datetime, timedelta
+
 import logging
-from unittest.mock import Mock
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Union
 
 logger = logging.getLogger(__name__)
 
@@ -46,15 +44,15 @@ class Web3MockProvider:
         # Default contracts
         self.contracts = {
             "0x2791bca1f2de4661ed88a30c99a7a9449aa84174": {  # USDC on Polygon
-                'address': "0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
-                'abi': self._get_erc20_abi(),
-                'name': 'USD Coin'
+                "address": "0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
+                "abi": self._get_erc20_abi(),
+                "name": "USD Coin",
             },
             "0x42f5d81136d8b8c6e2e5f5abd46a5f9be4457b3a": {  # Polymarket AMM
-                'address': "0x42f5d81136d8b8c6e2e5f5abd46a5f9be4457b3a",
-                'abi': [],  # Would contain actual ABI
-                'name': 'Polymarket AMM'
-            }
+                "address": "0x42f5d81136d8b8c6e2e5f5abd46a5f9be4457b3a",
+                "abi": [],  # Would contain actual ABI
+                "name": "Polymarket AMM",
+            },
         }
 
         # Create some default blocks
@@ -70,53 +68,53 @@ class Web3MockProvider:
                 "inputs": [{"name": "_owner", "type": "address"}],
                 "name": "balanceOf",
                 "outputs": [{"name": "balance", "type": "uint256"}],
-                "type": "function"
+                "type": "function",
             },
             {
                 "constant": True,
                 "inputs": [],
                 "name": "decimals",
                 "outputs": [{"name": "", "type": "uint8"}],
-                "type": "function"
+                "type": "function",
             },
             {
                 "constant": True,
                 "inputs": [],
                 "name": "symbol",
                 "outputs": [{"name": "", "type": "string"}],
-                "type": "function"
-            }
+                "type": "function",
+            },
         ]
 
     def _create_mock_block(self, block_number: int) -> Dict[str, Any]:
         """Create a mock block for testing."""
         return {
-            'number': block_number,
-            'hash': f'0xblock{block_number:064x}',
-            'parentHash': f'0xblock{block_number-1:064x}',
-            'timestamp': int((datetime.now() - timedelta(minutes=block_number)).timestamp()),
-            'transactions': [
-                f'0xtx{block_number}_{i:064x}' for i in range(min(5, block_number % 10))
+            "number": block_number,
+            "hash": f"0xblock{block_number:064x}",
+            "parentHash": f"0xblock{block_number-1:064x}",
+            "timestamp": int((datetime.now() - timedelta(minutes=block_number)).timestamp()),
+            "transactions": [
+                f"0xtx{block_number}_{i:064x}" for i in range(min(5, block_number % 10))
             ],
-            'gasUsed': '0x123456',
-            'gasLimit': '0x1c9c380'
+            "gasUsed": "0x123456",
+            "gasLimit": "0x1c9c380",
         }
 
     def _create_mock_transaction(self, tx_hash: str) -> Dict[str, Any]:
         """Create a mock transaction."""
         return {
-            'hash': tx_hash,
-            'blockNumber': self.current_block,
-            'from': '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-            'to': '0x42f5d81136d8b8c6e2e5f5abd46a5f9be4457b3a',
-            'value': '0x0',
-            'gas': '0x493e0',
-            'gasPrice': hex(self.gas_price),
-            'input': '0x1234567890abcdef',
-            'nonce': '0x1',
-            'v': '0x1b',
-            'r': '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-            's': '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
+            "hash": tx_hash,
+            "blockNumber": self.current_block,
+            "from": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+            "to": "0x42f5d81136d8b8c6e2e5f5abd46a5f9be4457b3a",
+            "value": "0x0",
+            "gas": "0x493e0",
+            "gasPrice": hex(self.gas_price),
+            "input": "0x1234567890abcdef",
+            "nonce": "0x1",
+            "v": "0x1b",
+            "r": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+            "s": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
         }
 
     # Web3 interface methods
@@ -138,15 +136,17 @@ class Web3MockProvider:
             raise self.fail_with_exception
         return self.gas_price
 
-    def eth_get_block(self, block_number: Union[int, str], full_transactions: bool = False) -> Dict[str, Any]:
+    def eth_get_block(
+        self, block_number: Union[int, str], full_transactions: bool = False
+    ) -> Dict[str, Any]:
         """Get block by number."""
         if self.should_fail and self.fail_with_exception:
             raise self.fail_with_exception
 
         if isinstance(block_number, str):
-            if block_number == 'latest':
+            if block_number == "latest":
                 block_number = self.current_block
-            elif block_number.startswith('0x'):
+            elif block_number.startswith("0x"):
                 block_number = int(block_number, 16)
 
         block = self.blocks.get(int(block_number))
@@ -156,8 +156,8 @@ class Web3MockProvider:
         if full_transactions:
             # Return full transaction objects
             block = block.copy()
-            block['transactions'] = [
-                self._create_mock_transaction(tx_hash) for tx_hash in block['transactions']
+            block["transactions"] = [
+                self._create_mock_transaction(tx_hash) for tx_hash in block["transactions"]
             ]
 
         return block
@@ -175,16 +175,16 @@ class Web3MockProvider:
             raise self.fail_with_exception
 
         # Simulate contract calls
-        to_address = transaction.get('to', '').lower()
+        to_address = transaction.get("to", "").lower()
 
         if to_address == "0x2791bca1f2de4661ed88a30c99a7a9449aa84174":  # USDC contract
             # Mock balanceOf call
-            if transaction.get('data', '').startswith('0x70a08231'):  # balanceOf selector
-                owner = transaction['data'][34:74]  # Extract address from call data
-                balance = self.balances.get(f'0x{owner}', 0)
+            if transaction.get("data", "").startswith("0x70a08231"):  # balanceOf selector
+                owner = transaction["data"][34:74]  # Extract address from call data
+                balance = self.balances.get(f"0x{owner}", 0)
                 return hex(balance)[2:].zfill(64)  # Return as 32-byte hex
 
-        return '0x'
+        return "0x"
 
     def eth_estimate_gas(self, transaction: Dict[str, Any]) -> int:
         """Estimate gas for transaction."""
@@ -230,11 +230,7 @@ class Web3MockProvider:
 
     def add_contract(self, address: str, abi: List[Dict[str, Any]], name: str = ""):
         """Add a contract to the mock state."""
-        self.contracts[address.lower()] = {
-            'address': address,
-            'abi': abi,
-            'name': name
-        }
+        self.contracts[address.lower()] = {"address": address, "abi": abi, "name": name}
 
     def clear_state(self):
         """Clear all mock state."""
@@ -267,7 +263,9 @@ class MockWeb3:
         """Get current gas price."""
         return self.provider.eth_gas_price()
 
-    def get_block(self, block_number: Union[int, str], full_transactions: bool = False) -> Dict[str, Any]:
+    def get_block(
+        self, block_number: Union[int, str], full_transactions: bool = False
+    ) -> Dict[str, Any]:
         """Get block by number."""
         return self.provider.eth_get_block(block_number, full_transactions)
 
@@ -289,17 +287,17 @@ class MockWeb3:
 
     def from_wei(self, value: int, unit: str) -> Union[int, float]:
         """Convert from wei."""
-        if unit == 'ether':
+        if unit == "ether":
             return value / 10**18
-        elif unit == 'gwei':
+        elif unit == "gwei":
             return value / 10**9
         return value
 
     def to_wei(self, value: Union[int, float, str], unit: str) -> int:
         """Convert to wei."""
-        if unit == 'ether':
+        if unit == "ether":
             return int(float(value) * 10**18)
-        elif unit == 'gwei':
+        elif unit == "gwei":
             return int(float(value) * 10**9)
         return int(value)
 
@@ -324,9 +322,9 @@ class MockContractFunctions:
     def __init__(self, contract: MockContract):
         self.contract = contract
 
-    def balanceOf(self, address: str) -> 'MockContractCall':
+    def balanceOf(self, address: str) -> "MockContractCall":
         """Mock balanceOf function."""
-        return MockContractCall(self.contract, 'balanceOf', [address])
+        return MockContractCall(self.contract, "balanceOf", [address])
 
 
 class MockContractCall:
@@ -339,7 +337,7 @@ class MockContractCall:
 
     def call(self) -> Any:
         """Execute the contract call."""
-        if self.function_name == 'balanceOf':
+        if self.function_name == "balanceOf":
             address = self.args[0]
             # Return balance from mock provider
             return self.contract.web3.provider.balances.get(address.lower(), 0)
@@ -352,8 +350,9 @@ def create_mock_web3() -> MockWeb3:
     return MockWeb3()
 
 
-def create_web3_with_custom_state(balances: Dict[str, int] = None,
-                                gas_price: int = None) -> MockWeb3:
+def create_web3_with_custom_state(
+    balances: Dict[str, int] = None, gas_price: int = None
+) -> MockWeb3:
     """Create Web3 mock with custom state."""
     provider = Web3MockProvider()
 

@@ -4,39 +4,40 @@ Comprehensive Integration Test for Polymarket Copy Trading Bot
 Tests component integration, security fixes, and end-to-end functionality.
 """
 import asyncio
+import json
+import logging
 import os
 import sys
-import time
 import tempfile
-import json
-from datetime import datetime, timedelta
+import time
+from datetime import datetime
 from pathlib import Path
-from unittest.mock import Mock, AsyncMock, patch
-import logging
+from unittest.mock import Mock, patch
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # Set test environment variables
-os.environ['PRIVATE_KEY'] = '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
-os.environ['POLYGON_RPC_URL'] = 'https://polygon-rpc.com'
-os.environ['TELEGRAM_BOT_TOKEN'] = 'test_token'
-os.environ['TELEGRAM_CHAT_ID'] = '123456789'
+os.environ["PRIVATE_KEY"] = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+os.environ["POLYGON_RPC_URL"] = "https://polygon-rpc.com"
+os.environ["TELEGRAM_BOT_TOKEN"] = "test_token"
+os.environ["TELEGRAM_CHAT_ID"] = "123456789"
+
 
 class IntegrationTestRunner:
     """Comprehensive integration test runner."""
 
     def __init__(self):
         self.results = {
-            'component_initialization': False,
-            'configuration_loading': False,
-            'security_validation': False,
-            'concurrent_operations': False,
-            'error_handling': False,
-            'performance_validation': False,
-            'race_condition_fixes': False,
-            'overall_integration': False
+            "component_initialization": False,
+            "configuration_loading": False,
+            "security_validation": False,
+            "concurrent_operations": False,
+            "error_handling": False,
+            "performance_validation": False,
+            "race_condition_fixes": False,
+            "overall_integration": False,
         }
         self.start_time = time.time()
 
@@ -46,36 +47,37 @@ class IntegrationTestRunner:
 
         try:
             # Test 1: Component Initialization
-            self.results['component_initialization'] = await self.test_component_initialization()
+            self.results["component_initialization"] = await self.test_component_initialization()
 
             # Test 2: Configuration Loading
-            self.results['configuration_loading'] = await self.test_configuration_loading()
+            self.results["configuration_loading"] = await self.test_configuration_loading()
 
             # Test 3: Security Validation
-            self.results['security_validation'] = await self.test_security_validation()
+            self.results["security_validation"] = await self.test_security_validation()
 
             # Test 4: Concurrent Operations
-            self.results['concurrent_operations'] = await self.test_concurrent_operations()
+            self.results["concurrent_operations"] = await self.test_concurrent_operations()
 
             # Test 5: Error Handling
-            self.results['error_handling'] = await self.test_error_handling()
+            self.results["error_handling"] = await self.test_error_handling()
 
             # Test 6: Performance Validation
-            self.results['performance_validation'] = await self.test_performance_validation()
+            self.results["performance_validation"] = await self.test_performance_validation()
 
             # Test 7: Race Condition Fixes
-            self.results['race_condition_fixes'] = await self.test_race_condition_fixes()
+            self.results["race_condition_fixes"] = await self.test_race_condition_fixes()
 
             # Overall assessment
-            self.results['overall_integration'] = self.assess_overall_integration()
+            self.results["overall_integration"] = self.assess_overall_integration()
 
             duration = time.time() - self.start_time
-            logger.info(".2f"
+            logger.info(f"Integration tests completed in {duration:.2f}s")
             return self.results
 
         except Exception as e:
             logger.error(f"❌ Integration tests failed: {e}")
             import traceback
+
             traceback.print_exc()
             return self.results
 
@@ -87,12 +89,10 @@ class IntegrationTestRunner:
             # Import all components
             from config.settings import settings
             from core.clob_client import PolymarketClient
-            from core.wallet_monitor import WalletMonitor
             from core.trade_executor import TradeExecutor
-            from utils.security import validate_private_key, secure_log
-            from utils.helpers import normalize_address, calculate_confidence_score
-            from utils.logging_utils import setup_logging
-            from utils.alerts import alert_manager
+            from core.wallet_monitor import WalletMonitor
+            from utils.helpers import normalize_address
+            from utils.security import validate_private_key
 
             logger.info("✅ All imports successful")
 
@@ -101,8 +101,10 @@ class IntegrationTestRunner:
             logger.info("✅ Settings validation passed")
 
             # Test basic component creation with mocks
-            with patch('core.clob_client.Web3') as mock_web3, \
-                 patch('core.wallet_monitor.Web3') as mock_web3_monitor:
+            with (
+                patch("core.clob_client.Web3") as mock_web3,
+                patch("core.wallet_monitor.Web3") as mock_web3_monitor,
+            ):
 
                 mock_web3_instance = Mock()
                 mock_web3_instance.is_connected.return_value = True
@@ -127,8 +129,13 @@ class IntegrationTestRunner:
                 logger.info("✅ Trade executor initialized")
 
             # Test utility functions
-            assert validate_private_key("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
-            assert normalize_address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e") == "0x742d35cc6634c0532925a3b844bc454e4438f44e"
+            assert validate_private_key(
+                "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+            )
+            assert (
+                normalize_address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e")
+                == "0x742d35cc6634c0532925a3b844bc454e4438f44e"
+            )
             logger.info("✅ Utility functions working")
 
             return True
@@ -151,30 +158,29 @@ class IntegrationTestRunner:
             logger.info("✅ Default configuration loaded")
 
             # Test environment variable override
-            with patch.dict(os.environ, {
-                'MAX_DAILY_LOSS': '150.0',
-                'MONITOR_INTERVAL': '20'
-            }):
+            with patch.dict(os.environ, {"MAX_DAILY_LOSS": "150.0", "MONITOR_INTERVAL": "20"}):
                 test_settings = Settings()
                 assert test_settings.risk.max_daily_loss == 150.0
                 assert test_settings.monitoring.monitor_interval == 20
                 logger.info("✅ Environment variable override working")
 
             # Test wallet file loading
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
                 test_wallets = {
-                    'target_wallets': [
+                    "target_wallets": [
                         "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
-                        "0x742d35Cc6634C0532925a3b844Bc454e4438f44f"
+                        "0x742d35Cc6634C0532925a3b844Bc454e4438f44f",
                     ],
-                    'min_confidence_score': 0.8
+                    "min_confidence_score": 0.8,
                 }
                 json.dump(test_wallets, f)
                 temp_file = f.name
 
             try:
-                with patch('config.settings.os.path.exists', return_value=True), \
-                     patch('builtins.open', create=True) as mock_open:
+                with (
+                    patch("config.settings.os.path.exists", return_value=True),
+                    patch("builtins.open", create=True) as mock_open,
+                ):
 
                     mock_file = Mock()
                     mock_file.read.return_value = json.dumps(test_wallets)
@@ -198,13 +204,13 @@ class IntegrationTestRunner:
         logger.info("🔒 Testing security validation...")
 
         try:
-            from utils.security import validate_private_key, mask_sensitive_data, secure_log
             from utils.logging_utils import CustomJsonFormatter
+            from utils.security import mask_sensitive_data, secure_log, validate_private_key
 
             # Test private key validation
             valid_keys = [
                 "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-                "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+                "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
             ]
             invalid_keys = ["", "0x", "invalid_key"]
 
@@ -216,29 +222,29 @@ class IntegrationTestRunner:
 
             # Test data masking
             test_data = {
-                'private_key': '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-                'wallet_address': '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-                'api_key': 'sk_live_secret123',
-                'normal_data': 'safe_value'
+                "private_key": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+                "wallet_address": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+                "api_key": "sk_live_secret123",
+                "normal_data": "safe_value",
             }
 
             masked = mask_sensitive_data(test_data)
-            assert '[REDACTED]' in str(masked) or '0x1234...' in str(masked)
-            assert '0x742d...' in str(masked)
-            assert 'safe_value' in str(masked)
+            assert "[REDACTED]" in str(masked) or "0x1234..." in str(masked)
+            assert "0x742d..." in str(masked)
+            assert "safe_value" in str(masked)
             logger.info("✅ Data masking working")
 
             # Test secure logging
-            test_logger = logging.getLogger('test_security')
-            secure_log(test_logger, 'test_action', test_data)
+            test_logger = logging.getLogger("test_security")
+            secure_log(test_logger, "test_action", test_data)
             logger.info("✅ Secure logging working")
 
             # Test JSON formatter
             formatter = CustomJsonFormatter()
             log_record = logging.LogRecord(
-                'test', logging.INFO, 'test.py', 1, 'Test message', (), None
+                "test", logging.INFO, "test.py", 1, "Test message", (), None
             )
-            log_record.timestamp = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+            log_record.timestamp = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
             formatted = formatter.format(log_record)
             assert isinstance(formatted, str)
             logger.info("✅ JSON formatting working")
@@ -274,7 +280,7 @@ class IntegrationTestRunner:
                 call_id, balance, market = result
                 assert balance == 1000.0
                 assert market is not None
-                assert call_id.startswith('call_')
+                assert call_id.startswith("call_")
 
             logger.info("✅ Concurrent API calls working")
 
@@ -288,7 +294,7 @@ class IntegrationTestRunner:
             trade_results = await asyncio.gather(*trade_tasks)
 
             assert len(trade_results) == 20
-            assert all('processed' in result for result in trade_results)
+            assert all("processed" in result for result in trade_results)
 
             logger.info("✅ Concurrent trade processing working")
 
@@ -323,7 +329,7 @@ class IntegrationTestRunner:
             # Test input validation errors
             from core.trade_executor import TradeExecutor
 
-            with patch('core.clob_client.Web3') as mock_web3:
+            with patch("core.clob_client.Web3") as mock_web3:
                 mock_web3_instance = Mock()
                 mock_web3_instance.is_connected.return_value = True
                 mock_web3.return_value = mock_web3_instance
@@ -332,26 +338,26 @@ class IntegrationTestRunner:
                 executor = TradeExecutor(mock_clob_client)
 
                 # Test invalid trade data
-                invalid_trade = {'invalid': 'data'}
+                invalid_trade = {"invalid": "data"}
                 result = await executor.execute_copy_trade(invalid_trade)
-                assert result['status'] == 'error'
+                assert result["status"] == "error"
                 logger.info("✅ Invalid trade data handling working")
 
                 # Test risk rejection
                 risky_trade = {
-                    'tx_hash': '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-                    'timestamp': datetime.now(),
-                    'wallet_address': '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-                    'condition_id': '0x1234567890abcdef1234567890abcdef12345678',
-                    'side': 'BUY',
-                    'amount': 1000.0,  # Too large
-                    'price': 0.65,
-                    'token_id': '0xabcdef1234567890abcdef1234567890abcdef12',
-                    'confidence_score': 0.8
+                    "tx_hash": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+                    "timestamp": datetime.now(),
+                    "wallet_address": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+                    "condition_id": "0x1234567890abcdef1234567890abcdef12345678",
+                    "side": "BUY",
+                    "amount": 1000.0,  # Too large
+                    "price": 0.65,
+                    "token_id": "0xabcdef1234567890abcdef1234567890abcdef12",
+                    "confidence_score": 0.8,
                 }
 
                 result = await executor.execute_copy_trade(risky_trade)
-                assert result['status'] == 'rejected'
+                assert result["status"] == "rejected"
                 logger.info("✅ Risk management rejection working")
 
             return True
@@ -380,9 +386,10 @@ class IntegrationTestRunner:
 
             # Should be very fast (mock operations)
             assert avg_time < 0.001  # Less than 1ms per call
-            logger.info(".4f"
+            logger.info(f"Average time per call: {avg_time:.4f}s")
             # Test memory usage (basic check)
             import psutil
+
             process = psutil.Process(os.getpid())
             initial_memory = process.memory_info().rss / 1024 / 1024  # MB
 
@@ -395,7 +402,7 @@ class IntegrationTestRunner:
 
             # Memory increase should be minimal
             assert memory_increase < 10.0  # Less than 10MB increase
-            logger.info(".1f"
+            logger.info(f"Memory increase: {memory_increase:.1f}MB")
             return True
 
         except Exception as e:
@@ -433,7 +440,7 @@ class IntegrationTestRunner:
             # (This is a structural test since we're using mocks)
             from core.trade_executor import TradeExecutor
 
-            with patch('core.clob_client.Web3') as mock_web3:
+            with patch("core.clob_client.Web3") as mock_web3:
                 mock_web3_instance = Mock()
                 mock_web3_instance.is_connected.return_value = True
                 mock_web3.return_value = mock_web3_instance
@@ -442,9 +449,9 @@ class IntegrationTestRunner:
                 executor = TradeExecutor(mock_clob_client)
 
                 # Check that the executor has the necessary attributes
-                assert hasattr(executor, 'daily_loss')
-                assert hasattr(executor, 'open_positions')
-                assert hasattr(executor, 'total_trades')
+                assert hasattr(executor, "daily_loss")
+                assert hasattr(executor, "open_positions")
+                assert hasattr(executor, "total_trades")
 
                 # These attributes should be properly initialized
                 assert isinstance(executor.daily_loss, float)
@@ -461,7 +468,9 @@ class IntegrationTestRunner:
 
     def assess_overall_integration(self):
         """Assess overall integration health."""
-        passed_tests = sum(1 for result in self.results.values() if isinstance(result, bool) and result)
+        passed_tests = sum(
+            1 for result in self.results.values() if isinstance(result, bool) and result
+        )
         total_tests = sum(1 for result in self.results.values() if isinstance(result, bool))
 
         success_rate = passed_tests / total_tests if total_tests > 0 else 0
@@ -485,7 +494,7 @@ class IntegrationTestRunner:
 """
 
         for test_name, result in self.results.items():
-            if test_name != 'overall_integration':
+            if test_name != "overall_integration":
                 status = "✅ PASSED" if result else "❌ FAILED"
                 report += f"- **{test_name.replace('_', ' ').title()}**: {status}\n"
 
@@ -507,7 +516,7 @@ class IntegrationTestRunner:
 ### Recommendations
 """
 
-        if self.results['overall_integration']:
+        if self.results["overall_integration"]:
             report += """
 ✅ **INTEGRATION SUCCESSFUL**
 All components integrate properly and security fixes are working correctly.
@@ -539,7 +548,7 @@ async def main():
     total_tests = sum(1 for r in results.values() if isinstance(r, bool))
 
     for test_name, result in results.items():
-        if test_name != 'overall_integration':
+        if test_name != "overall_integration":
             status = "✅ PASSED" if result else "❌ FAILED"
             print(f"   {test_name.replace('_', ' ').title()}: {status}")
 
@@ -553,7 +562,7 @@ async def main():
 
     print(f"\n📄 Detailed report saved to: {report_file}")
 
-    return results['overall_integration']
+    return results["overall_integration"]
 
 
 if __name__ == "__main__":

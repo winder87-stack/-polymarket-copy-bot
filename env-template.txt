@@ -1,0 +1,108 @@
+# ===========================================
+# 🤖 Polymarket Copy Trading Bot - Environment Configuration
+# ===========================================
+#
+# This file contains all environment variables required for the bot.
+# Copy this file to .env and fill in your values.
+#
+# NEVER commit your actual .env file - it contains sensitive information!
+#
+# For testnet/staging, use the staging templates instead.
+# ===========================================
+
+# === Required ===
+# Your wallet private key (NEVER commit this!)
+PRIVATE_KEY=your_private_key_here
+
+# Polygon RPC endpoint
+POLYGON_RPC_URL=https://polygon-rpc.com/
+
+# PolygonScan API key for transaction monitoring
+POLYGONSCAN_API_KEY=your_polygonscan_api_key
+
+# Telegram bot token for alerts (optional but recommended)
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+
+# Telegram chat ID for notifications (optional but recommended)
+TELEGRAM_CHAT_ID=your_telegram_chat_id
+
+# === Trading Settings ===
+# Maximum position size in USDC
+MAX_POSITION_SIZE=50.0
+
+# Circuit breaker threshold - bot stops if daily loss exceeds this
+MAX_DAILY_LOSS=100.0
+
+# Minimum trade amount to consider (ignore smaller trades)
+MIN_TRADE_AMOUNT=1.0
+
+# Maximum slippage allowed (0.02 = 2%)
+MAX_SLIPPAGE=0.02
+
+# Stop loss percentage (0.15 = 15%)
+STOP_LOSS_PERCENTAGE=0.15
+
+# Take profit percentage (0.25 = 25%)
+TAKE_PROFIT_PERCENTAGE=0.25
+
+# Maximum concurrent positions
+MAX_CONCURRENT_POSITIONS=10
+
+# === Monitoring Settings ===
+# How often to check for new transactions (seconds)
+MONITOR_INTERVAL=30
+
+# Minimum confidence score for trades (0.0-1.0)
+MIN_CONFIDENCE_SCORE=0.7
+
+# === Network Settings ===
+# Polymarket CLOB API host
+CLOB_HOST=https://clob.polymarket.com
+
+# Polygon chain ID (137 for mainnet, 80001 for Mumbai testnet)
+CHAIN_ID=137
+
+# Maximum gas price for transactions (in gwei)
+MAX_GAS_PRICE=100
+
+# Default gas limit for transactions
+DEFAULT_GAS_LIMIT=200000
+
+# === Logging Settings ===
+# Log level (DEBUG, INFO, WARNING, ERROR)
+LOG_LEVEL=INFO
+
+# Log file path
+LOG_FILE=logs/polymarket_bot.log
+
+# === Security Settings ===
+# Encrypt sensitive data in logs (recommended: true)
+ENCRYPT_SENSITIVE_DATA=true
+
+# === Performance Settings ===
+# Enable dry run mode (set to false for live trading)
+DRY_RUN=true
+
+# ===========================================
+# ⚠️  CRITICAL SECURITY REMINDERS
+# ===========================================
+#
+# 1. PRIVATE_KEY: This controls real funds. Use a dedicated trading wallet.
+# 2. POLYGONSCAN_API_KEY: Get from https://polygonscan.com/apis
+# 3. TELEGRAM_*: Create bot at https://t.me/BotFather, get chat ID from @userinfobot
+# 4. Test on testnet first! Use Mumbai testnet (CHAIN_ID=80001)
+# 5. Start with small amounts and monitor closely
+# 6. Backup your private key securely offline
+#
+# ===========================================
+# 🧪 TESTING CHECKLIST
+# ===========================================
+#
+# [ ] DRY_RUN=true initially for testing
+# [ ] Small MAX_POSITION_SIZE (1-10 USDC) for testing
+# [ ] TELEGRAM_* configured for alerts
+# [ ] LOG_LEVEL=DEBUG for detailed monitoring
+# [ ] Testnet RPC URL for initial testing
+# [ ] Monitor logs after starting: journalctl -u polymarket-bot -f
+#
+# ===========================================

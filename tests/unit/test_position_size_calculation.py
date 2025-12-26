@@ -12,12 +12,13 @@ Tests cover:
 """
 
 import asyncio
-import pytest
-from decimal import Decimal, getcontext
-from unittest.mock import AsyncMock, MagicMock, patch
+from decimal import Decimal
+from unittest.mock import MagicMock, patch
 
-from core.trade_executor import TradeExecutor
+import pytest
+
 from config.settings import Settings
+from core.trade_executor import TradeExecutor
 
 
 @pytest.fixture
@@ -46,14 +47,12 @@ class TestPositionSizeCalculation:
     async def test_calculate_copy_amount_normal_case(self, trade_executor):
         """Test normal position size calculation"""
         # Setup
-        original_trade = {
-            "amount": 10.0,
-            "price": 0.5,
-            "condition_id": "test_condition"
-        }
+        original_trade = {"amount": 10.0, "price": 0.5, "condition_id": "test_condition"}
 
-        with patch.object(trade_executor.clob_client, 'get_balance', return_value=1000.0), \
-             patch.object(trade_executor.clob_client, 'get_current_price', return_value=0.52):
+        with (
+            patch.object(trade_executor.clob_client, "get_balance", return_value=1000.0),
+            patch.object(trade_executor.clob_client, "get_current_price", return_value=0.52),
+        ):
 
             # Execute
             result = await trade_executor._calculate_copy_amount(original_trade, {})
@@ -70,14 +69,12 @@ class TestPositionSizeCalculation:
     async def test_calculate_copy_amount_zero_price_risk(self, trade_executor):
         """Test handling of zero price risk (identical prices)"""
         # Setup
-        original_trade = {
-            "amount": 10.0,
-            "price": 0.5,
-            "condition_id": "test_condition"
-        }
+        original_trade = {"amount": 10.0, "price": 0.5, "condition_id": "test_condition"}
 
-        with patch.object(trade_executor.clob_client, 'get_balance', return_value=1000.0), \
-             patch.object(trade_executor.clob_client, 'get_current_price', return_value=0.5):  # Same price
+        with (
+            patch.object(trade_executor.clob_client, "get_balance", return_value=1000.0),
+            patch.object(trade_executor.clob_client, "get_current_price", return_value=0.5),
+        ):  # Same price
 
             # Execute
             result = await trade_executor._calculate_copy_amount(original_trade, {})
@@ -90,14 +87,12 @@ class TestPositionSizeCalculation:
     async def test_calculate_copy_amount_very_small_price_risk(self, trade_executor):
         """Test handling of very small price risk"""
         # Setup
-        original_trade = {
-            "amount": 10.0,
-            "price": 0.5,
-            "condition_id": "test_condition"
-        }
+        original_trade = {"amount": 10.0, "price": 0.5, "condition_id": "test_condition"}
 
-        with patch.object(trade_executor.clob_client, 'get_balance', return_value=1000.0), \
-             patch.object(trade_executor.clob_client, 'get_current_price', return_value=0.500001):  # Tiny difference
+        with (
+            patch.object(trade_executor.clob_client, "get_balance", return_value=1000.0),
+            patch.object(trade_executor.clob_client, "get_current_price", return_value=0.500001),
+        ):  # Tiny difference
 
             # Execute
             result = await trade_executor._calculate_copy_amount(original_trade, {})
@@ -110,14 +105,12 @@ class TestPositionSizeCalculation:
     async def test_calculate_copy_amount_max_account_balance(self, trade_executor):
         """Test position sizing with maximum account balance"""
         # Setup
-        original_trade = {
-            "amount": 10.0,
-            "price": 0.5,
-            "condition_id": "test_condition"
-        }
+        original_trade = {"amount": 10.0, "price": 0.5, "condition_id": "test_condition"}
 
-        with patch.object(trade_executor.clob_client, 'get_balance', return_value=1000000.0), \
-             patch.object(trade_executor.clob_client, 'get_current_price', return_value=0.52):
+        with (
+            patch.object(trade_executor.clob_client, "get_balance", return_value=1000000.0),
+            patch.object(trade_executor.clob_client, "get_current_price", return_value=0.52),
+        ):
 
             # Execute
             result = await trade_executor._calculate_copy_amount(original_trade, {})
@@ -132,11 +125,13 @@ class TestPositionSizeCalculation:
         original_trade = {
             "amount": 0.1,  # Very small amount
             "price": 0.5,
-            "condition_id": "test_condition"
+            "condition_id": "test_condition",
         }
 
-        with patch.object(trade_executor.clob_client, 'get_balance', return_value=10.0), \
-             patch.object(trade_executor.clob_client, 'get_current_price', return_value=0.52):
+        with (
+            patch.object(trade_executor.clob_client, "get_balance", return_value=10.0),
+            patch.object(trade_executor.clob_client, "get_current_price", return_value=0.52),
+        ):
 
             # Execute
             result = await trade_executor._calculate_copy_amount(original_trade, {})
@@ -148,14 +143,12 @@ class TestPositionSizeCalculation:
     async def test_calculate_copy_amount_balance_unavailable(self, trade_executor):
         """Test fallback when balance is unavailable"""
         # Setup
-        original_trade = {
-            "amount": 10.0,
-            "price": 0.5,
-            "condition_id": "test_condition"
-        }
+        original_trade = {"amount": 10.0, "price": 0.5, "condition_id": "test_condition"}
 
-        with patch.object(trade_executor.clob_client, 'get_balance', return_value=None), \
-             patch.object(trade_executor.clob_client, 'get_current_price', return_value=0.52):
+        with (
+            patch.object(trade_executor.clob_client, "get_balance", return_value=None),
+            patch.object(trade_executor.clob_client, "get_current_price", return_value=0.52),
+        ):
 
             # Execute
             result = await trade_executor._calculate_copy_amount(original_trade, {})
@@ -168,14 +161,12 @@ class TestPositionSizeCalculation:
     async def test_calculate_copy_amount_price_unavailable(self, trade_executor):
         """Test fallback when current price is unavailable"""
         # Setup
-        original_trade = {
-            "amount": 10.0,
-            "price": 0.5,
-            "condition_id": "test_condition"
-        }
+        original_trade = {"amount": 10.0, "price": 0.5, "condition_id": "test_condition"}
 
-        with patch.object(trade_executor.clob_client, 'get_balance', return_value=1000.0), \
-             patch.object(trade_executor.clob_client, 'get_current_price', return_value=None):
+        with (
+            patch.object(trade_executor.clob_client, "get_balance", return_value=1000.0),
+            patch.object(trade_executor.clob_client, "get_current_price", return_value=None),
+        ):
 
             # Execute
             result = await trade_executor._calculate_copy_amount(original_trade, {})
@@ -188,14 +179,14 @@ class TestPositionSizeCalculation:
     async def test_calculate_copy_amount_decimal_precision(self, trade_executor):
         """Test decimal precision in position size calculation"""
         # Setup
-        original_trade = {
-            "amount": 10.0,
-            "price": Decimal("0.5"),
-            "condition_id": "test_condition"
-        }
+        original_trade = {"amount": 10.0, "price": Decimal("0.5"), "condition_id": "test_condition"}
 
-        with patch.object(trade_executor.clob_client, 'get_balance', return_value=Decimal("1000.0")), \
-             patch.object(trade_executor.clob_client, 'get_current_price', return_value=Decimal("0.52")):
+        with (
+            patch.object(trade_executor.clob_client, "get_balance", return_value=Decimal("1000.0")),
+            patch.object(
+                trade_executor.clob_client, "get_current_price", return_value=Decimal("0.52")
+            ),
+        ):
 
             # Execute
             result = await trade_executor._calculate_copy_amount(original_trade, {})
@@ -207,11 +198,6 @@ class TestPositionSizeCalculation:
     def test_calculate_copy_amount_error_handling(self, trade_executor):
         """Test error handling in position size calculation"""
         # Setup - invalid inputs that would cause errors
-        original_trade = {
-            "amount": "invalid",  # String instead of number
-            "price": 0.5,
-            "condition_id": "test_condition"
-        }
 
         # This should not crash but return fallback
         # Note: In real implementation, validation happens before this
@@ -222,12 +208,14 @@ class TestPositionSizeCalculation:
         # Setup
         original_trade = {
             "amount": 1000000.0,  # Very large amount
-            "price": 0.000001,   # Very small price
-            "condition_id": "test_condition"
+            "price": 0.000001,  # Very small price
+            "condition_id": "test_condition",
         }
 
-        with patch.object(trade_executor.clob_client, 'get_balance', return_value=1000.0), \
-             patch.object(trade_executor.clob_client, 'get_current_price', return_value=0.000002):
+        with (
+            patch.object(trade_executor.clob_client, "get_balance", return_value=1000.0),
+            patch.object(trade_executor.clob_client, "get_current_price", return_value=0.000002),
+        ):
 
             # Execute
             result = await trade_executor._calculate_copy_amount(original_trade, {})
@@ -240,14 +228,12 @@ class TestPositionSizeCalculation:
     async def test_calculate_copy_amount_account_risk_limit(self, trade_executor):
         """Test that position size respects account risk limit"""
         # Setup
-        original_trade = {
-            "amount": 10.0,
-            "price": 0.5,
-            "condition_id": "test_condition"
-        }
+        original_trade = {"amount": 10.0, "price": 0.5, "condition_id": "test_condition"}
 
-        with patch.object(trade_executor.clob_client, 'get_balance', return_value=100.0), \
-             patch.object(trade_executor.clob_client, 'get_current_price', return_value=0.52):
+        with (
+            patch.object(trade_executor.clob_client, "get_balance", return_value=100.0),
+            patch.object(trade_executor.clob_client, "get_current_price", return_value=0.52),
+        ):
 
             # Execute
             result = await trade_executor._calculate_copy_amount(original_trade, {})
@@ -263,14 +249,12 @@ class TestPositionSizeEdgeCases:
     @pytest.mark.asyncio
     async def test_zero_balance(self, trade_executor):
         """Test handling of zero balance"""
-        original_trade = {
-            "amount": 10.0,
-            "price": 0.5,
-            "condition_id": "test_condition"
-        }
+        original_trade = {"amount": 10.0, "price": 0.5, "condition_id": "test_condition"}
 
-        with patch.object(trade_executor.clob_client, 'get_balance', return_value=0.0), \
-             patch.object(trade_executor.clob_client, 'get_current_price', return_value=0.52):
+        with (
+            patch.object(trade_executor.clob_client, "get_balance", return_value=0.0),
+            patch.object(trade_executor.clob_client, "get_current_price", return_value=0.52),
+        ):
 
             result = await trade_executor._calculate_copy_amount(original_trade, {})
 
@@ -281,14 +265,12 @@ class TestPositionSizeEdgeCases:
     @pytest.mark.asyncio
     async def test_negative_balance(self, trade_executor):
         """Test handling of negative balance (edge case)"""
-        original_trade = {
-            "amount": 10.0,
-            "price": 0.5,
-            "condition_id": "test_condition"
-        }
+        original_trade = {"amount": 10.0, "price": 0.5, "condition_id": "test_condition"}
 
-        with patch.object(trade_executor.clob_client, 'get_balance', return_value=-100.0), \
-             patch.object(trade_executor.clob_client, 'get_current_price', return_value=0.52):
+        with (
+            patch.object(trade_executor.clob_client, "get_balance", return_value=-100.0),
+            patch.object(trade_executor.clob_client, "get_current_price", return_value=0.52),
+        ):
 
             result = await trade_executor._calculate_copy_amount(original_trade, {})
 
@@ -299,15 +281,13 @@ class TestPositionSizeEdgeCases:
     @pytest.mark.asyncio
     async def test_extreme_price_difference(self, trade_executor):
         """Test handling of extreme price differences"""
-        original_trade = {
-            "amount": 10.0,
-            "price": 0.5,
-            "condition_id": "test_condition"
-        }
+        original_trade = {"amount": 10.0, "price": 0.5, "condition_id": "test_condition"}
 
         # Test with very large price difference
-        with patch.object(trade_executor.clob_client, 'get_balance', return_value=1000.0), \
-             patch.object(trade_executor.clob_client, 'get_current_price', return_value=0.9):  # Large difference
+        with (
+            patch.object(trade_executor.clob_client, "get_balance", return_value=1000.0),
+            patch.object(trade_executor.clob_client, "get_current_price", return_value=0.9),
+        ):  # Large difference
 
             result = await trade_executor._calculate_copy_amount(original_trade, {})
 
@@ -317,15 +297,13 @@ class TestPositionSizeEdgeCases:
     @pytest.mark.asyncio
     async def test_concurrent_calculations(self, trade_executor):
         """Test concurrent position size calculations"""
-        original_trade = {
-            "amount": 10.0,
-            "price": 0.5,
-            "condition_id": "test_condition"
-        }
+        original_trade = {"amount": 10.0, "price": 0.5, "condition_id": "test_condition"}
 
         async def calculate_once():
-            with patch.object(trade_executor.clob_client, 'get_balance', return_value=1000.0), \
-                 patch.object(trade_executor.clob_client, 'get_current_price', return_value=0.52):
+            with (
+                patch.object(trade_executor.clob_client, "get_balance", return_value=1000.0),
+                patch.object(trade_executor.clob_client, "get_current_price", return_value=0.52),
+            ):
                 return await trade_executor._calculate_copy_amount(original_trade, {})
 
         # Execute multiple concurrent calculations

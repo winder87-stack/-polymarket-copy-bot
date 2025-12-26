@@ -11,25 +11,27 @@ Provides comprehensive system-level monitoring including:
 - Process tree monitoring
 """
 
-import os
-import sys
-import time
 import json
-import psutil
-import threading
 import logging
+import os
+import threading
+import time
+from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional
-from dataclasses import dataclass, asdict
 from pathlib import Path
+from typing import Dict, List, Optional
+
+import psutil
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class SystemMetrics:
     """System metrics snapshot"""
+
     timestamp: datetime
     cpu_percent: float
     cpu_load_1m: float
@@ -53,9 +55,11 @@ class SystemMetrics:
     thread_count: int
     uptime_seconds: int
 
+
 @dataclass
 class ProcessMetrics:
     """Process-specific metrics"""
+
     pid: int
     name: str
     cpu_percent: float
@@ -68,6 +72,7 @@ class ProcessMetrics:
     status: str
     create_time: float
     cmdline: List[str]
+
 
 class SystemMonitor:
     """Comprehensive system monitoring"""
@@ -91,9 +96,7 @@ class SystemMonitor:
 
         self.monitoring_active = True
         self.monitor_thread = threading.Thread(
-            target=self._monitoring_loop,
-            args=(interval,),
-            daemon=True
+            target=self._monitoring_loop, args=(interval,), daemon=True
         )
         self.monitor_thread.start()
         logger.info(f"System monitoring started with {interval}s interval")
@@ -113,35 +116,47 @@ class SystemMonitor:
         """Get metrics for specific processes"""
         metrics = []
 
-        for proc in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent',
-                                        'memory_info', 'num_threads', 'status', 'create_time']):
+        for proc in psutil.process_iter(
+            [
+                "pid",
+                "name",
+                "cpu_percent",
+                "memory_percent",
+                "memory_info",
+                "num_threads",
+                "status",
+                "create_time",
+            ]
+        ):
             try:
-                if process_name.lower() in proc.info['name'].lower():
+                if process_name.lower() in proc.info["name"].lower():
                     # Get additional process info
                     try:
                         cmdline = proc.cmdline()
-                        num_fds = proc.num_fds() if hasattr(proc, 'num_fds') else 0
+                        num_fds = proc.num_fds() if hasattr(proc, "num_fds") else 0
                         connections = len(proc.connections())
                     except (psutil.AccessDenied, psutil.NoSuchProcess):
                         cmdline = []
                         num_fds = 0
                         connections = 0
 
-                    mem_info = proc.info['memory_info']
-                    metrics.append(ProcessMetrics(
-                        pid=proc.info['pid'],
-                        name=proc.info['name'],
-                        cpu_percent=proc.info['cpu_percent'] or 0.0,
-                        memory_percent=proc.info['memory_percent'] or 0.0,
-                        memory_rss_mb=mem_info.rss / (1024 * 1024) if mem_info else 0.0,
-                        memory_vms_mb=mem_info.vms / (1024 * 1024) if mem_info else 0.0,
-                        threads=proc.info['num_threads'] or 0,
-                        file_descriptors=num_fds,
-                        connections=connections,
-                        status=proc.info['status'] or 'unknown',
-                        create_time=proc.info['create_time'] or 0.0,
-                        cmdline=cmdline
-                    ))
+                    mem_info = proc.info["memory_info"]
+                    metrics.append(
+                        ProcessMetrics(
+                            pid=proc.info["pid"],
+                            name=proc.info["name"],
+                            cpu_percent=proc.info["cpu_percent"] or 0.0,
+                            memory_percent=proc.info["memory_percent"] or 0.0,
+                            memory_rss_mb=mem_info.rss / (1024 * 1024) if mem_info else 0.0,
+                            memory_vms_mb=mem_info.vms / (1024 * 1024) if mem_info else 0.0,
+                            threads=proc.info["num_threads"] or 0,
+                            file_descriptors=num_fds,
+                            connections=connections,
+                            status=proc.info["status"] or "unknown",
+                            create_time=proc.info["create_time"] or 0.0,
+                            cmdline=cmdline,
+                        )
+                    )
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 continue
 
@@ -159,25 +174,27 @@ class SystemMonitor:
 
         # CPU alerts
         if metrics.cpu_percent > 90:
-            alerts['cpu'] = f"CRITICAL: CPU usage at {metrics.cpu_percent:.1f}%"
+            alerts["cpu"] = f"CRITICAL: CPU usage at {metrics.cpu_percent:.1f}%"
         elif metrics.cpu_percent > 80:
-            alerts['cpu'] = f"WARNING: CPU usage at {metrics.cpu_percent:.1f}%"
+            alerts["cpu"] = f"WARNING: CPU usage at {metrics.cpu_percent:.1f}%"
 
         # Memory alerts
         if metrics.memory_percent > 95:
-            alerts['memory'] = f"CRITICAL: Memory usage at {metrics.memory_percent:.1f}%"
+            alerts["memory"] = f"CRITICAL: Memory usage at {metrics.memory_percent:.1f}%"
         elif metrics.memory_percent > 85:
-            alerts['memory'] = f"WARNING: Memory usage at {metrics.memory_percent:.1f}%"
+            alerts["memory"] = f"WARNING: Memory usage at {metrics.memory_percent:.1f}%"
 
         # Disk alerts
         if metrics.disk_usage_percent > 95:
-            alerts['disk'] = f"CRITICAL: Disk usage at {metrics.disk_usage_percent:.1f}%"
+            alerts["disk"] = f"CRITICAL: Disk usage at {metrics.disk_usage_percent:.1f}%"
         elif metrics.disk_usage_percent > 90:
-            alerts['disk'] = f"WARNING: Disk usage at {metrics.disk_usage_percent:.1f}%"
+            alerts["disk"] = f"WARNING: Disk usage at {metrics.disk_usage_percent:.1f}%"
 
         # File descriptor alerts
         if metrics.file_descriptors_used / metrics.file_descriptors_limit > 0.9:
-            alerts['fds'] = f"WARNING: File descriptors at {metrics.file_descriptors_used}/{metrics.file_descriptors_limit}"
+            alerts["fds"] = (
+                f"WARNING: File descriptors at {metrics.file_descriptors_used}/{metrics.file_descriptors_limit}"
+            )
 
         return alerts
 
@@ -190,7 +207,7 @@ class SystemMonitor:
 
                 # Maintain history size
                 if len(self.metrics_history) > self.max_history:
-                    self.metrics_history = self.metrics_history[-self.max_history:]
+                    self.metrics_history = self.metrics_history[-self.max_history :]
 
                 # Check for alerts
                 alerts = self.get_resource_alerts()
@@ -216,7 +233,7 @@ class SystemMonitor:
         swap = psutil.swap_memory()
 
         # Disk metrics
-        disk = psutil.disk_usage('/')
+        disk = psutil.disk_usage("/")
         disk_io = psutil.disk_io_counters()
 
         # Network metrics
@@ -224,7 +241,7 @@ class SystemMonitor:
 
         # File descriptors
         try:
-            with open('/proc/sys/fs/file-nr', 'r') as f:
+            with open("/proc/sys/fs/file-nr", "r") as f:
                 fd_line = f.read().strip().split()
                 fds_used = int(fd_line[0])
                 fds_limit = int(fd_line[2])
@@ -234,16 +251,31 @@ class SystemMonitor:
 
         # Process counts
         process_count = len(psutil.pids())
-        thread_count = sum(1 for p in psutil.process_iter(['num_threads'])
-                          if p.info['num_threads'])
+        thread_count = sum(1 for p in psutil.process_iter(["num_threads"]) if p.info["num_threads"])
 
         # Calculate rates (MB/s)
         time_diff = 1.0  # Assuming 1 second interval
-        disk_read_mb = (disk_io.read_bytes - self.prev_disk_io.read_bytes) / (1024 * 1024) / time_diff if self.prev_disk_io else 0
-        disk_write_mb = (disk_io.write_bytes - self.prev_disk_io.write_bytes) / (1024 * 1024) / time_diff if self.prev_disk_io else 0
+        disk_read_mb = (
+            (disk_io.read_bytes - self.prev_disk_io.read_bytes) / (1024 * 1024) / time_diff
+            if self.prev_disk_io
+            else 0
+        )
+        disk_write_mb = (
+            (disk_io.write_bytes - self.prev_disk_io.write_bytes) / (1024 * 1024) / time_diff
+            if self.prev_disk_io
+            else 0
+        )
 
-        network_rx_mb = (net_io.bytes_recv - self.prev_net_io.bytes_recv) / (1024 * 1024) / time_diff if self.prev_net_io else 0
-        network_tx_mb = (net_io.bytes_sent - self.prev_net_io.bytes_sent) / (1024 * 1024) / time_diff if self.prev_net_io else 0
+        network_rx_mb = (
+            (net_io.bytes_recv - self.prev_net_io.bytes_recv) / (1024 * 1024) / time_diff
+            if self.prev_net_io
+            else 0
+        )
+        network_tx_mb = (
+            (net_io.bytes_sent - self.prev_net_io.bytes_sent) / (1024 * 1024) / time_diff
+            if self.prev_net_io
+            else 0
+        )
 
         # Update previous values
         self.prev_disk_io = disk_io
@@ -271,8 +303,9 @@ class SystemMonitor:
             file_descriptors_limit=fds_limit,
             process_count=process_count,
             thread_count=thread_count,
-            uptime_seconds=int(time.time() - psutil.boot_time())
+            uptime_seconds=int(time.time() - psutil.boot_time()),
         )
+
 
 def main():
     """CLI interface for system monitoring"""
@@ -280,7 +313,9 @@ def main():
 
     parser = argparse.ArgumentParser(description="System Monitor for Polymarket Copy Bot")
     parser.add_argument("action", choices=["snapshot", "monitor", "processes", "alerts"])
-    parser.add_argument("--interval", type=float, default=5.0, help="Monitoring interval in seconds")
+    parser.add_argument(
+        "--interval", type=float, default=5.0, help="Monitoring interval in seconds"
+    )
     parser.add_argument("--process", default="python", help="Process name to monitor")
     parser.add_argument("--json", action="store_true", help="Output in JSON format")
 
@@ -297,8 +332,12 @@ def main():
             print(f"  CPU: {metrics.cpu_percent:.1f}% (Load: {metrics.cpu_load_1m:.2f})")
             print(f"  Memory: {metrics.memory_percent:.1f}% ({metrics.memory_used_gb:.1f}GB used)")
             print(f"  Disk: {metrics.disk_usage_percent:.1f}% ({metrics.disk_used_gb:.1f}GB used)")
-            print(f"  Network: RX {metrics.network_rx_mb:.2f}MB/s, TX {metrics.network_tx_mb:.2f}MB/s")
-            print(f"  File Descriptors: {metrics.file_descriptors_used}/{metrics.file_descriptors_limit}")
+            print(
+                f"  Network: RX {metrics.network_rx_mb:.2f}MB/s, TX {metrics.network_tx_mb:.2f}MB/s"
+            )
+            print(
+                f"  File Descriptors: {metrics.file_descriptors_used}/{metrics.file_descriptors_limit}"
+            )
             print(f"  Processes: {metrics.process_count}, Threads: {metrics.thread_count}")
 
     elif args.action == "monitor":
@@ -319,7 +358,9 @@ def main():
         else:
             print(f"Found {len(processes)} {args.process} processes:")
             for proc in processes:
-                print(f"  PID {proc.pid}: {proc.cpu_percent:.1f}% CPU, {proc.memory_percent:.1f}% MEM, {proc.threads} threads")
+                print(
+                    f"  PID {proc.pid}: {proc.cpu_percent:.1f}% CPU, {proc.memory_percent:.1f}% MEM, {proc.threads} threads"
+                )
 
     elif args.action == "alerts":
         alerts = monitor.get_resource_alerts()
@@ -332,6 +373,7 @@ def main():
                     print(f"  {message}")
             else:
                 print("No active alerts")
+
 
 if __name__ == "__main__":
     main()

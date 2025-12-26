@@ -1,22 +1,35 @@
+"""Utility functions for the Polymarket copy bot."""
+
 import asyncio  # For asynchronous operations and sleep functionality
 import json  # For JSON parsing and serialization
 import logging
 import re
+from collections import OrderedDict
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Union
+from decimal import Decimal
+from time import time
+from typing import Any, Dict, Optional, Union
 
 logger = logging.getLogger(__name__)
 
 
 def normalize_address(address: str) -> str:
-    """Normalize Ethereum address format"""
+    """
+    Normalize Ethereum address format.
+
+    Args:
+        address: Ethereum address to normalize
+
+    Returns:
+        Normalized address in lowercase with 0x prefix, or empty string if invalid
+    """
     if not address:
         return ""
 
     # Remove 0x prefix if present and ensure lowercase
-    address_clean = address.lower().replace("0x", "")
+    address_clean: str = address.lower().replace("0x", "")
 
-    # Validate address length
+    # Validate address length (should be 40 hex characters)
     if len(address_clean) != 40:
         logger.warning(f"Invalid address length: {address_clean} (length: {len(address_clean)})")
         return f"0x{address_clean}"  # Return as-is but with 0x prefix
@@ -24,28 +37,53 @@ def normalize_address(address: str) -> str:
     return f"0x{address_clean}"
 
 
-def wei_to_usdc(wei_amount: Union[int, float, str]) -> float:
-    """Convert wei to USDC (6 decimals)"""
+def wei_to_usdc(wei_amount: Union[int, float, str]) -> Decimal:
+    """
+    Convert wei to USDC (6 decimals).
+
+    Args:
+        wei_amount: Amount in wei to convert
+
+    Returns:
+        Amount in USDC as Decimal
+    """
     try:
         wei = int(wei_amount)
-        return wei / 10**6
+        return Decimal(wei) / Decimal(10**6)
     except (ValueError, TypeError) as e:
         logger.error(f"Error converting wei to USDC: {e}")
-        return 0.0
+        return Decimal("0.0")
 
 
-def usdc_to_wei(usdc_amount: Union[int, float, str]) -> int:
-    """Convert USDC to wei (6 decimals)"""
+def usdc_to_wei(usdc_amount: Union[int, float, str, Decimal]) -> int:
+    """
+    Convert USDC to wei (6 decimals).
+
+    Args:
+        usdc_amount: Amount in USDC to convert
+
+    Returns:
+        Amount in wei as integer
+    """
     try:
-        amount = float(usdc_amount)
-        return int(amount * 10**6)
-    except (ValueError, TypeError) as e:
+        amount = Decimal(usdc_amount)
+        return int(amount * Decimal(10**6))
+    except (ValueError, TypeError, ArithmeticError) as e:
         logger.error(f"Error converting USDC to wei: {e}")
         return 0
 
 
-def calculate_confidence_score(tx: Dict[str, Any], patterns: List[str] = None) -> float:
-    """Calculate confidence score for a detected trade"""
+def calculate_confidence_score(tx: dict[str, Any], patterns: Optional[list[str]] = None) -> float:
+    """
+    Calculate confidence score for a detected trade.
+
+    Args:
+        tx: Transaction data dictionary
+        patterns: Optional list of regex patterns to match against transaction input
+
+    Returns:
+        Confidence score between 0.0 and 1.0
+    """
     score = 0.3  # Base score
 
     # Value-based scoring
@@ -218,6 +256,129 @@ def retry_with_backoff(max_attempts: int = 3, base_delay: float = 1.0):
         return wrapper
 
     return decorator
+
+
+class BoundedCache:
+    """Efficient TTL-based cache with size limits using OrderedDict for LRU eviction."""
+
+    def __init__(self, max_size: int = 1000, ttl_seconds: int = 3600) -> None:
+        """
+        Initialize the bounded cache.
+
+        Args:
+            max_size: Maximum number of items to store
+            ttl_seconds: Time-to-live in seconds for cache entries
+        """
+        self.max_size = max_size
+        self.ttl_seconds = ttl_seconds
+        self._cache: OrderedDict[str, Any] = OrderedDict()
+        self._timestamps: dict[str, float] = {}
+        self._hits: int = 0
+        self._misses: int = 0
+        self._evictions: int = 0
+
+    def get(self, key: str) -> Optional[Any]:
+        """
+        Get value from cache with TTL check.
+
+        Args:
+            key: Cache key to look up
+
+        Returns:
+            Cached value if found and not expired, None otherwise
+        """
+        now: float = time()
+        self._cleanup_expired()
+
+        if key in self._cache:
+            # Move to end (most recently used)
+            value = self._cache.pop(key)
+            timestamp = self._timestamps.pop(key)
+            self._cache[key] = value
+            self._timestamps[key] = timestamp
+
+            if now - timestamp < self.ttl_seconds:
+                self._hits += 1
+                return value
+            else:
+                # Entry expired during access
+                del self._cache[key]
+                del self._timestamps[key]
+
+        self._misses += 1
+        return None
+
+    def set(self, key: str, value: Any) -> None:
+        """
+        Set value in cache with cleanup and size enforcement.
+
+        Args:
+            key: Cache key
+            value: Value to cache
+        """
+        self._cleanup_expired()
+        self._enforce_size_limit()
+
+        now: float = time()
+        if key in self._cache:
+            # Update existing entry, move to end
+            self._cache.pop(key)
+            self._timestamps.pop(key)
+
+        self._cache[key] = value
+        self._timestamps[key] = now
+
+    def _cleanup_expired(self) -> None:
+        """Remove expired entries"""
+        now = time()
+        expired_keys = [
+            key for key, timestamp in self._timestamps.items() if now - timestamp > self.ttl_seconds
+        ]
+
+        for key in expired_keys:
+            self._cache.pop(key, None)
+            self._timestamps.pop(key, None)
+            self._evictions += 1
+
+    def _enforce_size_limit(self) -> None:
+        """Enforce maximum cache size using LRU eviction"""
+        while len(self._cache) >= self.max_size:
+            # Remove oldest (least recently used) entry
+            oldest_key, _ = self._cache.popitem(last=False)
+            self._timestamps.pop(oldest_key, None)
+            self._evictions += 1
+
+    def clear(self) -> None:
+        """Clear all cache entries"""
+        self._cache.clear()
+        self._timestamps.clear()
+        self._hits = 0
+        self._misses = 0
+        self._evictions = 0
+
+    def get_stats(self) -> dict[str, Any]:
+        """
+        Get cache statistics.
+
+        Returns:
+            Dictionary containing cache performance metrics
+        """
+        total_requests: int = self._hits + self._misses
+        hit_ratio: float = (self._hits / total_requests) if total_requests > 0 else 0.0
+
+        oldest_timestamp: float = min(self._timestamps.values()) if self._timestamps else time()
+        age_seconds: float = time() - oldest_timestamp
+
+        return {
+            "size": len(self._cache),
+            "max_size": self.max_size,
+            "hit_ratio": hit_ratio,
+            "hits": self._hits,
+            "misses": self._misses,
+            "evictions": self._evictions,
+            "oldest_entry_age_seconds": age_seconds,
+            "ttl_seconds": self.ttl_seconds,
+        }
 
 
 if __name__ == "__main__":

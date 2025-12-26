@@ -10,18 +10,17 @@ This module provides support for multiple environments:
 - Network-specific configurations
 """
 
+import logging
 import os
-import sys
-import json
 import shutil
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
+import sys
 from dataclasses import dataclass, field
 from datetime import datetime
-import logging
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-from environment_manager import EnvironmentManager
 from dependency_manager import DependencyManager
+from environment_manager import EnvironmentManager
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +28,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class NetworkConfig:
     """Network-specific configuration"""
+
     name: str
     display_name: str
     chain_id: int
@@ -43,6 +43,7 @@ class NetworkConfig:
 @dataclass
 class EnvironmentSwitch:
     """Environment switch operation"""
+
     from_env: str
     to_env: str
     timestamp: datetime
@@ -75,14 +76,14 @@ class MultiEnvironmentManager:
                 rpc_urls=[
                     "https://polygon-rpc.com/",
                     "https://rpc-mainnet.matic.network",
-                    "https://matic-mainnet.chainstacklabs.com"
+                    "https://matic-mainnet.chainstacklabs.com",
                 ],
                 block_explorer="https://polygonscan.com",
                 currency="MATIC",
                 is_testnet=False,
                 contracts={
                     "clob": "0x5d6a3c37...2b6a",  # Real CLOB contract
-                }
+                },
             ),
             "polygon_mumbai": NetworkConfig(
                 name="polygon_mumbai",
@@ -91,18 +92,15 @@ class MultiEnvironmentManager:
                 rpc_urls=[
                     "https://rpc-mumbai.maticvigil.com",
                     "https://matic-mumbai.chainstacklabs.com",
-                    "https://rpc-mumbai.matic.today"
+                    "https://rpc-mumbai.matic.today",
                 ],
                 block_explorer="https://mumbai.polygonscan.com",
                 currency="MATIC",
                 is_testnet=True,
-                faucets=[
-                    "https://faucet.polygon.technology/",
-                    "https://matic.supply/"
-                ],
+                faucets=["https://faucet.polygon.technology/", "https://matic.supply/"],
                 contracts={
                     "clob": "0x4b0c4c...8b6a",  # Testnet CLOB contract
-                }
+                },
             ),
             "polygon_amoy": NetworkConfig(
                 name="polygon_amoy",
@@ -110,19 +108,16 @@ class MultiEnvironmentManager:
                 chain_id=80002,
                 rpc_urls=[
                     "https://rpc-amoy.polygon.technology",
-                    "https://polygon-amoy.g.alchemy.com/v2/demo"
+                    "https://polygon-amoy.g.alchemy.com/v2/demo",
                 ],
                 block_explorer="https://amoy.polygonscan.com",
                 currency="MATIC",
                 is_testnet=True,
-                faucets=[
-                    "https://faucet.polygon.technology/",
-                    "https://matic.supply/"
-                ],
+                faucets=["https://faucet.polygon.technology/", "https://matic.supply/"],
                 contracts={
                     "clob": "0x4b0c4c...8b6a",  # Amoy CLOB contract
-                }
-            )
+                },
+            ),
         }
 
     def get_current_environment(self) -> Optional[str]:
@@ -146,7 +141,7 @@ class MultiEnvironmentManager:
             timestamp=datetime.now(),
             success=False,
             actions_taken=[],
-            warnings=[]
+            warnings=[],
         )
 
         try:
@@ -175,6 +170,7 @@ class MultiEnvironmentManager:
 
                 # Attempt automatic repair
                 from env_repair import EnvironmentRepair
+
                 repair = EnvironmentRepair(self.project_root)
                 repair_result = repair.diagnose_and_repair(target_env, auto_repair=True)
 
@@ -232,24 +228,30 @@ class MultiEnvironmentManager:
     def _stop_environment_services(self, environment: str) -> None:
         """Stop services for an environment"""
         try:
-            if sys.platform.startswith('linux'):
-                service_name = f"polymarket-bot{'-' + environment if environment != 'production' else ''}"
+            if sys.platform.startswith("linux"):
+                service_name = (
+                    f"polymarket-bot{'-' + environment if environment != 'production' else ''}"
+                )
                 import subprocess
-                subprocess.run([
-                    'systemctl', 'stop', service_name
-                ], capture_output=True, check=False)
+
+                subprocess.run(
+                    ["systemctl", "stop", service_name], capture_output=True, check=False
+                )
         except Exception as e:
             logger.warning(f"Failed to stop services for {environment}: {e}")
 
     def _start_environment_services(self, environment: str) -> None:
         """Start services for an environment"""
         try:
-            if sys.platform.startswith('linux'):
-                service_name = f"polymarket-bot{'-' + environment if environment != 'production' else ''}"
+            if sys.platform.startswith("linux"):
+                service_name = (
+                    f"polymarket-bot{'-' + environment if environment != 'production' else ''}"
+                )
                 import subprocess
-                subprocess.run([
-                    'systemctl', 'start', service_name
-                ], capture_output=True, check=False)
+
+                subprocess.run(
+                    ["systemctl", "start", service_name], capture_output=True, check=False
+                )
         except Exception as e:
             logger.warning(f"Failed to start services for {environment}: {e}")
 
@@ -263,14 +265,15 @@ class MultiEnvironmentManager:
         if config.environment_file.exists():
             try:
                 import dotenv
+
                 dotenv.load_dotenv(config.environment_file)
             except ImportError:
                 # Fallback without dotenv
-                with open(config.environment_file, 'r') as f:
+                with open(config.environment_file, "r") as f:
                     for line in f:
                         line = line.strip()
-                        if line and not line.startswith('#'):
-                            key, value = line.split('=', 1)
+                        if line and not line.startswith("#"):
+                            key, value = line.split("=", 1)
                             os.environ[key.strip()] = value.strip()
 
         # Set standard environment variables
@@ -283,7 +286,7 @@ class MultiEnvironmentManager:
         env_network_map = {
             "production": "polygon_mainnet",
             "staging": "polygon_mumbai",
-            "development": "polygon_amoy"
+            "development": "polygon_amoy",
         }
 
         network_name = env_network_map.get(environment)
@@ -291,12 +294,7 @@ class MultiEnvironmentManager:
 
     def validate_network_compatibility(self, environment: str) -> Dict[str, Any]:
         """Validate network compatibility for an environment"""
-        result = {
-            "compatible": True,
-            "network": None,
-            "issues": [],
-            "recommendations": []
-        }
+        result = {"compatible": True, "network": None, "issues": [], "recommendations": []}
 
         network = self.get_environment_network(environment)
         if not network:
@@ -308,24 +306,31 @@ class MultiEnvironmentManager:
             "name": network.name,
             "display_name": network.display_name,
             "is_testnet": network.is_testnet,
-            "chain_id": network.chain_id
+            "chain_id": network.chain_id,
         }
 
         # Check if environment is configured for correct network
         config = self.env_manager.environments.get(environment)
         if config and config.environment_file.exists():
             try:
-                with open(config.environment_file, 'r') as f:
+                with open(config.environment_file, "r") as f:
                     env_content = f.read()
 
                 # Check for network-specific settings
                 if network.is_testnet:
                     if "CLOB_HOST" not in env_content or "clob.polymarket.com" in env_content:
                         result["issues"].append("Testnet environment should use testnet CLOB host")
-                        result["recommendations"].append("Set CLOB_HOST=https://clob.polymarket.com (testnet)")
+                        result["recommendations"].append(
+                            "Set CLOB_HOST=https://clob.polymarket.com (testnet)"
+                        )
                 else:
-                    if "mainnet" not in env_content.lower() and "production" not in env_content.lower():
-                        result["issues"].append("Mainnet environment should be clearly marked as production")
+                    if (
+                        "mainnet" not in env_content.lower()
+                        and "production" not in env_content.lower()
+                    ):
+                        result["issues"].append(
+                            "Mainnet environment should be clearly marked as production"
+                        )
 
                 if result["issues"]:
                     result["compatible"] = False
@@ -346,7 +351,7 @@ class MultiEnvironmentManager:
         template_path = self.project_root / f"env-{environment}-template.txt"
 
         try:
-            with open(template_path, 'w') as f:
+            with open(template_path, "w") as f:
                 f.write(f"# Environment template for {environment}\n")
                 f.write(f"# Network: {network.display_name}\n")
                 f.write(f"# Generated on {datetime.now().isoformat()}\n")
@@ -419,7 +424,7 @@ class MultiEnvironmentManager:
                 "healthy": health.is_healthy,
                 "network": network_info.get("network"),
                 "issues": health.issues + network_info.get("issues", []),
-                "is_current": env_name == self.get_current_environment()
+                "is_current": env_name == self.get_current_environment(),
             }
 
         return environments
@@ -443,10 +448,20 @@ def main():
     """CLI interface for multi-environment management"""
     import argparse
 
-    parser = argparse.ArgumentParser(description="Multi-Environment Manager for Polymarket Copy Bot")
-    parser.add_argument("action", choices=[
-        "switch", "current", "list", "validate-network", "create-template", "quick-switch"
-    ])
+    parser = argparse.ArgumentParser(
+        description="Multi-Environment Manager for Polymarket Copy Bot"
+    )
+    parser.add_argument(
+        "action",
+        choices=[
+            "switch",
+            "current",
+            "list",
+            "validate-network",
+            "create-template",
+            "quick-switch",
+        ],
+    )
     parser.add_argument("--env", help="Target environment name")
     parser.add_argument("--no-backup", action="store_true", help="Skip backup during switch")
 
@@ -491,7 +506,9 @@ def main():
             sys.exit(1)
 
         validation = manager.validate_network_compatibility(args.env)
-        print(f"Network validation for {args.env}: {'✅ Compatible' if validation['compatible'] else '❌ Incompatible'}")
+        print(
+            f"Network validation for {args.env}: {'✅ Compatible' if validation['compatible'] else '❌ Incompatible'}"
+        )
         if validation["issues"]:
             print("Issues:")
             for issue in validation["issues"]:

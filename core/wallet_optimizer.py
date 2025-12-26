@@ -14,22 +14,19 @@ Features:
 - Monte Carlo scenario analysis
 """
 
-import asyncio
 import json
 import logging
 import pickle
-import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.model_selection import TimeSeriesSplit, cross_val_score
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import mean_squared_error, r2_score
 
 from core.performance_analyzer import PerformanceAnalyzer
 
@@ -50,14 +47,14 @@ class WalletOptimizer:
         # Optimization configuration
         self.optimization_config = {
             "rebalance_frequency": "daily",  # daily, weekly, monthly
-            "min_allocation": 0.02,          # Minimum 2% allocation per wallet type
-            "max_allocation": 0.40,          # Maximum 40% allocation per wallet type
-            "risk_target": 0.15,             # Target portfolio volatility (15%)
-            "return_target": 0.25,           # Target annual return (25%)
-            "optimization_horizon": 30,      # Days to look ahead for optimization
-            "ml_model": "gradient_boosting", # ML model for prediction
-            "monte_carlo_runs": 500,         # Monte Carlo simulation runs
-            "walk_forward_windows": 5,       # Walk-forward validation windows
+            "min_allocation": 0.02,  # Minimum 2% allocation per wallet type
+            "max_allocation": 0.40,  # Maximum 40% allocation per wallet type
+            "risk_target": 0.15,  # Target portfolio volatility (15%)
+            "return_target": 0.25,  # Target annual return (25%)
+            "optimization_horizon": 30,  # Days to look ahead for optimization
+            "ml_model": "gradient_boosting",  # ML model for prediction
+            "monte_carlo_runs": 500,  # Monte Carlo simulation runs
+            "walk_forward_windows": 5,  # Walk-forward validation windows
         }
 
         # ML models for wallet quality prediction
@@ -72,17 +69,23 @@ class WalletOptimizer:
 
         # Training data
         self.feature_columns = [
-            "win_rate", "profit_factor", "sharpe_ratio", "max_drawdown",
-            "avg_win", "avg_loss", "total_trades", "avg_holding_time",
-            "gas_efficiency", "confidence_score", "mm_probability"
+            "win_rate",
+            "profit_factor",
+            "sharpe_ratio",
+            "max_drawdown",
+            "avg_win",
+            "avg_loss",
+            "total_trades",
+            "avg_holding_time",
+            "gas_efficiency",
+            "confidence_score",
+            "mm_probability",
         ]
 
         logger.info("🎯 Wallet optimizer initialized")
 
     async def optimize_portfolio_allocation(
-        self,
-        target_date: Optional[datetime] = None,
-        optimization_method: str = "ml_optimization"
+        self, target_date: Optional[datetime] = None, optimization_method: str = "ml_optimization"
     ) -> Dict[str, Any]:
         """
         Optimize portfolio allocation across wallet types.
@@ -98,7 +101,9 @@ class WalletOptimizer:
         if target_date is None:
             target_date = datetime.now()
 
-        logger.info(f"🎯 Optimizing portfolio allocation for {target_date.date()} using {optimization_method}")
+        logger.info(
+            f"🎯 Optimizing portfolio allocation for {target_date.date()} using {optimization_method}"
+        )
 
         # Get historical performance data
         historical_data = self._get_historical_performance_data(target_date)
@@ -129,9 +134,13 @@ class WalletOptimizer:
             "method": optimization_method,
             "allocation": validated_allocation,
             "historical_data_points": len(historical_data),
-            "expected_return": self._calculate_expected_return(validated_allocation, historical_data),
+            "expected_return": self._calculate_expected_return(
+                validated_allocation, historical_data
+            ),
             "expected_risk": self._calculate_expected_risk(validated_allocation, historical_data),
-            "sharpe_ratio": self._calculate_allocation_sharpe(validated_allocation, historical_data)
+            "sharpe_ratio": self._calculate_allocation_sharpe(
+                validated_allocation, historical_data
+            ),
         }
 
         self.optimization_history.append(optimization_result)
@@ -157,9 +166,7 @@ class WalletOptimizer:
         return historical_data
 
     async def _ml_based_optimization(
-        self,
-        historical_data: List[Dict[str, Any]],
-        target_date: datetime
+        self, historical_data: List[Dict[str, Any]], target_date: datetime
     ) -> Dict[str, float]:
         """
         ML-based portfolio optimization using predictive models.
@@ -197,7 +204,7 @@ class WalletOptimizer:
                 "predicted_return": predicted_return,
                 "predicted_risk": predicted_risk,
                 "predicted_quality": predicted_quality,
-                "sharpe_ratio": predicted_return / predicted_risk if predicted_risk > 0 else 0
+                "sharpe_ratio": predicted_return / predicted_risk if predicted_risk > 0 else 0,
             }
 
         if not wallet_type_predictions:
@@ -227,23 +234,27 @@ class WalletOptimizer:
 
             # Create rolling windows (e.g., 10-day windows to predict next 5 days)
             for i in range(10, len(type_data) - 5):
-                window_data = type_data.iloc[i-10:i]
+                window_data = type_data.iloc[i - 10 : i]
 
                 # Calculate features from window
                 features = self._calculate_window_features(window_data)
 
                 # Calculate target (next 5 days performance)
-                future_data = type_data.iloc[i:i+5]
+                future_data = type_data.iloc[i : i + 5]
                 target_return = future_data["pnl_usd"].sum()
                 target_risk = future_data["pnl_usd"].std()
-                target_quality = future_data["pnl_usd"].mean() / (future_data["pnl_usd"].std() + 0.001)
+                target_quality = future_data["pnl_usd"].mean() / (
+                    future_data["pnl_usd"].std() + 0.001
+                )
 
-                training_data.append({
-                    "features": features,
-                    "target_return": target_return,
-                    "target_risk": target_risk,
-                    "target_quality": target_quality
-                })
+                training_data.append(
+                    {
+                        "features": features,
+                        "target_return": target_return,
+                        "target_risk": target_risk,
+                        "target_quality": target_quality,
+                    }
+                )
 
         if len(training_data) < 10:
             logger.warning("Insufficient training data for ML models")
@@ -261,9 +272,15 @@ class WalletOptimizer:
 
         # Train models
         if self.optimization_config["ml_model"] == "gradient_boosting":
-            self.return_prediction_model = GradientBoostingRegressor(n_estimators=100, random_state=42)
-            self.risk_prediction_model = GradientBoostingRegressor(n_estimators=100, random_state=42)
-            self.quality_prediction_model = GradientBoostingRegressor(n_estimators=100, random_state=42)
+            self.return_prediction_model = GradientBoostingRegressor(
+                n_estimators=100, random_state=42
+            )
+            self.risk_prediction_model = GradientBoostingRegressor(
+                n_estimators=100, random_state=42
+            )
+            self.quality_prediction_model = GradientBoostingRegressor(
+                n_estimators=100, random_state=42
+            )
         else:
             self.return_prediction_model = RandomForestRegressor(n_estimators=100, random_state=42)
             self.risk_prediction_model = RandomForestRegressor(n_estimators=100, random_state=42)
@@ -289,14 +306,20 @@ class WalletOptimizer:
 
         # Basic statistics
         pnl_values = window_data["pnl_usd"].values
-        features.extend([
-            np.mean(pnl_values),           # Average P&L
-            np.std(pnl_values),            # Volatility
-            np.max(pnl_values),            # Best trade
-            np.min(pnl_values),            # Worst trade
-            np.sum(pnl_values > 0) / len(pnl_values),  # Win rate
-            np.sum(pnl_values) / np.sum(np.abs(pnl_values)) if np.sum(np.abs(pnl_values)) > 0 else 0,  # Profit factor
-        ])
+        features.extend(
+            [
+                np.mean(pnl_values),  # Average P&L
+                np.std(pnl_values),  # Volatility
+                np.max(pnl_values),  # Best trade
+                np.min(pnl_values),  # Worst trade
+                np.sum(pnl_values > 0) / len(pnl_values),  # Win rate
+                (
+                    np.sum(pnl_values) / np.sum(np.abs(pnl_values))
+                    if np.sum(np.abs(pnl_values)) > 0
+                    else 0
+                ),  # Profit factor
+            ]
+        )
 
         # Trend features
         if len(pnl_values) > 5:
@@ -307,18 +330,20 @@ class WalletOptimizer:
             features.append(0)
 
         # Wallet-specific features
-        features.extend([
-            window_data.get("confidence_score", 0).mean(),
-            window_data.get("mm_probability", 0).mean(),
-            window_data.get("position_size_usd", 0).mean(),
-            window_data.get("holding_time_hours", 0).mean(),
-        ])
+        features.extend(
+            [
+                window_data.get("confidence_score", 0).mean(),
+                window_data.get("mm_probability", 0).mean(),
+                window_data.get("position_size_usd", 0).mean(),
+                window_data.get("holding_time_hours", 0).mean(),
+            ]
+        )
 
         # Pad or truncate to fixed length
         while len(features) < len(self.feature_columns):
             features.append(0)
 
-        return features[:len(self.feature_columns)]
+        return features[: len(self.feature_columns)]
 
     def _prepare_prediction_features(self, metrics: Dict[str, Any]) -> List[float]:
         """Prepare features for ML prediction from current metrics."""
@@ -330,22 +355,24 @@ class WalletOptimizer:
         profit_loss = metrics.get("profit_loss_metrics", {})
         risk_metrics = metrics.get("risk_metrics", {})
 
-        features.extend([
-            trade_metrics.get("win_rate", 0),
-            profit_loss.get("profit_factor", 0),
-            risk_metrics.get("sharpe_ratio", 0),
-            risk_metrics.get("max_drawdown_usd", 0),
-            profit_loss.get("avg_win_usd", 0),
-            profit_loss.get("avg_loss_usd", 0),
-            trade_metrics.get("total_trades", 0),
-            metrics.get("timing_metrics", {}).get("avg_holding_time_hours", 0),
-            metrics.get("efficiency_metrics", {}).get("gas_efficiency_ratio", 0),
-            0.8,  # Placeholder for confidence_score
-            0.6,  # Placeholder for mm_probability
-        ])
+        features.extend(
+            [
+                trade_metrics.get("win_rate", 0),
+                profit_loss.get("profit_factor", 0),
+                risk_metrics.get("sharpe_ratio", 0),
+                risk_metrics.get("max_drawdown_usd", 0),
+                profit_loss.get("avg_win_usd", 0),
+                profit_loss.get("avg_loss_usd", 0),
+                trade_metrics.get("total_trades", 0),
+                metrics.get("timing_metrics", {}).get("avg_holding_time_hours", 0),
+                metrics.get("efficiency_metrics", {}).get("gas_efficiency_ratio", 0),
+                0.8,  # Placeholder for confidence_score
+                0.6,  # Placeholder for mm_probability
+            ]
+        )
 
         # Scale features
-        if hasattr(self, 'feature_scaler'):
+        if hasattr(self, "feature_scaler"):
             features_scaled = self.feature_scaler.transform([features])
             return features_scaled[0].tolist()
         else:
@@ -389,11 +416,13 @@ class WalletOptimizer:
         # Renormalize to sum to 1
         total_weight = sum(allocation.values())
         if total_weight > 0:
-            allocation = {wt: w/total_weight for wt, w in allocation.items()}
+            allocation = {wt: w / total_weight for wt, w in allocation.items()}
 
         return allocation
 
-    def _mean_variance_optimization(self, historical_data: List[Dict[str, Any]]) -> Dict[str, float]:
+    def _mean_variance_optimization(
+        self, historical_data: List[Dict[str, Any]]
+    ) -> Dict[str, float]:
         """
         Traditional mean-variance portfolio optimization.
         """
@@ -421,8 +450,10 @@ class WalletOptimizer:
         ]
 
         # Bounds for each asset
-        bounds = [(self.optimization_config["min_allocation"],
-                  self.optimization_config["max_allocation"]) for _ in range(n_assets)]
+        bounds = [
+            (self.optimization_config["min_allocation"], self.optimization_config["max_allocation"])
+            for _ in range(n_assets)
+        ]
 
         # Objective: Minimize portfolio variance (for given return target)
         def portfolio_variance(weights):
@@ -430,10 +461,9 @@ class WalletOptimizer:
 
         # Target return constraint
         target_return = self.optimization_config["return_target"] / 252  # Daily target
-        constraints.append({
-            "type": "eq",
-            "fun": lambda x: np.dot(expected_returns, x) - target_return
-        })
+        constraints.append(
+            {"type": "eq", "fun": lambda x: np.dot(expected_returns, x) - target_return}
+        )
 
         # Initial guess (equal weight)
         init_guess = np.ones(n_assets) / n_assets
@@ -445,7 +475,7 @@ class WalletOptimizer:
                 init_guess,
                 method="SLSQP",
                 bounds=bounds,
-                constraints=constraints
+                constraints=constraints,
             )
 
             if result.success:
@@ -486,9 +516,11 @@ class WalletOptimizer:
         weights = inverse_vol_weights / np.sum(inverse_vol_weights)
 
         # Apply constraints
-        weights = np.clip(weights,
-                         self.optimization_config["min_allocation"],
-                         self.optimization_config["max_allocation"])
+        weights = np.clip(
+            weights,
+            self.optimization_config["min_allocation"],
+            self.optimization_config["max_allocation"],
+        )
 
         # Renormalize
         weights = weights / np.sum(weights)
@@ -518,7 +550,7 @@ class WalletOptimizer:
             "market_maker": 0.4,
             "directional_trader": 0.3,
             "high_frequency_trader": 0.2,
-            "mixed_trader": 0.1
+            "mixed_trader": 0.1,
         }
 
     def _validate_and_constrain_allocation(self, allocation: Dict[str, float]) -> Dict[str, float]:
@@ -531,13 +563,13 @@ class WalletOptimizer:
         for wallet_type in allocation:
             allocation[wallet_type] = max(
                 self.optimization_config["min_allocation"],
-                min(self.optimization_config["max_allocation"], allocation[wallet_type])
+                min(self.optimization_config["max_allocation"], allocation[wallet_type]),
             )
 
         # Renormalize to sum to 1
         total_weight = sum(allocation.values())
         if total_weight > 0:
-            allocation = {k: v/total_weight for k, v in allocation.items()}
+            allocation = {k: v / total_weight for k, v in allocation.items()}
 
         # Ensure we have at least some allocation
         if not allocation:
@@ -545,7 +577,9 @@ class WalletOptimizer:
 
         return allocation
 
-    def _calculate_expected_return(self, allocation: Dict[str, float], historical_data: List[Dict[str, Any]]) -> float:
+    def _calculate_expected_return(
+        self, allocation: Dict[str, float], historical_data: List[Dict[str, Any]]
+    ) -> float:
         """Calculate expected portfolio return."""
 
         df = pd.DataFrame(historical_data)
@@ -559,7 +593,9 @@ class WalletOptimizer:
 
         return expected_return
 
-    def _calculate_expected_risk(self, allocation: Dict[str, float], historical_data: List[Dict[str, Any]]) -> float:
+    def _calculate_expected_risk(
+        self, allocation: Dict[str, float], historical_data: List[Dict[str, Any]]
+    ) -> float:
         """Calculate expected portfolio risk (volatility)."""
 
         df = pd.DataFrame(historical_data)
@@ -580,7 +616,9 @@ class WalletOptimizer:
 
         return np.std(portfolio_returns) if portfolio_returns else 0
 
-    def _calculate_allocation_sharpe(self, allocation: Dict[str, float], historical_data: List[Dict[str, Any]]) -> float:
+    def _calculate_allocation_sharpe(
+        self, allocation: Dict[str, float], historical_data: List[Dict[str, Any]]
+    ) -> float:
         """Calculate Sharpe ratio for allocation."""
 
         expected_return = self._calculate_expected_return(allocation, historical_data)
@@ -601,27 +639,40 @@ class WalletOptimizer:
         return {
             "trade_metrics": {
                 "win_rate": sum(1 for p in pnl_values if p > 0) / len(pnl_values),
-                "total_trades": len(pnl_values)
+                "total_trades": len(pnl_values),
             },
             "profit_loss_metrics": {
-                "profit_factor": (sum(p for p in pnl_values if p > 0) /
-                                abs(sum(p for p in pnl_values if p < 0))) if any(p < 0 for p in pnl_values) else float('inf'),
-                "avg_win_usd": np.mean([p for p in pnl_values if p > 0]) if any(p > 0 for p in pnl_values) else 0,
-                "avg_loss_usd": abs(np.mean([p for p in pnl_values if p < 0])) if any(p < 0 for p in pnl_values) else 0
+                "profit_factor": (
+                    (sum(p for p in pnl_values if p > 0) / abs(sum(p for p in pnl_values if p < 0)))
+                    if any(p < 0 for p in pnl_values)
+                    else float("inf")
+                ),
+                "avg_win_usd": (
+                    np.mean([p for p in pnl_values if p > 0])
+                    if any(p > 0 for p in pnl_values)
+                    else 0
+                ),
+                "avg_loss_usd": (
+                    abs(np.mean([p for p in pnl_values if p < 0]))
+                    if any(p < 0 for p in pnl_values)
+                    else 0
+                ),
             },
             "risk_metrics": {
                 "sharpe_ratio": self._calculate_sharpe_ratio(np.array(pnl_values)),
-                "max_drawdown_usd": self._calculate_max_drawdown(np.array(pnl_values))
+                "max_drawdown_usd": self._calculate_max_drawdown(np.array(pnl_values)),
             },
             "timing_metrics": {
-                "avg_holding_time_hours": np.mean([record.get("holding_time_hours", 1) for record in type_data])
+                "avg_holding_time_hours": np.mean(
+                    [record.get("holding_time_hours", 1) for record in type_data]
+                )
             },
-            "efficiency_metrics": {
-                "gas_efficiency_ratio": 1.0  # Placeholder
-            }
+            "efficiency_metrics": {"gas_efficiency_ratio": 1.0},  # Placeholder
         }
 
-    def detect_performance_decay(self, wallet_type: str, current_metrics: Dict[str, Any]) -> Dict[str, Any]:
+    def detect_performance_decay(
+        self, wallet_type: str, current_metrics: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Detect if a wallet type's performance is decaying.
 
@@ -633,18 +684,20 @@ class WalletOptimizer:
         for record in self.optimization_history[-30:]:  # Last 30 optimization runs
             if wallet_type in record.get("allocation", {}):
                 allocation_weight = record["allocation"][wallet_type]
-                historical_metrics.append({
-                    "weight": allocation_weight,
-                    "expected_return": record.get("expected_return", 0),
-                    "expected_risk": record.get("expected_risk", 0),
-                    "sharpe_ratio": record.get("sharpe_ratio", 0)
-                })
+                historical_metrics.append(
+                    {
+                        "weight": allocation_weight,
+                        "expected_return": record.get("expected_return", 0),
+                        "expected_risk": record.get("expected_risk", 0),
+                        "sharpe_ratio": record.get("sharpe_ratio", 0),
+                    }
+                )
 
         if len(historical_metrics) < 5:
             return {"decay_detected": False, "reason": "Insufficient historical data"}
 
         # Analyze trend in performance metrics
-        weights = [m["weight"] for m in historical_metrics]
+        [m["weight"] for m in historical_metrics]
         sharpe_ratios = [m["sharpe_ratio"] for m in historical_metrics]
 
         # Check for declining Sharpe ratio
@@ -661,21 +714,21 @@ class WalletOptimizer:
                     "decay_ratio": decay_ratio,
                     "reason": f"Sharpe ratio declined by {decay_ratio:.1%} over recent periods",
                     "recommendation": "Reduce allocation to this wallet type",
-                    "suggested_weight_reduction": min(0.5, decay_ratio * 2)  # Reduce by up to 50%
+                    "suggested_weight_reduction": min(0.5, decay_ratio * 2),  # Reduce by up to 50%
                 }
 
         return {"decay_detected": False, "reason": "No significant performance decay detected"}
 
     async def run_walk_forward_optimization(
-        self,
-        total_period_days: int = 90,
-        walk_forward_windows: int = 5
+        self, total_period_days: int = 90, walk_forward_windows: int = 5
     ) -> Dict[str, Any]:
         """
         Run walk-forward optimization to validate strategy stability.
         """
 
-        logger.info(f"🏃 Running walk-forward optimization: {total_period_days} days, {walk_forward_windows} windows")
+        logger.info(
+            f"🏃 Running walk-forward optimization: {total_period_days} days, {walk_forward_windows} windows"
+        )
 
         window_size = total_period_days // walk_forward_windows
         results = []
@@ -687,8 +740,7 @@ class WalletOptimizer:
 
             # Optimize using data up to test_start
             allocation = await self.optimize_portfolio_allocation(
-                target_date=test_start,
-                optimization_method="ml_optimization"
+                target_date=test_start, optimization_method="ml_optimization"
             )
 
             # Evaluate performance during test period
@@ -696,12 +748,14 @@ class WalletOptimizer:
                 allocation, test_start, test_end
             )
 
-            results.append({
-                "window": i + 1,
-                "test_period": {"start": test_start.isoformat(), "end": test_end.isoformat()},
-                "allocation": allocation,
-                "performance": test_performance
-            })
+            results.append(
+                {
+                    "window": i + 1,
+                    "test_period": {"start": test_start.isoformat(), "end": test_end.isoformat()},
+                    "allocation": allocation,
+                    "performance": test_performance,
+                }
+            )
 
         # Analyze walk-forward results
         analysis = self._analyze_walk_forward_results(results)
@@ -709,14 +763,11 @@ class WalletOptimizer:
         return {
             "walk_forward_results": results,
             "analysis": analysis,
-            "recommendations": self._generate_walk_forward_recommendations(analysis)
+            "recommendations": self._generate_walk_forward_recommendations(analysis),
         }
 
     def _evaluate_allocation_performance(
-        self,
-        allocation: Dict[str, float],
-        start_date: datetime,
-        end_date: datetime
+        self, allocation: Dict[str, float], start_date: datetime, end_date: datetime
     ) -> Dict[str, Any]:
         """Evaluate how well an allocation performed during a test period."""
 
@@ -754,7 +805,7 @@ class WalletOptimizer:
             "total_return": total_return,
             "sharpe_ratio": sharpe_ratio,
             "max_drawdown": max_drawdown,
-            "daily_returns": portfolio_returns
+            "daily_returns": portfolio_returns,
         }
 
     def _analyze_walk_forward_results(self, results: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -766,7 +817,7 @@ class WalletOptimizer:
         # Extract performance metrics
         returns = [r["performance"]["total_return"] for r in results]
         sharpe_ratios = [r["performance"]["sharpe_ratio"] for r in results]
-        max_drawdowns = [r["performance"]["max_drawdown"] for r in results]
+        [r["performance"]["max_drawdown"] for r in results]
 
         # Calculate stability metrics
         return_volatility = np.std(returns)
@@ -784,22 +835,22 @@ class WalletOptimizer:
                 "sharpe_volatility": sharpe_volatility,
                 "avg_return": avg_return,
                 "avg_sharpe_ratio": avg_sharpe,
-                "return_consistency": consistency_ratio
+                "return_consistency": consistency_ratio,
             },
             "performance_distribution": {
                 "returns": {
                     "mean": np.mean(returns),
                     "std": np.std(returns),
                     "min": min(returns),
-                    "max": max(returns)
+                    "max": max(returns),
                 },
                 "sharpe_ratios": {
                     "mean": np.mean(sharpe_ratios),
                     "std": np.std(sharpe_ratios),
                     "min": min(sharpe_ratios),
-                    "max": max(sharpe_ratios)
-                }
-            }
+                    "max": max(sharpe_ratios),
+                },
+            },
         }
 
     def _generate_walk_forward_recommendations(self, analysis: Dict[str, Any]) -> List[str]:
@@ -811,31 +862,40 @@ class WalletOptimizer:
         consistency = stability.get("return_consistency", 0)
 
         if consistency > 0.8:
-            recommendations.append("✅ **High Consistency**: Strategy shows consistent performance across different market conditions")
+            recommendations.append(
+                "✅ **High Consistency**: Strategy shows consistent performance across different market conditions"
+            )
         elif consistency > 0.6:
-            recommendations.append("⚠️ **Moderate Consistency**: Strategy performs reasonably well but shows some variability")
+            recommendations.append(
+                "⚠️ **Moderate Consistency**: Strategy performs reasonably well but shows some variability"
+            )
         else:
-            recommendations.append("❌ **Low Consistency**: Strategy performance is highly variable - consider more robust approach")
+            recommendations.append(
+                "❌ **Low Consistency**: Strategy performance is highly variable - consider more robust approach"
+            )
 
         sharpe_volatility = stability.get("sharpe_volatility", 0)
         if sharpe_volatility < 0.5:
-            recommendations.append("📊 **Stable Risk-Adjusted Returns**: Sharpe ratio remains stable across periods")
+            recommendations.append(
+                "📊 **Stable Risk-Adjusted Returns**: Sharpe ratio remains stable across periods"
+            )
         else:
-            recommendations.append("⚠️ **Variable Risk-Adjustment**: Risk-adjusted performance fluctuates significantly")
+            recommendations.append(
+                "⚠️ **Variable Risk-Adjustment**: Risk-adjusted performance fluctuates significantly"
+            )
 
         return recommendations
 
     async def run_monte_carlo_simulation(
-        self,
-        allocation: Dict[str, float],
-        simulation_days: int = 30,
-        num_simulations: int = 1000
+        self, allocation: Dict[str, float], simulation_days: int = 30, num_simulations: int = 1000
     ) -> Dict[str, Any]:
         """
         Run Monte Carlo simulation to assess allocation robustness.
         """
 
-        logger.info(f"🎲 Running Monte Carlo simulation: {num_simulations} runs, {simulation_days} days")
+        logger.info(
+            f"🎲 Running Monte Carlo simulation: {num_simulations} runs, {simulation_days} days"
+        )
 
         # Get historical return distributions by wallet type
         historical_returns = self._get_historical_return_distributions()
@@ -865,12 +925,15 @@ class WalletOptimizer:
             sharpe_ratio = self._calculate_sharpe_ratio(np.array(portfolio_returns))
             max_drawdown = self._calculate_max_drawdown(np.array(portfolio_returns))
 
-            simulation_results.append({
-                "total_return": total_return,
-                "sharpe_ratio": sharpe_ratio,
-                "max_drawdown": max_drawdown,
-                "final_portfolio_value": 10000 * (1 + total_return / 10000)  # Assuming $10k starting
-            })
+            simulation_results.append(
+                {
+                    "total_return": total_return,
+                    "sharpe_ratio": sharpe_ratio,
+                    "max_drawdown": max_drawdown,
+                    "final_portfolio_value": 10000
+                    * (1 + total_return / 10000),  # Assuming $10k starting
+                }
+            )
 
         # Analyze simulation results
         returns = [r["total_return"] for r in simulation_results]
@@ -884,22 +947,24 @@ class WalletOptimizer:
                 "mean": np.mean(sharpe_ratios),
                 "std": np.std(sharpe_ratios),
                 "percentile_5": np.percentile(sharpe_ratios, 5),
-                "percentile_95": np.percentile(sharpe_ratios, 95)
+                "percentile_95": np.percentile(sharpe_ratios, 95),
             },
             "value_at_risk_95": np.percentile(returns, 5),
-            "expected_shortfall_95": np.mean([r for r in returns if r <= np.percentile(returns, 5)]),
+            "expected_shortfall_95": np.mean(
+                [r for r in returns if r <= np.percentile(returns, 5)]
+            ),
             "prob_profit": sum(1 for r in returns if r > 0) / len(returns),
-            "prob_loss": sum(1 for r in returns if r < -500) / len(returns)  # >5% loss
+            "prob_loss": sum(1 for r in returns if r < -500) / len(returns),  # >5% loss
         }
 
         return {
             "simulation_parameters": {
                 "num_simulations": num_simulations,
                 "simulation_days": simulation_days,
-                "allocation": allocation
+                "allocation": allocation,
             },
             "results_summary": analysis,
-            "full_results": simulation_results[:100]  # First 100 for detailed analysis
+            "full_results": simulation_results[:100],  # First 100 for detailed analysis
         }
 
     def _get_historical_return_distributions(self) -> Dict[str, List[float]]:
@@ -924,24 +989,24 @@ class WalletOptimizer:
             state_dir.mkdir(parents=True, exist_ok=True)
 
             # Save current allocations
-            with open(state_dir / "current_allocations.json", 'w') as f:
+            with open(state_dir / "current_allocations.json", "w") as f:
                 json.dump(self.current_allocations, f, indent=2)
 
             # Save optimization history
-            with open(state_dir / "optimization_history.json", 'w') as f:
+            with open(state_dir / "optimization_history.json", "w") as f:
                 json.dump(self.optimization_history[-100:], f, indent=2)  # Last 100 records
 
             # Save ML models if they exist
             if self.return_prediction_model:
-                with open(state_dir / "return_model.pkl", 'wb') as f:
+                with open(state_dir / "return_model.pkl", "wb") as f:
                     pickle.dump(self.return_prediction_model, f)
 
             if self.risk_prediction_model:
-                with open(state_dir / "risk_model.pkl", 'wb') as f:
+                with open(state_dir / "risk_model.pkl", "wb") as f:
                     pickle.dump(self.risk_prediction_model, f)
 
             if self.quality_prediction_model:
-                with open(state_dir / "quality_model.pkl", 'wb') as f:
+                with open(state_dir / "quality_model.pkl", "wb") as f:
                     pickle.dump(self.quality_prediction_model, f)
 
             logger.info(f"💾 Optimizer state saved to {state_dir}")
@@ -958,29 +1023,29 @@ class WalletOptimizer:
             # Load current allocations
             alloc_file = state_dir / "current_allocations.json"
             if alloc_file.exists():
-                with open(alloc_file, 'r') as f:
+                with open(alloc_file, "r") as f:
                     self.current_allocations = json.load(f)
 
             # Load optimization history
             history_file = state_dir / "optimization_history.json"
             if history_file.exists():
-                with open(history_file, 'r') as f:
+                with open(history_file, "r") as f:
                     self.optimization_history = json.load(f)
 
             # Load ML models
             return_model_file = state_dir / "return_model.pkl"
             if return_model_file.exists():
-                with open(return_model_file, 'rb') as f:
+                with open(return_model_file, "rb") as f:
                     self.return_prediction_model = pickle.load(f)
 
             risk_model_file = state_dir / "risk_model.pkl"
             if risk_model_file.exists():
-                with open(risk_model_file, 'rb') as f:
+                with open(risk_model_file, "rb") as f:
                     self.risk_prediction_model = pickle.load(f)
 
             quality_model_file = state_dir / "quality_model.pkl"
             if quality_model_file.exists():
-                with open(quality_model_file, 'rb') as f:
+                with open(quality_model_file, "rb") as f:
                     self.quality_prediction_model = pickle.load(f)
 
             logger.info(f"📊 Optimizer state loaded from {state_dir}")
@@ -994,29 +1059,37 @@ class WalletOptimizer:
         # Cross-validation scores
         cv_splitter = TimeSeriesSplit(n_splits=3)
 
-        return_scores = cross_val_score(self.return_prediction_model, X, y_return, cv=cv_splitter, scoring='r2')
-        risk_scores = cross_val_score(self.risk_prediction_model, X, y_risk, cv=cv_splitter, scoring='r2')
-        quality_scores = cross_val_score(self.quality_prediction_model, X, y_quality, cv=cv_splitter, scoring='r2')
+        return_scores = cross_val_score(
+            self.return_prediction_model, X, y_return, cv=cv_splitter, scoring="r2"
+        )
+        risk_scores = cross_val_score(
+            self.risk_prediction_model, X, y_risk, cv=cv_splitter, scoring="r2"
+        )
+        quality_scores = cross_val_score(
+            self.quality_prediction_model, X, y_quality, cv=cv_splitter, scoring="r2"
+        )
 
         self.model_performance = {
             "return_model": {
                 "mean_r2": return_scores.mean(),
                 "std_r2": return_scores.std(),
-                "cv_scores": return_scores.tolist()
+                "cv_scores": return_scores.tolist(),
             },
             "risk_model": {
                 "mean_r2": risk_scores.mean(),
                 "std_r2": risk_scores.std(),
-                "cv_scores": risk_scores.tolist()
+                "cv_scores": risk_scores.tolist(),
             },
             "quality_model": {
                 "mean_r2": quality_scores.mean(),
                 "std_r2": quality_scores.std(),
-                "cv_scores": quality_scores.tolist()
-            }
+                "cv_scores": quality_scores.tolist(),
+            },
         }
 
-        logger.info(f"🤖 ML Model Performance - Return R²: {return_scores.mean():.3f}, Risk R²: {risk_scores.mean():.3f}, Quality R²: {quality_scores.mean():.3f}")
+        logger.info(
+            f"🤖 ML Model Performance - Return R²: {return_scores.mean():.3f}, Risk R²: {risk_scores.mean():.3f}, Quality R²: {quality_scores.mean():.3f}"
+        )
 
     async def get_optimization_dashboard(self) -> Dict[str, Any]:
         """Generate optimization dashboard data."""
@@ -1024,33 +1097,40 @@ class WalletOptimizer:
         # Current allocation status
         current_status = {
             "current_allocations": self.current_allocations,
-            "last_optimization": self.optimization_history[-1] if self.optimization_history else None,
-            "model_performance": self.model_performance
+            "last_optimization": (
+                self.optimization_history[-1] if self.optimization_history else None
+            ),
+            "model_performance": self.model_performance,
         }
 
         # Performance trends
-        recent_history = self.optimization_history[-10:] if len(self.optimization_history) > 10 else self.optimization_history
+        recent_history = (
+            self.optimization_history[-10:]
+            if len(self.optimization_history) > 10
+            else self.optimization_history
+        )
 
         performance_trends = []
         for record in recent_history:
-            performance_trends.append({
-                "date": record["timestamp"],
-                "sharpe_ratio": record.get("sharpe_ratio", 0),
-                "expected_return": record.get("expected_return", 0),
-                "expected_risk": record.get("expected_risk", 0)
-            })
+            performance_trends.append(
+                {
+                    "date": record["timestamp"],
+                    "sharpe_ratio": record.get("sharpe_ratio", 0),
+                    "expected_return": record.get("expected_return", 0),
+                    "expected_risk": record.get("expected_risk", 0),
+                }
+            )
 
         # Allocation changes over time
         allocation_history = []
         for record in recent_history:
-            allocation_history.append({
-                "date": record["timestamp"],
-                "allocations": record["allocation"]
-            })
+            allocation_history.append(
+                {"date": record["timestamp"], "allocations": record["allocation"]}
+            )
 
         return {
             "current_status": current_status,
             "performance_trends": performance_trends,
             "allocation_history": allocation_history,
-            "optimization_config": self.optimization_config
+            "optimization_config": self.optimization_config,
         }

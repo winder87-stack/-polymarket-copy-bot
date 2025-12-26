@@ -7,12 +7,13 @@ import os
 import sys
 from pathlib import Path
 
+
 def main():
     print("🔗 Polymarket Copy Trading Bot - Integration Check")
     print("=" * 60)
 
     # Set test environment
-    os.environ['PRIVATE_KEY'] = '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
+    os.environ["PRIVATE_KEY"] = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
 
     checks_passed = 0
     total_checks = 0
@@ -21,9 +22,13 @@ def main():
     total_checks += 1
     print("📁 Checking file structure...")
     required_files = [
-        'main.py', 'config/settings.py', 'core/clob_client.py',
-        'core/wallet_monitor.py', 'core/trade_executor.py',
-        'utils/security.py', 'utils/helpers.py'
+        "main.py",
+        "config/settings.py",
+        "core/clob_client.py",
+        "core/wallet_monitor.py",
+        "core/trade_executor.py",
+        "utils/security.py",
+        "utils/helpers.py",
     ]
     missing = [f for f in required_files if not Path(f).exists()]
     if missing:
@@ -37,11 +42,9 @@ def main():
     print("📦 Checking imports...")
     try:
         from config.settings import settings
-        from core.clob_client import PolymarketClient
-        from core.wallet_monitor import WalletMonitor
         from core.trade_executor import TradeExecutor
-        from utils.security import validate_private_key, mask_sensitive_data
-        from utils.helpers import normalize_address
+        from utils.security import mask_sensitive_data, validate_private_key
+
         print("✅ All critical imports successful")
         checks_passed += 1
     except Exception as e:
@@ -63,14 +66,16 @@ def main():
     print("🔒 Checking security features...")
     try:
         # Test private key validation
-        valid = validate_private_key('0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef')
+        valid = validate_private_key(
+            "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+        )
         assert valid
 
         # Test data masking
-        test_data = {'private_key': 'secret', 'normal': 'safe'}
+        test_data = {"private_key": "secret", "normal": "safe"}
         masked = mask_sensitive_data(test_data)
-        assert 'secret' not in str(masked) or '[REDACTED]' in str(masked)
-        assert 'safe' in str(masked)
+        assert "secret" not in str(masked) or "[REDACTED]" in str(masked)
+        assert "safe" in str(masked)
 
         print("✅ Security features working")
         checks_passed += 1
@@ -82,18 +87,19 @@ def main():
     print("🔒 Checking race condition fixes...")
     try:
         # Check if TradeExecutor has state lock
-        from core.trade_executor import TradeExecutor
         from unittest.mock import Mock
 
+        from core.trade_executor import TradeExecutor
+
         mock_client = Mock()
-        mock_client.wallet_address = '0x1234...'
+        mock_client.wallet_address = "0x1234..."
 
         executor = TradeExecutor(mock_client)
 
         # Check if locks are present
-        assert hasattr(executor, '_state_lock')
-        assert hasattr(executor, '_position_locks')
-        assert hasattr(executor, '_get_position_lock')
+        assert hasattr(executor, "_state_lock")
+        assert hasattr(executor, "_position_locks")
+        assert hasattr(executor, "_get_position_lock")
 
         print("✅ Race condition fixes implemented")
         checks_passed += 1
@@ -105,8 +111,8 @@ def main():
     print("📦 Checking dependency management...")
     try:
         # Check if pyproject.toml exists (Poetry)
-        pyproject_exists = Path('pyproject.toml').exists()
-        poetry_lock_exists = Path('poetry.lock').exists()
+        pyproject_exists = Path("pyproject.toml").exists()
+        poetry_lock_exists = Path("poetry.lock").exists()
 
         if pyproject_exists:
             print("✅ Poetry configuration present")
@@ -136,6 +142,7 @@ def main():
         print("\n⚠️ INTEGRATION ISSUES DETECTED")
         print("📋 Some components need attention")
         return False
+
 
 if __name__ == "__main__":
     success = main()

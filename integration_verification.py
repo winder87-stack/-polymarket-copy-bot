@@ -7,24 +7,25 @@ import os
 import sys
 from pathlib import Path
 
+
 def check_file_structure():
     """Check that all required files exist."""
     print("📁 Checking file structure...")
 
     required_files = [
-        'main.py',
-        'config/settings.py',
-        'core/clob_client.py',
-        'core/wallet_monitor.py',
-        'core/trade_executor.py',
-        'utils/helpers.py',
-        'utils/security.py',
-        'utils/logging_utils.py',
-        'utils/alerts.py',
-        'requirements.txt',
-        'README.md',
-        'systemd/polymarket-bot.service',
-        'scripts/setup_ubuntu.sh'
+        "main.py",
+        "config/settings.py",
+        "core/clob_client.py",
+        "core/wallet_monitor.py",
+        "core/trade_executor.py",
+        "utils/helpers.py",
+        "utils/security.py",
+        "utils/logging_utils.py",
+        "utils/alerts.py",
+        "requirements.txt",
+        "README.md",
+        "systemd/polymarket-bot.service",
+        "scripts/setup_ubuntu.sh",
     ]
 
     missing_files = []
@@ -39,29 +40,23 @@ def check_file_structure():
         print("✅ All required files present")
         return True
 
+
 def check_imports():
     """Check that all modules can be imported."""
     print("📦 Checking imports...")
 
     # Set test environment
-    os.environ['PRIVATE_KEY'] = '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
+    os.environ["PRIVATE_KEY"] = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
 
     try:
         # Test core imports
-        from config.settings import settings
-        from core.clob_client import PolymarketClient
-        from core.wallet_monitor import WalletMonitor
-        from core.trade_executor import TradeExecutor
-        from utils.security import validate_private_key
-        from utils.helpers import normalize_address
-        from utils.logging_utils import setup_logging
-        from utils.alerts import alert_manager
 
         print("✅ All critical imports successful")
         return True
     except Exception as e:
         print(f"❌ Import error: {e}")
         return False
+
 
 def check_configuration():
     """Check configuration loading and validation."""
@@ -85,26 +80,29 @@ def check_configuration():
         print(f"❌ Configuration error: {e}")
         return False
 
+
 def check_security_features():
     """Check security features are working."""
     print("🔒 Checking security features...")
 
     try:
-        from utils.security import validate_private_key, mask_sensitive_data
+        from utils.security import mask_sensitive_data, validate_private_key
 
         # Test private key validation
-        valid = validate_private_key('0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef')
+        valid = validate_private_key(
+            "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+        )
         assert valid
         print("✅ Private key validation working")
 
         # Test data masking
         test_data = {
-            'private_key': '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-            'normal_data': 'safe'
+            "private_key": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+            "normal_data": "safe",
         }
         masked = mask_sensitive_data(test_data)
-        assert '[REDACTED]' in str(masked) or '0x1234...' in str(masked)
-        assert 'safe' in str(masked)
+        assert "[REDACTED]" in str(masked) or "0x1234..." in str(masked)
+        assert "safe" in str(masked)
         print("✅ Data masking working")
 
         return True
@@ -112,15 +110,18 @@ def check_security_features():
         print(f"❌ Security feature error: {e}")
         return False
 
+
 def check_component_integration():
     """Check that components can work together."""
     print("🔗 Checking component integration...")
 
     try:
-        from unittest.mock import patch, Mock
+        from unittest.mock import Mock, patch
 
-        with patch('core.clob_client.Web3') as mock_web3, \
-             patch('core.wallet_monitor.Web3') as mock_web3_monitor:
+        with (
+            patch("core.clob_client.Web3") as mock_web3,
+            patch("core.wallet_monitor.Web3") as mock_web3_monitor,
+        ):
 
             mock_web3_instance = Mock()
             mock_web3_instance.is_connected.return_value = True
@@ -129,8 +130,8 @@ def check_component_integration():
 
             # Test component creation
             from core.clob_client import PolymarketClient
-            from core.wallet_monitor import WalletMonitor
             from core.trade_executor import TradeExecutor
+            from core.wallet_monitor import WalletMonitor
 
             clob_client = PolymarketClient()
             wallet_monitor = WalletMonitor()
@@ -147,32 +148,28 @@ def check_component_integration():
         print(f"❌ Component integration error: {e}")
         return False
 
+
 def check_test_coverage():
     """Check that comprehensive tests exist."""
     print("🧪 Checking test coverage...")
 
-    test_directories = [
-        'tests/unit',
-        'tests/integration',
-        'tests/performance',
-        'tests/mocks'
-    ]
+    test_directories = ["tests/unit", "tests/integration", "tests/performance", "tests/mocks"]
 
     test_files = [
-        'tests/conftest.py',
-        'tests/unit/test_settings.py',
-        'tests/unit/test_clob_client.py',
-        'tests/unit/test_wallet_monitor.py',
-        'tests/unit/test_trade_executor.py',
-        'tests/unit/test_security.py',
-        'tests/unit/test_helpers.py',
-        'tests/integration/test_end_to_end.py',
-        'tests/integration/test_security_integration.py',
-        'tests/integration/test_edge_cases.py',
-        'tests/performance/test_performance.py',
-        'tests/mocks/polygonscan_mock.py',
-        'tests/mocks/clob_api_mock.py',
-        'tests/mocks/web3_mock.py'
+        "tests/conftest.py",
+        "tests/unit/test_settings.py",
+        "tests/unit/test_clob_client.py",
+        "tests/unit/test_wallet_monitor.py",
+        "tests/unit/test_trade_executor.py",
+        "tests/unit/test_security.py",
+        "tests/unit/test_helpers.py",
+        "tests/integration/test_end_to_end.py",
+        "tests/integration/test_security_integration.py",
+        "tests/integration/test_edge_cases.py",
+        "tests/performance/test_performance.py",
+        "tests/mocks/polygonscan_mock.py",
+        "tests/mocks/clob_api_mock.py",
+        "tests/mocks/web3_mock.py",
     ]
 
     missing_dirs = [d for d in test_directories if not Path(d).exists()]
@@ -186,14 +183,12 @@ def check_test_coverage():
         print("✅ Comprehensive test suite present")
         return True
 
+
 def check_deployment_readiness():
     """Check deployment configuration."""
     print("🚀 Checking deployment readiness...")
 
-    deployment_files = [
-        'systemd/polymarket-bot.service',
-        'scripts/setup_ubuntu.sh'
-    ]
+    deployment_files = ["systemd/polymarket-bot.service", "scripts/setup_ubuntu.sh"]
 
     for file_path in deployment_files:
         if not Path(file_path).exists():
@@ -201,14 +196,8 @@ def check_deployment_readiness():
             return False
 
     # Check systemd service content
-    service_content = Path('systemd/polymarket-bot.service').read_text()
-    required_directives = [
-        '[Unit]',
-        '[Service]',
-        '[Install]',
-        'ExecStart=',
-        'User=polymarket-bot'
-    ]
+    service_content = Path("systemd/polymarket-bot.service").read_text()
+    required_directives = ["[Unit]", "[Service]", "[Install]", "ExecStart=", "User=polymarket-bot"]
 
     for directive in required_directives:
         if directive not in service_content:
@@ -216,13 +205,14 @@ def check_deployment_readiness():
             return False
 
     # Check setup script
-    setup_content = Path('scripts/setup_ubuntu.sh').read_text()
-    if 'set -e' not in setup_content:
+    setup_content = Path("scripts/setup_ubuntu.sh").read_text()
+    if "set -e" not in setup_content:
         print("❌ Setup script missing error handling")
         return False
 
     print("✅ Deployment configuration ready")
     return True
+
 
 def generate_integration_report(results):
     """Generate integration verification report."""
@@ -244,7 +234,7 @@ def generate_integration_report(results):
         status = "✅ PASSED" if result else "❌ FAILED"
         report += f"- **{check_name.replace('_', ' ').title()}**: {status}\n"
 
-    report += f"""
+    report += """
 ## Critical Integration Points Verified
 
 ### ✅ Security Integration
@@ -311,6 +301,7 @@ def generate_integration_report(results):
 
     return report
 
+
 def main():
     """Run integration verification."""
     print("=" * 80)
@@ -320,13 +311,13 @@ def main():
     results = {}
 
     # Run all checks
-    results['file_structure'] = check_file_structure()
-    results['imports'] = check_imports()
-    results['configuration'] = check_configuration()
-    results['security_features'] = check_security_features()
-    results['component_integration'] = check_component_integration()
-    results['test_coverage'] = check_test_coverage()
-    results['deployment_readiness'] = check_deployment_readiness()
+    results["file_structure"] = check_file_structure()
+    results["imports"] = check_imports()
+    results["configuration"] = check_configuration()
+    results["security_features"] = check_security_features()
+    results["component_integration"] = check_component_integration()
+    results["test_coverage"] = check_test_coverage()
+    results["deployment_readiness"] = check_deployment_readiness()
 
     print("\n" + "=" * 80)
     print("📊 VERIFICATION RESULTS")
@@ -358,6 +349,7 @@ def main():
         print("\n⚠️ SOME INTEGRATION ISSUES DETECTED")
         print("📋 Review the detailed report for remediation steps")
         return False
+
 
 if __name__ == "__main__":
     success = main()

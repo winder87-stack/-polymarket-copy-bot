@@ -13,20 +13,22 @@ Automated performance benchmarking including:
 Generates performance reports and alerts on regressions.
 """
 
-import os
-import json
 import asyncio
-import time
-import psutil
-from pathlib import Path
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional, Tuple
-import statistics
+import json
 import logging
+import os
+import statistics
+import time
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+import psutil
 
 from monitoring.monitoring_config import monitoring_config
 
 logger = logging.getLogger(__name__)
+
 
 class PerformanceBenchmark:
     """Performance benchmarking system"""
@@ -44,7 +46,7 @@ class PerformanceBenchmark:
         """Load performance baseline data"""
         if os.path.exists(self.config.baseline_file):
             try:
-                with open(self.config.baseline_file, 'r') as f:
+                with open(self.config.baseline_file, "r") as f:
                     self.baseline_data = json.load(f)
                 logger.info(f"✅ Loaded performance baseline from {self.config.baseline_file}")
             except Exception as e:
@@ -66,7 +68,7 @@ class PerformanceBenchmark:
             "scenarios": {},
             "system_metrics": {},
             "comparison": {},
-            "alerts": []
+            "alerts": [],
         }
 
         # Run benchmark scenarios
@@ -122,7 +124,7 @@ class PerformanceBenchmark:
             "throughput_tps": 0,
             "error_rate": 0,
             "memory_delta_mb": 0,
-            "status": "completed"
+            "status": "completed",
         }
 
         try:
@@ -157,15 +159,17 @@ class PerformanceBenchmark:
 
             # Check thresholds
             if result["throughput_tps"] < self.config.min_throughput_tps:
-                self.alerts.append({
-                    "level": "high",
-                    "metric": "trade_throughput",
-                    "message": f"Trade throughput {result['throughput_tps']:.1f} TPS below threshold {self.config.min_throughput_tps} TPS",
-                    "value": result["throughput_tps"],
-                    "threshold": self.config.min_throughput_tps
-                })
+                self.alerts.append(
+                    {
+                        "level": "high",
+                        "metric": "trade_throughput",
+                        "message": f"Trade throughput {result['throughput_tps']:.1f} TPS below threshold {self.config.min_throughput_tps} TPS",
+                        "value": result["throughput_tps"],
+                        "threshold": self.config.min_throughput_tps,
+                    }
+                )
 
-            logger.info(".2f"
+            logger.info(f"Trade execution benchmark completed in {total_time:.2f}s")
         except Exception as e:
             logger.error(f"Trade execution benchmark failed: {e}")
             result["error"] = str(e)
@@ -179,14 +183,16 @@ class PerformanceBenchmark:
             "scan_times": [],
             "wallets_per_second": 0,
             "memory_usage_mb": 0,
-            "status": "completed"
+            "status": "completed",
         }
 
         try:
             # Mock wallet scanning benchmark
             from config.settings import settings
 
-            wallet_count = len(settings.monitoring.target_wallets) or 25  # Default to 25 if not loaded
+            wallet_count = (
+                len(settings.monitoring.target_wallets) or 25
+            )  # Default to 25 if not loaded
             start_memory = psutil.Process().memory_info().rss / 1024 / 1024
             start_time = time.time()
 
@@ -210,7 +216,7 @@ class PerformanceBenchmark:
             result["wallets_per_second"] = len(scan_times) / total_time
             result["memory_usage_mb"] = end_memory - start_memory
 
-            logger.info(".2f"
+            logger.info(f"Wallet scanning benchmark completed in {total_time:.2f}s")
         except Exception as e:
             logger.error(f"Wallet scanning benchmark failed: {e}")
             result["error"] = str(e)
@@ -224,7 +230,7 @@ class PerformanceBenchmark:
             "response_times": [],
             "success_rate": 0.0,
             "avg_response_time_ms": 0,
-            "status": "completed"
+            "status": "completed",
         }
 
         try:
@@ -232,7 +238,7 @@ class PerformanceBenchmark:
             api_calls = [
                 ("polygonscan", "https://api.polygonscan.com/api"),
                 ("clob", "https://clob.polymarket.com"),
-                ("polygon_rpc", "https://polygon-rpc.com")
+                ("polygon_rpc", "https://polygon-rpc.com"),
             ]
 
             response_times = []
@@ -256,19 +262,25 @@ class PerformanceBenchmark:
             # Calculate metrics
             result["response_times"] = response_times
             result["success_rate"] = success_count / len(response_times) if response_times else 0
-            result["avg_response_time_ms"] = statistics.mean(response_times) * 1000 if response_times else 0
+            result["avg_response_time_ms"] = (
+                statistics.mean(response_times) * 1000 if response_times else 0
+            )
 
             # Check thresholds
             if result["avg_response_time_ms"] > self.config.max_response_time_ms:
-                self.alerts.append({
-                    "level": "medium",
-                    "metric": "api_response_time",
-                    "message": f"Average API response time {result['avg_response_time_ms']:.1f}ms exceeds threshold {self.config.max_response_time_ms}ms",
-                    "value": result["avg_response_time_ms"],
-                    "threshold": self.config.max_response_time_ms
-                })
+                self.alerts.append(
+                    {
+                        "level": "medium",
+                        "metric": "api_response_time",
+                        "message": f"Average API response time {result['avg_response_time_ms']:.1f}ms exceeds threshold {self.config.max_response_time_ms}ms",
+                        "value": result["avg_response_time_ms"],
+                        "threshold": self.config.max_response_time_ms,
+                    }
+                )
 
-            logger.info(".1f"
+            logger.info(
+                f"API call benchmark completed - avg response time: {result['avg_response_time_ms']:.1f}ms"
+            )
         except Exception as e:
             logger.error(f"API call benchmark failed: {e}")
             result["error"] = str(e)
@@ -283,7 +295,7 @@ class PerformanceBenchmark:
             "avg_memory_mb": 0,
             "memory_samples": [],
             "memory_leaks_detected": False,
-            "status": "completed"
+            "status": "completed",
         }
 
         try:
@@ -304,8 +316,8 @@ class PerformanceBenchmark:
 
             # Check for memory leaks (increasing trend)
             if len(samples) >= 10:
-                first_half = samples[:len(samples)//2]
-                second_half = samples[len(samples)//2:]
+                first_half = samples[: len(samples) // 2]
+                second_half = samples[len(samples) // 2 :]
 
                 first_avg = statistics.mean(first_half)
                 second_avg = statistics.mean(second_half)
@@ -313,24 +325,33 @@ class PerformanceBenchmark:
                 # If memory increased by more than 10% over time, flag as potential leak
                 if second_avg > first_avg * 1.1:
                     result["memory_leaks_detected"] = True
-                    self.alerts.append({
-                        "level": "medium",
-                        "metric": "memory_usage",
-                        "message": f"Potential memory leak detected: {first_avg:.1f}MB → {second_avg:.1f}MB",
-                        "details": {"trend": "increasing", "increase_percent": ((second_avg/first_avg - 1) * 100)}
-                    })
+                    self.alerts.append(
+                        {
+                            "level": "medium",
+                            "metric": "memory_usage",
+                            "message": f"Potential memory leak detected: {first_avg:.1f}MB → {second_avg:.1f}MB",
+                            "details": {
+                                "trend": "increasing",
+                                "increase_percent": ((second_avg / first_avg - 1) * 100),
+                            },
+                        }
+                    )
 
             # Check memory threshold
             if result["peak_memory_mb"] > self.config.max_memory_mb:
-                self.alerts.append({
-                    "level": "high",
-                    "metric": "peak_memory",
-                    "message": f"Peak memory usage {result['peak_memory_mb']:.1f}MB exceeds threshold {self.config.max_memory_mb}MB",
-                    "value": result["peak_memory_mb"],
-                    "threshold": self.config.max_memory_mb
-                })
+                self.alerts.append(
+                    {
+                        "level": "high",
+                        "metric": "peak_memory",
+                        "message": f"Peak memory usage {result['peak_memory_mb']:.1f}MB exceeds threshold {self.config.max_memory_mb}MB",
+                        "value": result["peak_memory_mb"],
+                        "threshold": self.config.max_memory_mb,
+                    }
+                )
 
-            logger.info(".1f"
+            logger.info(
+                f"Memory usage benchmark completed - peak memory: {result['peak_memory_mb']:.1f}MB"
+            )
         except Exception as e:
             logger.error(f"Memory usage benchmark failed: {e}")
             result["error"] = str(e)
@@ -348,12 +369,12 @@ class PerformanceBenchmark:
                 "memory_percent": psutil.virtual_memory().percent,
                 "memory_used_mb": psutil.virtual_memory().used / 1024 / 1024,
                 "memory_available_mb": psutil.virtual_memory().available / 1024 / 1024,
-                "disk_usage_percent": psutil.disk_usage('/').percent,
+                "disk_usage_percent": psutil.disk_usage("/").percent,
                 "process_memory_mb": process.memory_info().rss / 1024 / 1024,
                 "process_cpu_percent": process.cpu_percent(interval=1),
-                "load_average": os.getloadavg() if hasattr(os, 'getloadavg') else None,
+                "load_average": os.getloadavg() if hasattr(os, "getloadavg") else None,
                 "network_connections": len(psutil.net_connections()),
-                "open_files": len(process.open_files()) if hasattr(process, 'open_files') else None
+                "open_files": len(process.open_files()) if hasattr(process, "open_files") else None,
             }
         except Exception as e:
             logger.error(f"Failed to collect system metrics: {e}")
@@ -365,7 +386,7 @@ class PerformanceBenchmark:
             "baseline_available": bool(self.baseline_data),
             "regressions": [],
             "improvements": [],
-            "status": "completed"
+            "status": "completed",
         }
 
         if not self.baseline_data:
@@ -378,49 +399,65 @@ class PerformanceBenchmark:
                 ("trade_execution.throughput_tps", "trade_throughput", "higher"),
                 ("wallet_scanning.avg_scan_time_ms", "wallet_scan_time", "lower"),
                 ("api_calls.avg_response_time_ms", "api_response_time", "lower"),
-                ("memory_usage.avg_memory_mb", "memory_usage", "lower")
+                ("memory_usage.avg_memory_mb", "memory_usage", "lower"),
             ]
 
             for result_path, metric_name, direction in comparisons:
-                current_value = self._get_nested_value(results, result_path.split('.'))
-                baseline_value = self._get_nested_value(self.baseline_data, result_path.split('.'))
+                current_value = self._get_nested_value(results, result_path.split("."))
+                baseline_value = self._get_nested_value(self.baseline_data, result_path.split("."))
 
                 if current_value is not None and baseline_value is not None:
-                    if direction == "lower" and current_value > baseline_value * (1 + self.config.baseline_update_threshold):
-                        comparison["regressions"].append({
-                            "metric": metric_name,
-                            "current": current_value,
-                            "baseline": baseline_value,
-                            "change_percent": ((current_value / baseline_value) - 1) * 100,
-                            "direction": "worse"
-                        })
-                    elif direction == "higher" and current_value < baseline_value * (1 - self.config.baseline_update_threshold):
-                        comparison["regressions"].append({
-                            "metric": metric_name,
-                            "current": current_value,
-                            "baseline": baseline_value,
-                            "change_percent": ((current_value / baseline_value) - 1) * 100,
-                            "direction": "worse"
-                        })
-                    elif abs(current_value / baseline_value - 1) > self.config.baseline_update_threshold:
-                        if (direction == "lower" and current_value < baseline_value) or \
-                           (direction == "higher" and current_value > baseline_value):
-                            comparison["improvements"].append({
+                    if direction == "lower" and current_value > baseline_value * (
+                        1 + self.config.baseline_update_threshold
+                    ):
+                        comparison["regressions"].append(
+                            {
                                 "metric": metric_name,
                                 "current": current_value,
                                 "baseline": baseline_value,
                                 "change_percent": ((current_value / baseline_value) - 1) * 100,
-                                "direction": "better"
-                            })
+                                "direction": "worse",
+                            }
+                        )
+                    elif direction == "higher" and current_value < baseline_value * (
+                        1 - self.config.baseline_update_threshold
+                    ):
+                        comparison["regressions"].append(
+                            {
+                                "metric": metric_name,
+                                "current": current_value,
+                                "baseline": baseline_value,
+                                "change_percent": ((current_value / baseline_value) - 1) * 100,
+                                "direction": "worse",
+                            }
+                        )
+                    elif (
+                        abs(current_value / baseline_value - 1)
+                        > self.config.baseline_update_threshold
+                    ):
+                        if (direction == "lower" and current_value < baseline_value) or (
+                            direction == "higher" and current_value > baseline_value
+                        ):
+                            comparison["improvements"].append(
+                                {
+                                    "metric": metric_name,
+                                    "current": current_value,
+                                    "baseline": baseline_value,
+                                    "change_percent": ((current_value / baseline_value) - 1) * 100,
+                                    "direction": "better",
+                                }
+                            )
 
             # Generate alerts for regressions
             if comparison["regressions"]:
-                self.alerts.append({
-                    "level": "medium",
-                    "title": "Performance Regressions Detected",
-                    "message": f"Found {len(comparison['regressions'])} performance regressions vs baseline",
-                    "details": comparison["regressions"]
-                })
+                self.alerts.append(
+                    {
+                        "level": "medium",
+                        "title": "Performance Regressions Detected",
+                        "message": f"Found {len(comparison['regressions'])} performance regressions vs baseline",
+                        "details": comparison["regressions"],
+                    }
+                )
 
         except Exception as e:
             logger.error(f"Error comparing against baseline: {e}")
@@ -450,14 +487,14 @@ class PerformanceBenchmark:
         # Ensure directory exists
         Path("monitoring/performance").mkdir(parents=True, exist_ok=True)
 
-        with open(results_file, 'w') as f:
+        with open(results_file, "w") as f:
             json.dump(results, f, indent=2, default=str)
 
         logger.info(f"💾 Performance benchmark results saved to {results_file}")
 
         # Also save latest results
         latest_file = "monitoring/performance/latest_benchmark.json"
-        with open(latest_file, 'w') as f:
+        with open(latest_file, "w") as f:
             json.dump(results, f, indent=2, default=str)
 
     async def _update_baseline_if_improved(self, results: Dict[str, Any]) -> None:
@@ -468,8 +505,11 @@ class PerformanceBenchmark:
             return
 
         # Check if all key metrics improved
-        key_improvements = [imp for imp in comparison["improvements"]
-                          if imp["metric"] in ["trade_latency", "trade_throughput", "memory_usage"]]
+        key_improvements = [
+            imp
+            for imp in comparison["improvements"]
+            if imp["metric"] in ["trade_latency", "trade_throughput", "memory_usage"]
+        ]
 
         if len(key_improvements) >= 2:  # At least 2 key improvements
             logger.info("🎉 Significant performance improvements detected, updating baseline")
@@ -479,15 +519,16 @@ class PerformanceBenchmark:
                 "updated_at": datetime.now().isoformat(),
                 "updated_from": self.baseline_data.get("updated_at", "initial"),
                 "scenarios": results.get("scenarios", {}),
-                "reason": "automatic_update_due_to_improvements"
+                "reason": "automatic_update_due_to_improvements",
             }
 
             # Save new baseline
             Path(self.config.baseline_file).parent.mkdir(parents=True, exist_ok=True)
-            with open(self.config.baseline_file, 'w') as f:
+            with open(self.config.baseline_file, "w") as f:
                 json.dump(new_baseline, f, indent=2, default=str)
 
             logger.info(f"✅ Baseline updated at {self.config.baseline_file}")
+
 
 async def run_performance_benchmark() -> Dict[str, Any]:
     """Run the performance benchmark"""
@@ -504,6 +545,7 @@ async def run_performance_benchmark() -> Dict[str, Any]:
     logger.info(f"   Improvements: {len(comparison.get('improvements', []))}")
 
     return results
+
 
 if __name__ == "__main__":
     # Run performance benchmark

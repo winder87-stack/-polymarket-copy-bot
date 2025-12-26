@@ -11,16 +11,16 @@ Usage:
     python scripts/diagnostic_check.py [--component COMPONENT] [--hours HOURS] [--output FILE]
 """
 
-import os
-import sys
-import json
 import asyncio
-import time
-from pathlib import Path
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional
+import json
 import logging
+import os
 import re
+import sys
+import time
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -29,13 +29,16 @@ from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
+
 class DiagnosticChecker:
     """Advanced diagnostic checker"""
 
     def __init__(self):
         self.diagnostics = {}
 
-    async def run_full_diagnostics(self, component: Optional[str] = None, hours: int = 24) -> Dict[str, Any]:
+    async def run_full_diagnostics(
+        self, component: Optional[str] = None, hours: int = 24
+    ) -> Dict[str, Any]:
         """Run comprehensive diagnostics"""
         logger.info("🔍 Starting diagnostic analysis")
 
@@ -46,7 +49,7 @@ class DiagnosticChecker:
             "timestamp": start_time.isoformat(),
             "analysis_period_hours": hours,
             "component_focus": component,
-            "sections": {}
+            "sections": {},
         }
 
         # Run diagnostic sections
@@ -88,7 +91,7 @@ class DiagnosticChecker:
             "hostname": os.uname().nodename,
             "platform": sys.platform,
             "python_version": sys.version,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
         try:
@@ -98,7 +101,7 @@ class DiagnosticChecker:
             info["cpu"] = {
                 "physical_cores": psutil.cpu_count(logical=False),
                 "logical_cores": psutil.cpu_count(logical=True),
-                "usage_percent": psutil.cpu_percent(interval=1)
+                "usage_percent": psutil.cpu_percent(interval=1),
             }
 
             # Memory information
@@ -106,22 +109,22 @@ class DiagnosticChecker:
             info["memory"] = {
                 "total_gb": memory.total / (1024**3),
                 "available_gb": memory.available / (1024**3),
-                "used_percent": memory.percent
+                "used_percent": memory.percent,
             }
 
             # Disk information
-            disk = psutil.disk_usage('/')
+            disk = psutil.disk_usage("/")
             info["disk"] = {
                 "total_gb": disk.total / (1024**3),
                 "free_gb": disk.free / (1024**3),
-                "used_percent": disk.percent
+                "used_percent": disk.percent,
             }
 
             # Network information
             net = psutil.net_io_counters()
             info["network"] = {
                 "bytes_sent_mb": net.bytes_sent / (1024**2),
-                "bytes_recv_mb": net.bytes_recv / (1024**2)
+                "bytes_recv_mb": net.bytes_recv / (1024**2),
             }
 
         except ImportError:
@@ -134,20 +137,21 @@ class DiagnosticChecker:
         status = {}
 
         try:
-            import subprocess
 
             # Main service status
             result = await asyncio.create_subprocess_exec(
-                "systemctl", "show", "polymarket-bot",
+                "systemctl",
+                "show",
+                "polymarket-bot",
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
             )
             stdout, _ = await result.communicate()
 
             service_info = {}
-            for line in stdout.decode().split('\n'):
-                if '=' in line:
-                    key, value = line.split('=', 1)
+            for line in stdout.decode().split("\n"):
+                if "=" in line:
+                    key, value = line.split("=", 1)
                     service_info[key] = value
 
             status["main_service"] = {
@@ -155,14 +159,16 @@ class DiagnosticChecker:
                 "sub_state": service_info.get("SubState"),
                 "exec_main_pid": service_info.get("ExecMainPID"),
                 "memory_current": service_info.get("MemoryCurrent"),
-                "cpu_usage": service_info.get("CPUUsageNS")
+                "cpu_usage": service_info.get("CPUUsageNS"),
             }
 
             # Monitoring service status
             result = await asyncio.create_subprocess_exec(
-                "systemctl", "is-active", "polymarket-monitoring.timer",
+                "systemctl",
+                "is-active",
+                "polymarket-monitoring.timer",
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
             )
             stdout, _ = await result.communicate()
             status["monitoring_service"] = stdout.decode().strip()
@@ -177,13 +183,10 @@ class DiagnosticChecker:
         analysis = {
             "log_files_analyzed": [],
             "time_range": f"{cutoff_time.isoformat()} to {datetime.now().isoformat()}",
-            "patterns": {}
+            "patterns": {},
         }
 
-        log_files = [
-            "logs/polymarket_bot.log",
-            "/var/log/syslog"
-        ]
+        log_files = ["logs/polymarket_bot.log", "/var/log/syslog"]
 
         for log_file in log_files:
             if os.path.exists(log_file):
@@ -191,7 +194,7 @@ class DiagnosticChecker:
 
                 try:
                     # Analyze log patterns
-                    with open(log_file, 'r') as f:
+                    with open(log_file, "r") as f:
                         lines = f.readlines()
 
                     # Filter by time (approximate)
@@ -206,15 +209,17 @@ class DiagnosticChecker:
                         (r"WARNING", "warnings"),
                         (r"TRADE.*EXECUTED", "successful_trades"),
                         (r"TRADE.*FAILED", "failed_trades"),
-                        (r"ALERT", "alerts_sent")
+                        (r"ALERT", "alerts_sent"),
                     ]
 
                     file_patterns = {}
                     for pattern, key in error_patterns:
-                        matches = [line for line in recent_lines if re.search(pattern, line, re.IGNORECASE)]
+                        matches = [
+                            line for line in recent_lines if re.search(pattern, line, re.IGNORECASE)
+                        ]
                         file_patterns[key] = {
                             "count": len(matches),
-                            "recent_examples": matches[-3:] if matches else []
+                            "recent_examples": matches[-3:] if matches else [],
                         }
 
                     analysis["patterns"][log_file] = file_patterns
@@ -226,34 +231,32 @@ class DiagnosticChecker:
 
     async def _diagnose_performance_analysis(self, cutoff_time: datetime) -> Dict[str, Any]:
         """Analyze performance metrics and trends"""
-        analysis = {
-            "metrics_available": False,
-            "performance_trends": {},
-            "anomalies_detected": []
-        }
+        analysis = {"metrics_available": False, "performance_trends": {}, "anomalies_detected": []}
 
         # Check for performance benchmark results
         perf_file = Path("monitoring/performance/latest_benchmark.json")
         if perf_file.exists():
             try:
-                with open(perf_file, 'r') as f:
+                with open(perf_file, "r") as f:
                     perf_data = json.load(f)
 
                 analysis["metrics_available"] = True
                 analysis["latest_benchmark"] = {
                     "timestamp": perf_data.get("timestamp"),
                     "scenarios_run": len(perf_data.get("scenarios", {})),
-                    "duration_minutes": perf_data.get("duration_minutes")
+                    "duration_minutes": perf_data.get("duration_minutes"),
                 }
 
                 # Check for performance regressions
                 comparison = perf_data.get("comparison", {})
                 if comparison.get("regressions"):
                     analysis["performance_trends"]["regressions"] = comparison["regressions"]
-                    analysis["anomalies_detected"].extend([
-                        f"Performance regression in {reg['metric']}: {reg['change_percent']:+.1f}%"
-                        for reg in comparison["regressions"]
-                    ])
+                    analysis["anomalies_detected"].extend(
+                        [
+                            f"Performance regression in {reg['metric']}: {reg['change_percent']:+.1f}%"
+                            for reg in comparison["regressions"]
+                        ]
+                    )
 
             except Exception as e:
                 analysis["performance_error"] = str(e)
@@ -262,22 +265,19 @@ class DiagnosticChecker:
 
     async def _diagnose_network_diagnostics(self) -> Dict[str, Any]:
         """Diagnose network connectivity and performance"""
-        diagnostics = {
-            "connectivity_tests": {},
-            "latency_tests": {},
-            "dns_resolution": {}
-        }
+        diagnostics = {"connectivity_tests": {}, "latency_tests": {}, "dns_resolution": {}}
 
         endpoints = [
             ("polygon-rpc.com", 443),
             ("clob.polymarket.com", 443),
-            ("api.telegram.org", 443)
+            ("api.telegram.org", 443),
         ]
 
         for host, port in endpoints:
             try:
                 # Connectivity test
                 import socket
+
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 sock.settimeout(5)
                 start_time = time.time()
@@ -287,30 +287,24 @@ class DiagnosticChecker:
 
                 diagnostics["connectivity_tests"][f"{host}:{port}"] = {
                     "connected": result == 0,
-                    "latency_seconds": latency
+                    "latency_seconds": latency,
                 }
 
             except Exception as e:
-                diagnostics["connectivity_tests"][f"{host}:{port}"] = {
-                    "error": str(e)
-                }
+                diagnostics["connectivity_tests"][f"{host}:{port}"] = {"error": str(e)}
 
         return diagnostics
 
     async def _diagnose_configuration_check(self) -> Dict[str, Any]:
         """Check configuration consistency and validity"""
-        check = {
-            "config_files": {},
-            "validation_results": {},
-            "security_issues": []
-        }
+        check = {"config_files": {}, "validation_results": {}, "security_issues": []}
 
         config_files = [
             ".env",
             "config/settings.py",
             "config/wallets.json",
             "pyproject.toml",
-            "requirements.txt"
+            "requirements.txt",
         ]
 
         for config_file in config_files:
@@ -321,13 +315,15 @@ class DiagnosticChecker:
                         "exists": True,
                         "size_bytes": stat_info.st_size,
                         "permissions": oct(stat_info.st_mode)[-3:],
-                        "modified": datetime.fromtimestamp(stat_info.st_mtime).isoformat()
+                        "modified": datetime.fromtimestamp(stat_info.st_mtime).isoformat(),
                     }
 
                     # Check for obvious security issues
                     if config_file == ".env":
                         if check["config_files"][config_file]["permissions"] != "600":
-                            check["security_issues"].append(f"Insecure .env permissions: {check['config_files'][config_file]['permissions']}")
+                            check["security_issues"].append(
+                                f"Insecure .env permissions: {check['config_files'][config_file]['permissions']}"
+                            )
 
                 except Exception as e:
                     check["config_files"][config_file] = {"error": str(e)}
@@ -387,29 +383,44 @@ class DiagnosticChecker:
         insights = diagnostics.get("insights", [])
         for insight in insights:
             if "memory" in insight.lower():
-                recommendations.append("Optimize memory usage - consider implementing memory pooling or reducing data retention")
+                recommendations.append(
+                    "Optimize memory usage - consider implementing memory pooling or reducing data retention"
+                )
             elif "cpu" in insight.lower():
-                recommendations.append("Investigate CPU bottlenecks - profile code performance and optimize hot paths")
+                recommendations.append(
+                    "Investigate CPU bottlenecks - profile code performance and optimize hot paths"
+                )
             elif "error" in insight.lower():
-                recommendations.append("Review error patterns - implement better error handling and logging")
+                recommendations.append(
+                    "Review error patterns - implement better error handling and logging"
+                )
             elif "network" in insight.lower():
-                recommendations.append("Check network configuration - consider using multiple RPC endpoints for redundancy")
+                recommendations.append(
+                    "Check network configuration - consider using multiple RPC endpoints for redundancy"
+                )
             elif "performance" in insight.lower():
-                recommendations.append("Address performance regressions - review recent code changes and optimize algorithms")
+                recommendations.append(
+                    "Address performance regressions - review recent code changes and optimize algorithms"
+                )
 
         # Configuration recommendations
         config_check = diagnostics["sections"].get("configuration_check", {})
         if config_check.get("security_issues"):
-            recommendations.append("Fix configuration security issues - ensure proper file permissions")
+            recommendations.append(
+                "Fix configuration security issues - ensure proper file permissions"
+            )
 
         validation = config_check.get("validation_results", {})
         if not validation.get("config_valid", True):
-            recommendations.append("Fix configuration validation errors - check environment variables and settings")
+            recommendations.append(
+                "Fix configuration validation errors - check environment variables and settings"
+            )
 
         if not recommendations:
             recommendations.append("System diagnostics show healthy state - continue monitoring")
 
         return recommendations
+
 
 async def main():
     """Main entry point"""
@@ -423,19 +434,16 @@ async def main():
 
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
     try:
         checker = DiagnosticChecker()
-        results = await checker.run_full_diagnostics(
-            component=args.component,
-            hours=args.hours
-        )
+        results = await checker.run_full_diagnostics(component=args.component, hours=args.hours)
 
         output = json.dumps(results, indent=2, default=str) if args.json else str(results)
 
         if args.output:
-            with open(args.output, 'w') as f:
+            with open(args.output, "w") as f:
                 f.write(output)
             logger.info(f"Diagnostics saved to {args.output}")
         else:
@@ -444,6 +452,7 @@ async def main():
     except Exception as e:
         logger.error(f"Diagnostic check failed: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -17,11 +17,11 @@ Tests cover:
 - Edge cases and error conditions
 """
 
-import json
 import os
-import pytest
 from decimal import Decimal
 from unittest.mock import patch
+
+import pytest
 
 from utils.validation import InputValidator, ValidationError
 
@@ -193,7 +193,7 @@ class TestPriceValidation:
 
     def test_price_precision_warning(self):
         """Test high precision price warning"""
-        with patch('utils.validation.logger') as mock_logger:
+        with patch("utils.validation.logger") as mock_logger:
             result = InputValidator.validate_price(0.123456789)
             mock_logger.warning.assert_called_once()
             assert result == 0.123457  # Should be rounded
@@ -419,7 +419,9 @@ class TestHexStringValidation:
 
         # Too long
         with pytest.raises(ValidationError, match="length .* out of range"):
-            InputValidator.validate_hex_string("0x1234567890abcdef1234567890abcdef", min_length=2, max_length=20)
+            InputValidator.validate_hex_string(
+                "0x1234567890abcdef1234567890abcdef", min_length=2, max_length=20
+            )
 
     def test_invalid_hex_format(self):
         """Test rejection of invalid hex formats"""
@@ -455,13 +457,35 @@ class TestTokenAmountValidation:
 class TestFuzzTesting:
     """Fuzz testing with random inputs"""
 
-    @pytest.mark.parametrize("invalid_input", [
-        None, "", " ", "\n", "\t", "\r",
-        "0x", "0x1", "0xgggggggggggggggggggggggggggggggggggggggg",
-        "not_hex", "123", "-1", "0.0.0",
-        [], {}, {"key": "value"}, True, False,
-        0, -1, 1.5, float('inf'), float('-inf'), float('nan'),
-    ])
+    @pytest.mark.parametrize(
+        "invalid_input",
+        [
+            None,
+            "",
+            " ",
+            "\n",
+            "\t",
+            "\r",
+            "0x",
+            "0x1",
+            "0xgggggggggggggggggggggggggggggggggggggggg",
+            "not_hex",
+            "123",
+            "-1",
+            "0.0.0",
+            [],
+            {},
+            {"key": "value"},
+            True,
+            False,
+            0,
+            -1,
+            1.5,
+            float("inf"),
+            float("-inf"),
+            float("nan"),
+        ],
+    )
     def test_wallet_address_fuzz(self, invalid_input):
         """Fuzz test wallet address validation"""
         try:
@@ -476,10 +500,23 @@ class TestFuzzTesting:
             # Should not raise unexpected exceptions
             pytest.fail(f"Unexpected exception: {e}")
 
-    @pytest.mark.parametrize("invalid_input", [
-        None, "", " ", "0x", "0x1", "0xgggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
-        [], {}, True, False, 0, -1,
-    ])
+    @pytest.mark.parametrize(
+        "invalid_input",
+        [
+            None,
+            "",
+            " ",
+            "0x",
+            "0x1",
+            "0xgggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
+            [],
+            {},
+            True,
+            False,
+            0,
+            -1,
+        ],
+    )
     def test_private_key_fuzz(self, invalid_input):
         """Fuzz test private key validation"""
         try:
@@ -494,10 +531,25 @@ class TestFuzzTesting:
             # Should not raise unexpected exceptions
             pytest.fail(f"Unexpected exception: {e}")
 
-    @pytest.mark.parametrize("invalid_input", [
-        None, "", " ", "invalid", "1.2.3", "-1", "abc",
-        [], {}, True, False, float('inf'), float('-inf'), float('nan'),
-    ])
+    @pytest.mark.parametrize(
+        "invalid_input",
+        [
+            None,
+            "",
+            " ",
+            "invalid",
+            "1.2.3",
+            "-1",
+            "abc",
+            [],
+            {},
+            True,
+            False,
+            float("inf"),
+            float("-inf"),
+            float("nan"),
+        ],
+    )
     def test_trade_amount_fuzz(self, invalid_input):
         """Fuzz test trade amount validation"""
         try:
@@ -512,11 +564,23 @@ class TestFuzzTesting:
             # Should not raise unexpected exceptions
             pytest.fail(f"Unexpected exception: {e}")
 
-    @pytest.mark.parametrize("invalid_json", [
-        None, "", " ", "{", "}", "{invalid}", "[invalid]",
-        '{"key": value}', '{"key": "value",}', '{"key": "value", "key2": }',
-        '<script>alert("xss")</script>', '{"data": "' + "x" * 10001 + '"}',
-    ])
+    @pytest.mark.parametrize(
+        "invalid_json",
+        [
+            None,
+            "",
+            " ",
+            "{",
+            "}",
+            "{invalid}",
+            "[invalid]",
+            '{"key": value}',
+            '{"key": "value",}',
+            '{"key": "value", "key2": }',
+            '<script>alert("xss")</script>',
+            '{"data": "' + "x" * 10001 + '"}',
+        ],
+    )
     def test_json_sanitization_fuzz(self, invalid_json):
         """Fuzz test JSON sanitization"""
         try:
@@ -589,27 +653,30 @@ class TestValidationIntegration:
         # Should validate successfully
         validated_tx = InputValidator.validate_transaction_data(raw_tx)
         assert validated_tx["from"] != raw_tx["from"]  # Should be checksummed
-        assert validated_tx["to"] != raw_tx["to"]     # Should be checksummed
+        assert validated_tx["to"] != raw_tx["to"]  # Should be checksummed
         assert isinstance(validated_tx["blockNumber"], int)
         assert isinstance(validated_tx["gasUsed"], int)
 
     def test_config_validation_workflow(self):
         """Test complete configuration validation workflow"""
-        with patch.dict(os.environ, {
-            'PRIVATE_KEY': '0x1234567890123456789012345678901234567890123456789012345678901234',
-            'MAX_POSITION_SIZE': '100.0',
-            'MAX_DAILY_LOSS': '500.0',
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "PRIVATE_KEY": "0x1234567890123456789012345678901234567890123456789012345678901234",
+                "MAX_POSITION_SIZE": "100.0",
+                "MAX_DAILY_LOSS": "500.0",
+            },
+        ):
             config_dict = {
-                'PRIVATE_KEY': os.getenv('PRIVATE_KEY'),
-                'MAX_POSITION_SIZE': os.getenv('MAX_POSITION_SIZE'),
-                'MAX_DAILY_LOSS': os.getenv('MAX_DAILY_LOSS'),
+                "PRIVATE_KEY": os.getenv("PRIVATE_KEY"),
+                "MAX_POSITION_SIZE": os.getenv("MAX_POSITION_SIZE"),
+                "MAX_DAILY_LOSS": os.getenv("MAX_DAILY_LOSS"),
             }
 
             # Should validate successfully
             validated_config = InputValidator.validate_config_settings(config_dict)
-            assert validated_config['PRIVATE_KEY'] == config_dict['PRIVATE_KEY']
-            assert validated_config['MAX_POSITION_SIZE'] == config_dict['MAX_POSITION_SIZE']
+            assert validated_config["PRIVATE_KEY"] == config_dict["PRIVATE_KEY"]
+            assert validated_config["MAX_POSITION_SIZE"] == config_dict["MAX_POSITION_SIZE"]
 
     def test_trade_workflow_validation(self):
         """Test complete trade workflow validation"""

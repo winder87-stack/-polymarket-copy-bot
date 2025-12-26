@@ -12,13 +12,13 @@ Tests cover:
 import asyncio
 import gc
 import time
-import psutil
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
+import pytest
+
+from config.settings import Settings
 from core.trade_executor import TradeExecutor
 from core.wallet_monitor import WalletMonitor
-from config.settings import Settings
 
 
 @pytest.fixture
@@ -83,18 +83,20 @@ class TestPositionLockMemoryLeaks:
                 "side": "BUY",
                 "amount": 10.0,
                 "price": 0.5,
-                "confidence_score": 0.9
+                "confidence_score": 0.9,
             },
-            "order_id": "order123"
+            "order_id": "order123",
         }
 
         # Create lock for position
-        lock = trade_executor._get_position_lock(position_key)
+        trade_executor._get_position_lock(position_key)
         assert position_key in trade_executor._position_locks
 
         # Mock successful position close
-        with patch.object(trade_executor.clob_client, 'get_current_price', return_value=0.55), \
-             patch.object(trade_executor, 'execute_copy_trade') as mock_execute:
+        with (
+            patch.object(trade_executor.clob_client, "get_current_price", return_value=0.55),
+            patch.object(trade_executor, "execute_copy_trade") as mock_execute,
+        ):
 
             mock_execute.return_value = {"status": "success"}
 
@@ -158,6 +160,7 @@ class TestPositionLockMemoryLeaks:
     @pytest.mark.asyncio
     async def test_concurrent_lock_operations(self, trade_executor):
         """Test concurrent lock creation and cleanup"""
+
         async def create_and_use_lock(position_id):
             lock = trade_executor._get_position_lock(f"concurrent_{position_id}")
             async with lock:
@@ -173,7 +176,9 @@ class TestPositionLockMemoryLeaks:
         assert set(results) == set(range(50))
 
         # Verify locks were created
-        concurrent_locks = [k for k in trade_executor._position_locks.keys() if k.startswith("concurrent_")]
+        concurrent_locks = [
+            k for k in trade_executor._position_locks.keys() if k.startswith("concurrent_")
+        ]
         assert len(concurrent_locks) == 50
 
 
@@ -261,13 +266,13 @@ class TestMemoryUsageMonitoring:
     async def test_memory_cleanup_scheduling(self, trade_executor):
         """Test that memory cleanup runs periodically"""
         # Mock time to simulate periodic cleanup
-        with patch('time.time') as mock_time:
+        with patch("time.time") as mock_time:
             # Start at time 0
             mock_time.return_value = 0
 
             # Initial cleanup
             await trade_executor._cleanup_stale_locks()
-            initial_locks = len(trade_executor._position_locks)
+            len(trade_executor._position_locks)
 
             # Advance time past cleanup interval (300 seconds)
             mock_time.return_value = 301
@@ -322,14 +327,16 @@ class TestResourceCleanup:
                 "side": "BUY",
                 "amount": 10.0,
                 "price": 0.5,
-                "confidence_score": 0.9
+                "confidence_score": 0.9,
             },
-            "order_id": "order123"
+            "order_id": "order123",
         }
-        lock = trade_executor._get_position_lock(position_key)
+        trade_executor._get_position_lock(position_key)
 
         # Simulate failed close operation
-        with patch.object(trade_executor, 'execute_copy_trade', side_effect=Exception("Network error")):
+        with patch.object(
+            trade_executor, "execute_copy_trade", side_effect=Exception("Network error")
+        ):
             try:
                 await trade_executor._close_position(position_key, "FAILED_TEST")
             except Exception:

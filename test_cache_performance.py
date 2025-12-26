@@ -5,18 +5,19 @@ Tests the efficient TTL cache implementation with 1000+ simulated requests
 """
 
 import asyncio
-import time
 import sys
-from typing import Dict, Any, List
-import statistics
+import time
+from typing import Any, Dict
 
 # Add the core directory to path for imports
-sys.path.insert(0, 'core')
+sys.path.insert(0, "core")
 
 # Import only the EfficientTTLCache class directly
 import importlib.util
+
 spec = importlib.util.spec_from_file_location("clob_client", "core/clob_client.py")
 clob_module = importlib.util.module_from_spec(spec)
+
 
 # Extract only the EfficientTTLCache class
 class EfficientTTLCache:
@@ -87,6 +88,7 @@ class EfficientTTLCache:
             heap_index = len(self._expiration_heap)
             self._cache[key] = (value, now, heap_index)
             import heapq
+
             heapq.heappush(self._expiration_heap, (now + self.ttl_seconds, counter, key))
 
             # Check memory limits
@@ -100,8 +102,10 @@ class EfficientTTLCache:
             entries_to_remove = max(1, len(self._cache) // 5)
             await self._cleanup_expired_entries()
             await self._evict_oldest(entries_to_remove)
-            print(f"💾 Cache memory limit exceeded ({memory_usage/1024/1024:.1f}MB), "
-                         f"evicted {entries_to_remove} entries")
+            print(
+                f"💾 Cache memory limit exceeded ({memory_usage/1024/1024:.1f}MB), "
+                f"evicted {entries_to_remove} entries"
+            )
 
     async def _evict_oldest(self, count: int):
         """Evict oldest entries from cache"""
@@ -123,7 +127,6 @@ class EfficientTTLCache:
 
     async def _background_cleanup(self):
         """Background task to cleanup expired entries"""
-        import heapq
         while True:
             try:
                 await asyncio.sleep(60)  # Cleanup every minute
@@ -136,6 +139,7 @@ class EfficientTTLCache:
     async def _cleanup_expired_entries(self):
         """Remove expired entries from cache"""
         import heapq
+
         async with self._lock:
             now = time.time()
             original_count = len(self._cache)
@@ -174,7 +178,6 @@ class EfficientTTLCache:
         # Rough estimation: each entry ~1KB + key size
         base_memory = len(self._cache) * 1024  # 1KB per entry
         key_memory = sum(len(str(k)) for k in self._cache.keys()) * 2  # 2 bytes per char
-        import heapq
         heap_memory = len(self._expiration_heap) * 32  # ~32 bytes per heap entry
         return base_memory + key_memory + heap_memory
 
@@ -183,22 +186,23 @@ class EfficientTTLCache:
         total_requests = self._hits + self._misses
         hit_ratio = (self._hits / total_requests) if total_requests > 0 else 0.0
 
-        oldest_timestamp = float('inf')
+        oldest_timestamp = float("inf")
         for _, timestamp, _ in self._cache.values():
             oldest_timestamp = min(oldest_timestamp, timestamp)
-        oldest_timestamp = time.time() - oldest_timestamp if oldest_timestamp != float('inf') else 0
+        oldest_timestamp = time.time() - oldest_timestamp if oldest_timestamp != float("inf") else 0
 
         return {
-            'size': len(self._cache),
-            'max_size': None,  # No hard limit, memory-based
-            'hit_ratio': hit_ratio,
-            'hits': self._hits,
-            'misses': self._misses,
-            'evictions': self._evictions,
-            'memory_usage_mb': self._estimate_memory_usage() / 1024 / 1024,
-            'oldest_entry_seconds': oldest_timestamp,
-            'ttl_seconds': self.ttl_seconds,
-            'background_cleanup_active': self._cleanup_task is not None and not self._cleanup_task.done()
+            "size": len(self._cache),
+            "max_size": None,  # No hard limit, memory-based
+            "hit_ratio": hit_ratio,
+            "hits": self._hits,
+            "misses": self._misses,
+            "evictions": self._evictions,
+            "memory_usage_mb": self._estimate_memory_usage() / 1024 / 1024,
+            "oldest_entry_seconds": oldest_timestamp,
+            "ttl_seconds": self.ttl_seconds,
+            "background_cleanup_active": self._cleanup_task is not None
+            and not self._cleanup_task.done(),
         }
 
     async def clear(self):
@@ -223,15 +227,17 @@ class MockMarketData:
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            'condition_id': self.condition_id,
-            'price': self.price,
-            'volume': self.volume,
-            'active': self.active,
-            'data': 'x' * 1000  # Add some data to simulate real market data size
+            "condition_id": self.condition_id,
+            "price": self.price,
+            "volume": self.volume,
+            "active": self.active,
+            "data": "x" * 1000,  # Add some data to simulate real market data size
         }
 
 
-async def simulate_market_requests(cache: EfficientTTLCache, num_requests: int = 1000) -> Dict[str, Any]:
+async def simulate_market_requests(
+    cache: EfficientTTLCache, num_requests: int = 1000
+) -> Dict[str, Any]:
     """Simulate market requests with realistic cache hit patterns"""
 
     # Generate market IDs - some will be requested multiple times (cache hits)
@@ -279,11 +285,11 @@ async def simulate_market_requests(cache: EfficientTTLCache, num_requests: int =
         stats = cache.get_stats()
 
         return {
-            'total_requests': len(market_ids),
-            'total_time_seconds': total_time,
-            'requests_per_second': len(market_ids) / total_time,
-            'cache_stats': stats,
-            'memory_usage_mb': cache._estimate_memory_usage() / 1024 / 1024
+            "total_requests": len(market_ids),
+            "total_time_seconds": total_time,
+            "requests_per_second": len(market_ids) / total_time,
+            "cache_stats": stats,
+            "memory_usage_mb": cache._estimate_memory_usage() / 1024 / 1024,
         }
 
     finally:
@@ -297,17 +303,17 @@ async def test_cache_limits(cache: EfficientTTLCache) -> Dict[str, Any]:
 
     # Fill cache with large entries
     for i in range(200):  # Should exceed 50MB limit
-        large_data = 'x' * 500000  # ~500KB per entry
+        large_data = "x" * 500000  # ~500KB per entry
         await cache.put(f"large_market_{i:04d}", large_data)
 
     # Check memory usage and evictions
     stats = cache.get_stats()
 
     return {
-        'entries_after_fill': stats['size'],
-        'memory_usage_mb': stats['memory_usage_mb'],
-        'evictions': stats['evictions'],
-        'hit_ratio': stats['hit_ratio']
+        "entries_after_fill": stats["size"],
+        "memory_usage_mb": stats["memory_usage_mb"],
+        "evictions": stats["evictions"],
+        "hit_ratio": stats["hit_ratio"],
     }
 
 
@@ -332,9 +338,9 @@ async def test_ttl_expiration(cache: EfficientTTLCache) -> Dict[str, Any]:
     final_stats = cache.get_stats()
 
     return {
-        'initial_entries': initial_stats['size'],
-        'final_entries': final_stats['size'],
-        'entries_expired': initial_stats['size'] - final_stats['size']
+        "initial_entries": initial_stats["size"],
+        "final_entries": final_stats["size"],
+        "entries_expired": initial_stats["size"] - final_stats["size"],
     }
 
 
@@ -377,11 +383,11 @@ async def run_performance_tests():
     # Overall assessment
     print("\n🎯 Performance Assessment:")
     success_criteria = {
-        'O(1) Operations': results['requests_per_second'] > 500,  # Should handle >500 req/sec
-        'Cache Hit Ratio > 20%': results['cache_stats']['hit_ratio'] > 0.20,
-        'Memory Under Control': results['memory_usage_mb'] < 60,  # Under 60MB
-        'Memory Limits Work': memory_results['memory_usage_mb'] < 60,  # Memory management working
-        'TTL Expiration Works': ttl_results['entries_expired'] > 0
+        "O(1) Operations": results["requests_per_second"] > 500,  # Should handle >500 req/sec
+        "Cache Hit Ratio > 20%": results["cache_stats"]["hit_ratio"] > 0.20,
+        "Memory Under Control": results["memory_usage_mb"] < 60,  # Under 60MB
+        "Memory Limits Work": memory_results["memory_usage_mb"] < 60,  # Memory management working
+        "TTL Expiration Works": ttl_results["entries_expired"] > 0,
     }
 
     all_passed = True
@@ -411,5 +417,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ Test failed with error: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

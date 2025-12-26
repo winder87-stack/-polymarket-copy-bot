@@ -15,22 +15,15 @@ Features:
 - Optimization report generation with statistical validation
 """
 
-import asyncio
 import json
 import logging
-import time
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
-import pandas as pd
-from scipy.optimize import differential_evolution, minimize_scalar
-from scipy.stats import norm, ttest_1samp
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import Matern
-from sklearn.model_selection import KFold
-from sklearn.preprocessing import StandardScaler
 
 logger = logging.getLogger(__name__)
 
@@ -49,41 +42,35 @@ class ParameterOptimizer:
         # Optimization configuration
         self.optimization_config = {
             # Grid search parameters
-            "grid_search_points": 100,              # Maximum grid points to evaluate
-            "grid_search_parallel": 4,              # Parallel grid evaluations
-
+            "grid_search_points": 100,  # Maximum grid points to evaluate
+            "grid_search_parallel": 4,  # Parallel grid evaluations
             # Genetic algorithm parameters
-            "population_size": 50,                  # GA population size
-            "generations": 30,                      # GA generations
-            "mutation_rate": 0.1,                   # GA mutation rate
-            "crossover_rate": 0.8,                  # GA crossover rate
-            "elitism_rate": 0.1,                    # GA elitism rate
-
+            "population_size": 50,  # GA population size
+            "generations": 30,  # GA generations
+            "mutation_rate": 0.1,  # GA mutation rate
+            "crossover_rate": 0.8,  # GA crossover rate
+            "elitism_rate": 0.1,  # GA elitism rate
             # Bayesian optimization parameters
-            "bayesian_iterations": 50,              # BO iterations
-            "bayesian_exploration_weight": 0.1,     # BO exploration vs exploitation
-            "bayesian_kernel": "matern",            # BO kernel function
-
+            "bayesian_iterations": 50,  # BO iterations
+            "bayesian_exploration_weight": 0.1,  # BO exploration vs exploitation
+            "bayesian_kernel": "matern",  # BO kernel function
             # Validation parameters
-            "cv_folds": 5,                          # Cross-validation folds
-            "validation_window_days": 30,           # Validation window size
-            "out_of_sample_ratio": 0.3,             # Out-of-sample data ratio
-            "walk_forward_steps": 6,                # Walk-forward validation steps
-
+            "cv_folds": 5,  # Cross-validation folds
+            "validation_window_days": 30,  # Validation window size
+            "out_of_sample_ratio": 0.3,  # Out-of-sample data ratio
+            "walk_forward_steps": 6,  # Walk-forward validation steps
             # Stability analysis parameters
-            "stability_windows": 10,                # Number of stability windows
-            "stability_threshold": 0.15,            # Parameter stability threshold
-            "parameter_sensitivity_threshold": 0.1, # Sensitivity threshold
-
+            "stability_windows": 10,  # Number of stability windows
+            "stability_threshold": 0.15,  # Parameter stability threshold
+            "parameter_sensitivity_threshold": 0.1,  # Sensitivity threshold
             # Performance metrics
             "optimization_target": "sharpe_ratio",  # Primary optimization target
             "secondary_metrics": ["total_return", "max_drawdown", "win_rate"],
-            "risk_adjustment": True,                # Apply risk adjustment to optimization
-
+            "risk_adjustment": True,  # Apply risk adjustment to optimization
             # Computational limits
-            "max_evaluations": 500,                 # Maximum function evaluations
-            "time_limit_seconds": 3600,             # Time limit per optimization
-            "convergence_tolerance": 1e-4,          # Optimization convergence tolerance
+            "max_evaluations": 500,  # Maximum function evaluations
+            "time_limit_seconds": 3600,  # Time limit per optimization
+            "convergence_tolerance": 1e-4,  # Optimization convergence tolerance
         }
 
         # Parameter definitions for different strategies
@@ -93,19 +80,19 @@ class ParameterOptimizer:
                 "max_wallet_allocation": {"min": 0.05, "max": 0.25, "type": "float"},
                 "rebalance_frequency_hours": {"min": 6, "max": 72, "type": "int"},
                 "rotation_threshold": {"min": 0.05, "max": 0.30, "type": "float"},
-                "diversification_clusters": {"min": 3, "max": 8, "type": "int"}
+                "diversification_clusters": {"min": 3, "max": 8, "type": "int"},
             },
             "adaptive_strategy_engine": {
                 "strategy_switch_threshold": {"min": 0.05, "max": 0.25, "type": "float"},
                 "hysteresis_band": {"min": 0.01, "max": 0.10, "type": "float"},
                 "performance_window_days": {"min": 3, "max": 14, "type": "int"},
-                "min_confidence_threshold": {"min": 0.4, "max": 0.8, "type": "float"}
+                "min_confidence_threshold": {"min": 0.4, "max": 0.8, "type": "float"},
             },
             "market_maker_tactics": {
                 "min_spread_capture_pct": {"min": 0.01, "max": 0.10, "type": "float"},
                 "inventory_rebalance_threshold": {"min": 0.1, "max": 0.4, "type": "float"},
-                "gas_efficiency_threshold": {"min": 0.5, "max": 0.9, "type": "float"}
-            }
+                "gas_efficiency_threshold": {"min": 0.5, "max": 0.9, "type": "float"},
+            },
         }
 
         # Optimization results storage
@@ -123,7 +110,7 @@ class ParameterOptimizer:
         end_date: datetime,
         capital: float = 10000.0,
         optimization_method: str = "bayesian",
-        parameter_space: Optional[Dict[str, Any]] = None
+        parameter_space: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Optimize parameters for a specific strategy using chosen optimization method.
@@ -150,7 +137,7 @@ class ParameterOptimizer:
             "validation_results": {},
             "stability_analysis": {},
             "performance_summary": {},
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
         try:
@@ -158,7 +145,9 @@ class ParameterOptimizer:
             param_space = parameter_space or self.parameter_definitions.get(strategy_name, {})
 
             if not param_space:
-                optimization_result["error"] = f"No parameter space defined for strategy {strategy_name}"
+                optimization_result["error"] = (
+                    f"No parameter space defined for strategy {strategy_name}"
+                )
                 return optimization_result
 
             # Run optimization based on method
@@ -202,7 +191,9 @@ class ParameterOptimizer:
             # Store results
             self._store_optimization_results(strategy_name, optimization_result)
 
-            logger.info(f"✅ Parameter optimization completed for {strategy_name} using {optimization_method}")
+            logger.info(
+                f"✅ Parameter optimization completed for {strategy_name} using {optimization_method}"
+            )
 
         except Exception as e:
             logger.error(f"Error in parameter optimization for {strategy_name}: {e}")
@@ -217,7 +208,7 @@ class ParameterOptimizer:
         dataset: Dict[str, Any],
         start_date: datetime,
         end_date: datetime,
-        capital: float
+        capital: float,
     ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
         """Perform grid search optimization."""
 
@@ -226,7 +217,7 @@ class ParameterOptimizer:
         logger.info(f"Grid search: evaluating {len(param_grid)} parameter combinations")
 
         # Evaluate each parameter combination
-        best_score = float('-inf')
+        best_score = float("-inf")
         best_params = {}
         optimization_path = []
 
@@ -238,12 +229,14 @@ class ParameterOptimizer:
                 )
 
                 score = evaluation_result["score"]
-                optimization_path.append({
-                    "iteration": i + 1,
-                    "parameters": params,
-                    "score": score,
-                    "metrics": evaluation_result["metrics"]
-                })
+                optimization_path.append(
+                    {
+                        "iteration": i + 1,
+                        "parameters": params,
+                        "score": score,
+                        "metrics": evaluation_result["metrics"],
+                    }
+                )
 
                 if score > best_score:
                     best_score = score
@@ -251,7 +244,9 @@ class ParameterOptimizer:
 
                 # Progress logging
                 if (i + 1) % 10 == 0:
-                    logger.debug(f"Grid search progress: {i + 1}/{len(param_grid)} combinations evaluated")
+                    logger.debug(
+                        f"Grid search progress: {i + 1}/{len(param_grid)} combinations evaluated"
+                    )
 
             except Exception as e:
                 logger.error(f"Error evaluating parameter combination {i}: {e}")
@@ -266,7 +261,9 @@ class ParameterOptimizer:
         grid_points = []
 
         # For demonstration, generate a smaller grid
-        n_points_per_param = min(5, max(1, int(self.optimization_config["grid_search_points"] ** (1/len(param_space)))))
+        n_points_per_param = min(
+            5, max(1, int(self.optimization_config["grid_search_points"] ** (1 / len(param_space))))
+        )
 
         # Generate parameter values
         param_values = {}
@@ -313,7 +310,7 @@ class ParameterOptimizer:
         dataset: Dict[str, Any],
         start_date: datetime,
         end_date: datetime,
-        capital: float
+        capital: float,
     ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
         """Perform genetic algorithm optimization."""
 
@@ -325,9 +322,11 @@ class ParameterOptimizer:
 
         optimization_path = []
         best_individual = None
-        best_fitness = float('-inf')
+        best_fitness = float("-inf")
 
-        logger.info(f"Genetic algorithm: evolving population of {population_size} over {generations} generations")
+        logger.info(
+            f"Genetic algorithm: evolving population of {population_size} over {generations} generations"
+        )
 
         for generation in range(generations):
             # Evaluate fitness of current population
@@ -352,7 +351,7 @@ class ParameterOptimizer:
                 "best_fitness": max(fitness_scores),
                 "avg_fitness": np.mean(fitness_scores),
                 "fitness_std": np.std(fitness_scores),
-                "best_individual": best_individual
+                "best_individual": best_individual,
             }
             optimization_path.append(generation_stats)
 
@@ -364,7 +363,9 @@ class ParameterOptimizer:
 
         return best_individual or {}, optimization_path
 
-    def _initialize_ga_population(self, param_space: Dict[str, Any], population_size: int) -> List[Dict[str, Any]]:
+    def _initialize_ga_population(
+        self, param_space: Dict[str, Any], population_size: int
+    ) -> List[Dict[str, Any]]:
         """Initialize genetic algorithm population."""
 
         population = []
@@ -391,7 +392,7 @@ class ParameterOptimizer:
         self,
         population: List[Dict[str, Any]],
         fitness_scores: List[float],
-        param_space: Dict[str, Any]
+        param_space: Dict[str, Any],
     ) -> List[Dict[str, Any]]:
         """Evolve population using genetic operators."""
 
@@ -424,7 +425,9 @@ class ParameterOptimizer:
 
         return new_population[:population_size]
 
-    def _tournament_selection(self, population: List[Dict[str, Any]], fitness_scores: List[float]) -> Dict[str, Any]:
+    def _tournament_selection(
+        self, population: List[Dict[str, Any]], fitness_scores: List[float]
+    ) -> Dict[str, Any]:
         """Tournament selection for genetic algorithm."""
 
         tournament_size = 3
@@ -434,7 +437,9 @@ class ParameterOptimizer:
 
         return population[winner_idx]
 
-    def _crossover(self, parent1: Dict[str, Any], parent2: Dict[str, Any], param_space: Dict[str, Any]) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    def _crossover(
+        self, parent1: Dict[str, Any], parent2: Dict[str, Any], param_space: Dict[str, Any]
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """Perform crossover between two parents."""
 
         child1 = {}
@@ -484,7 +489,7 @@ class ParameterOptimizer:
         dataset: Dict[str, Any],
         start_date: datetime,
         end_date: datetime,
-        capital: float
+        capital: float,
     ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
         """Perform Bayesian optimization."""
 
@@ -492,10 +497,7 @@ class ParameterOptimizer:
         kernel = Matern(nu=2.5) if self.optimization_config["bayesian_kernel"] == "matern" else None
 
         gp = GaussianProcessRegressor(
-            kernel=kernel,
-            alpha=1e-6,
-            normalize_y=True,
-            n_restarts_optimizer=10
+            kernel=kernel, alpha=1e-6, normalize_y=True, n_restarts_optimizer=10
         )
 
         # Initial random evaluations
@@ -538,12 +540,14 @@ class ParameterOptimizer:
                     X_observed.append(list(next_params.values()))
                     y_observed.append(evaluation["score"])
 
-                    optimization_path.append({
-                        "iteration": iteration + 1,
-                        "parameters": next_params,
-                        "score": evaluation["score"],
-                        "acquisition_value": 0  # Would compute EI value
-                    })
+                    optimization_path.append(
+                        {
+                            "iteration": iteration + 1,
+                            "parameters": next_params,
+                            "score": evaluation["score"],
+                            "acquisition_value": 0,  # Would compute EI value
+                        }
+                    )
 
                     logger.debug(f"BO iteration {iteration + 1}: score = {evaluation['score']:.4f}")
 
@@ -560,7 +564,9 @@ class ParameterOptimizer:
 
         return best_params, optimization_path
 
-    def _acquire_next_point(self, gp, param_space: Dict[str, Any], X_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
+    def _acquire_next_point(
+        self, gp, param_space: Dict[str, Any], X_train: np.ndarray, y_train: np.ndarray
+    ) -> np.ndarray:
         """Find next point to evaluate using Expected Improvement."""
 
         # Simple random search for next point (simplified implementation)
@@ -585,7 +591,7 @@ class ParameterOptimizer:
         dataset: Dict[str, Any],
         start_date: datetime,
         end_date: datetime,
-        capital: float
+        capital: float,
     ) -> Dict[str, Any]:
         """Evaluate a specific parameter combination."""
 
@@ -612,39 +618,44 @@ class ParameterOptimizer:
                 "score": score,
                 "metrics": performance_metrics,
                 "risk_adjusted_score": score,
-                "backtest_result": backtest_result
+                "backtest_result": backtest_result,
             }
 
         except Exception as e:
             logger.error(f"Error evaluating parameter combination: {e}")
-            return {
-                "score": float('-inf'),
-                "metrics": {},
-                "error": str(e)
-            }
+            return {"score": float("-inf"), "metrics": {}, "error": str(e)}
 
-    def _create_strategy_config(self, strategy_name: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
+    def _create_strategy_config(
+        self, strategy_name: str, parameters: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Create strategy configuration from parameters."""
 
         # Base configuration
-        config = {
-            "name": f"{strategy_name}_optimized",
-            "type": strategy_name
-        }
+        config = {"name": f"{strategy_name}_optimized", "type": strategy_name}
 
         # Add parameters
         config.update(parameters)
 
         # Add strategy-specific settings
         if strategy_name == "wallet_quality_scorer":
-            config.update({
-                "wallet_type_filter": ["market_maker", "directional_trader", "arbitrage_trader"],
-                "quality_weighted_allocation": True
-            })
+            config.update(
+                {
+                    "wallet_type_filter": [
+                        "market_maker",
+                        "directional_trader",
+                        "arbitrage_trader",
+                    ],
+                    "quality_weighted_allocation": True,
+                }
+            )
         elif strategy_name == "adaptive_strategy_engine":
-            config.update({
-                "strategy_definitions": self.backtesting_engine.simulation_params.get("strategy_definitions", {})
-            })
+            config.update(
+                {
+                    "strategy_definitions": self.backtesting_engine.simulation_params.get(
+                        "strategy_definitions", {}
+                    )
+                }
+            )
 
         return config
 
@@ -668,7 +679,7 @@ class ParameterOptimizer:
         dataset: Dict[str, Any],
         start_date: datetime,
         end_date: datetime,
-        capital: float
+        capital: float,
     ) -> Dict[str, Any]:
         """Validate optimal parameters using out-of-sample testing."""
 
@@ -678,7 +689,7 @@ class ParameterOptimizer:
             "cross_validation_scores": {},
             "parameter_sensitivity": {},
             "robustness_tests": {},
-            "validation_summary": {}
+            "validation_summary": {},
         }
 
         try:
@@ -713,7 +724,9 @@ class ParameterOptimizer:
             validation_results["robustness_tests"] = robustness
 
             # Validation summary
-            validation_results["validation_summary"] = self._create_validation_summary(validation_results)
+            validation_results["validation_summary"] = self._create_validation_summary(
+                validation_results
+            )
 
         except Exception as e:
             logger.error(f"Error in parameter validation: {e}")
@@ -728,13 +741,15 @@ class ParameterOptimizer:
         dataset: Dict[str, Any],
         start_date: datetime,
         end_date: datetime,
-        capital: float
+        capital: float,
     ) -> Dict[str, Any]:
         """Run out-of-sample validation."""
 
         # Split data into in-sample and out-of-sample
         total_days = (end_date - start_date).days
-        split_point = start_date + timedelta(days=int(total_days * (1 - self.optimization_config["out_of_sample_ratio"])))
+        split_point = start_date + timedelta(
+            days=int(total_days * (1 - self.optimization_config["out_of_sample_ratio"]))
+        )
 
         # In-sample performance (used for optimization)
         in_sample_result = await self._evaluate_parameter_combination(
@@ -750,8 +765,12 @@ class ParameterOptimizer:
             "in_sample_score": in_sample_result["score"],
             "out_of_sample_score": oos_result["score"],
             "oos_degradation": in_sample_result["score"] - oos_result["score"],
-            "oos_ratio": oos_result["score"] / in_sample_result["score"] if in_sample_result["score"] != 0 else 0,
-            "validation_period_days": (end_date - split_point).days
+            "oos_ratio": (
+                oos_result["score"] / in_sample_result["score"]
+                if in_sample_result["score"] != 0
+                else 0
+            ),
+            "validation_period_days": (end_date - split_point).days,
         }
 
     async def _run_walk_forward_validation(
@@ -761,7 +780,7 @@ class ParameterOptimizer:
         dataset: Dict[str, Any],
         start_date: datetime,
         end_date: datetime,
-        capital: float
+        capital: float,
     ) -> Dict[str, Any]:
         """Run walk-forward validation."""
 
@@ -769,7 +788,7 @@ class ParameterOptimizer:
             "walk_forward_scores": [],
             "average_wf_score": 0.0,
             "wf_volatility": 0.0,
-            "wf_trend": 0.0
+            "wf_trend": 0.0,
         }
 
         # Use existing walk-forward method from backtesting engine
@@ -777,7 +796,7 @@ class ParameterOptimizer:
             [self._create_strategy_config(strategy_name, optimal_params)],
             dataset,
             start_date,
-            end_date
+            end_date,
         )
 
         if walk_forward_results and "walk_forward_windows" in walk_forward_results:
@@ -787,10 +806,9 @@ class ParameterOptimizer:
                 score = testing_perf.get(self.optimization_config["optimization_target"], 0)
                 wf_scores.append(score)
 
-                wf_results["walk_forward_scores"].append({
-                    "window": window.get("training_period"),
-                    "score": score
-                })
+                wf_results["walk_forward_scores"].append(
+                    {"window": window.get("training_period"), "score": score}
+                )
 
             if wf_scores:
                 wf_results["average_wf_score"] = np.mean(wf_scores)
@@ -811,7 +829,7 @@ class ParameterOptimizer:
         dataset: Dict[str, Any],
         start_date: datetime,
         end_date: datetime,
-        capital: float
+        capital: float,
     ) -> Dict[str, Any]:
         """Run cross-validation on optimal parameters."""
 
@@ -842,8 +860,8 @@ class ParameterOptimizer:
             "cv_std": np.std(cv_scores),
             "cv_confidence_interval": [
                 np.mean(cv_scores) - 1.96 * np.std(cv_scores) / np.sqrt(len(cv_scores)),
-                np.mean(cv_scores) + 1.96 * np.std(cv_scores) / np.sqrt(len(cv_scores))
-            ]
+                np.mean(cv_scores) + 1.96 * np.std(cv_scores) / np.sqrt(len(cv_scores)),
+            ],
         }
 
     async def _run_parameter_sensitivity_analysis(
@@ -853,7 +871,7 @@ class ParameterOptimizer:
         dataset: Dict[str, Any],
         start_date: datetime,
         end_date: datetime,
-        capital: float
+        capital: float,
     ) -> Dict[str, Any]:
         """Run parameter sensitivity analysis."""
 
@@ -891,7 +909,11 @@ class ParameterOptimizer:
                 param_scores.append(result["score"])
 
             # Calculate sensitivity metrics
-            sensitivity = np.std(param_scores) / abs(np.mean(param_scores)) if np.mean(param_scores) != 0 else 0
+            sensitivity = (
+                np.std(param_scores) / abs(np.mean(param_scores))
+                if np.mean(param_scores) != 0
+                else 0
+            )
 
             sensitivity_results[param_name] = {
                 "optimal_value": param_value,
@@ -899,7 +921,9 @@ class ParameterOptimizer:
                 "test_scores": param_scores,
                 "sensitivity": sensitivity,
                 "sensitivity_interpretation": self._interpret_sensitivity(sensitivity),
-                "robust_range": self._calculate_robust_range(test_points, param_scores, optimal_params[param_name])
+                "robust_range": self._calculate_robust_range(
+                    test_points, param_scores, optimal_params[param_name]
+                ),
             }
 
         return sensitivity_results
@@ -916,10 +940,16 @@ class ParameterOptimizer:
         else:
             return "extreme_sensitivity"
 
-    def _calculate_robust_range(self, test_values: List[float], test_scores: List[float], optimal_value: float) -> Dict[str, Any]:
+    def _calculate_robust_range(
+        self, test_values: List[float], test_scores: List[float], optimal_value: float
+    ) -> Dict[str, Any]:
         """Calculate robust parameter range."""
 
-        optimal_score = test_scores[test_values.index(optimal_value)] if optimal_value in test_values else max(test_scores)
+        optimal_score = (
+            test_scores[test_values.index(optimal_value)]
+            if optimal_value in test_values
+            else max(test_scores)
+        )
 
         # Find values within 5% of optimal score
         threshold_score = optimal_score * 0.95
@@ -928,7 +958,7 @@ class ParameterOptimizer:
         return {
             "robust_values": robust_values,
             "robust_range_width": max(robust_values) - min(robust_values) if robust_values else 0,
-            "robustness_score": len(robust_values) / len(test_values)
+            "robustness_score": len(robust_values) / len(test_values),
         }
 
     async def _run_robustness_tests(
@@ -938,7 +968,7 @@ class ParameterOptimizer:
         dataset: Dict[str, Any],
         start_date: datetime,
         end_date: datetime,
-        capital: float
+        capital: float,
     ) -> Dict[str, Any]:
         """Run robustness tests on optimal parameters."""
 
@@ -946,24 +976,31 @@ class ParameterOptimizer:
             "monte_carlo_robustness": {},
             "stress_test_performance": {},
             "regime_robustness": {},
-            "data_sensitivity": {}
+            "data_sensitivity": {},
         }
 
         try:
             # Monte Carlo robustness
             mc_results = await self.backtesting_engine.run_monte_carlo_stress_test(
                 self._create_strategy_config(strategy_name, optimal_params),
-                dataset, start_date, end_date, capital
+                dataset,
+                start_date,
+                end_date,
+                capital,
             )
 
             robustness_results["monte_carlo_robustness"] = {
-                "survival_probability": mc_results.get("aggregate_statistics", {}).get("probability_profit", 0),
+                "survival_probability": mc_results.get("aggregate_statistics", {}).get(
+                    "probability_profit", 0
+                ),
                 "var_95_robustness": mc_results.get("var_95", 0),
-                "expected_shortfall_robustness": mc_results.get("cvar_95", 0)
+                "expected_shortfall_robustness": mc_results.get("cvar_95", 0),
             }
 
             # Stress test performance
-            robustness_results["stress_test_performance"] = mc_results.get("aggregate_statistics", {})
+            robustness_results["stress_test_performance"] = mc_results.get(
+                "aggregate_statistics", {}
+            )
 
         except Exception as e:
             logger.error(f"Error in robustness tests: {e}")
@@ -979,7 +1016,7 @@ class ParameterOptimizer:
             "validation_strengths": [],
             "validation_concerns": [],
             "recommendations": [],
-            "confidence_level": "unknown"
+            "confidence_level": "unknown",
         }
 
         try:
@@ -1023,8 +1060,7 @@ class ParameterOptimizer:
             # Parameter sensitivity
             sensitivity = validation_results.get("parameter_sensitivity", {})
             high_sensitivity_params = [
-                param for param, data in sensitivity.items()
-                if data.get("sensitivity", 0) > 0.25
+                param for param, data in sensitivity.items() if data.get("sensitivity", 0) > 0.25
             ]
 
             if not high_sensitivity_params:
@@ -1032,7 +1068,9 @@ class ParameterOptimizer:
                 summary["validation_strengths"].append("Low parameter sensitivity")
             else:
                 scores.append(0.7)
-                summary["validation_concerns"].append(f"High sensitivity to parameters: {high_sensitivity_params}")
+                summary["validation_concerns"].append(
+                    f"High sensitivity to parameters: {high_sensitivity_params}"
+                )
 
             # Overall score
             summary["overall_validation_score"] = np.mean(scores) if scores else 0.5
@@ -1047,11 +1085,17 @@ class ParameterOptimizer:
 
             # Recommendations
             if summary["confidence_level"] == "high":
-                summary["recommendations"].append("Parameters are well-validated and can be used in production")
+                summary["recommendations"].append(
+                    "Parameters are well-validated and can be used in production"
+                )
             elif summary["confidence_level"] == "moderate":
-                summary["recommendations"].append("Parameters show reasonable validation but monitor performance closely")
+                summary["recommendations"].append(
+                    "Parameters show reasonable validation but monitor performance closely"
+                )
             else:
-                summary["recommendations"].append("Parameters require further validation or adjustment before production use")
+                summary["recommendations"].append(
+                    "Parameters require further validation or adjustment before production use"
+                )
 
         except Exception as e:
             logger.error(f"Error creating validation summary: {e}")
@@ -1065,7 +1109,7 @@ class ParameterOptimizer:
         optimal_params: Dict[str, Any],
         dataset: Dict[str, Any],
         start_date: datetime,
-        end_date: datetime
+        end_date: datetime,
     ) -> Dict[str, Any]:
         """Analyze parameter stability across different time periods."""
 
@@ -1073,7 +1117,7 @@ class ParameterOptimizer:
             "parameter_stability_scores": {},
             "stability_over_time": {},
             "most_stable_parameters": [],
-            "stability_recommendations": []
+            "stability_recommendations": [],
         }
 
         try:
@@ -1115,7 +1159,9 @@ class ParameterOptimizer:
                         "stability_score": stability_score,
                         "mean_deviation": np.mean(deviations),
                         "deviation_std": np.std(deviations),
-                        "stability_interpretation": "stable" if stability_score > 0.8 else "variable"
+                        "stability_interpretation": (
+                            "stable" if stability_score > 0.8 else "variable"
+                        ),
                     }
 
             # Find most stable parameters
@@ -1123,13 +1169,16 @@ class ParameterOptimizer:
                 sorted_stability = sorted(
                     stability_results["parameter_stability_scores"].items(),
                     key=lambda x: x[1]["stability_score"],
-                    reverse=True
+                    reverse=True,
                 )
-                stability_results["most_stable_parameters"] = [p[0] for p, _ in sorted_stability[:3]]
+                stability_results["most_stable_parameters"] = [
+                    p[0] for p, _ in sorted_stability[:3]
+                ]
 
             # Stability recommendations
             unstable_params = [
-                param for param, data in stability_results["parameter_stability_scores"].items()
+                param
+                for param, data in stability_results["parameter_stability_scores"].items()
                 if data["stability_score"] < 0.7
             ]
 
@@ -1152,7 +1201,7 @@ class ParameterOptimizer:
         self,
         optimal_params: Dict[str, Any],
         validation_results: Dict[str, Any],
-        stability_analysis: Dict[str, Any]
+        stability_analysis: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Generate comprehensive optimization performance summary."""
 
@@ -1162,7 +1211,7 @@ class ParameterOptimizer:
             "validation_assessment": "unknown",
             "stability_assessment": "unknown",
             "production_readiness": "unknown",
-            "performance_summary_text": ""
+            "performance_summary_text": "",
         }
 
         try:
@@ -1170,7 +1219,9 @@ class ParameterOptimizer:
             scores = []
 
             # Validation performance
-            validation_score = validation_results.get("validation_summary", {}).get("overall_validation_score", 0.5)
+            validation_score = validation_results.get("validation_summary", {}).get(
+                "overall_validation_score", 0.5
+            )
             scores.append(validation_score)
 
             # Parameter stability
@@ -1182,7 +1233,9 @@ class ParameterOptimizer:
             scores.append(avg_stability)
 
             # Out-of-sample performance
-            oos_ratio = validation_results.get("out_of_sample_performance", {}).get("oos_ratio", 0.5)
+            oos_ratio = validation_results.get("out_of_sample_performance", {}).get(
+                "oos_ratio", 0.5
+            )
             scores.append(oos_ratio)
 
             summary["optimization_quality_score"] = np.mean(scores)
@@ -1194,7 +1247,9 @@ class ParameterOptimizer:
                 "oos_degradation": oos_perf.get("oos_degradation", 0),
                 "validation_confidence": validation_score,
                 "parameter_stability": avg_stability,
-                "walk_forward_avg_score": validation_results.get("walk_forward_validation", {}).get("average_wf_score", 0)
+                "walk_forward_avg_score": validation_results.get("walk_forward_validation", {}).get(
+                    "average_wf_score", 0
+                ),
             }
 
             # Assessments
@@ -1265,7 +1320,7 @@ Key Metrics:
             "optimized_strategies": list(self.optimization_results.keys()),
             "best_performing_optimization": self._find_best_optimization(),
             "optimization_methods_used": self._get_methods_used(),
-            "average_optimization_score": self._calculate_average_optimization_score()
+            "average_optimization_score": self._calculate_average_optimization_score(),
         }
 
     def _find_best_optimization(self) -> Optional[str]:
@@ -1318,7 +1373,7 @@ Key Metrics:
 
             filepath = data_dir / f"{filename}.json"
 
-            with open(filepath, 'w') as f:
+            with open(filepath, "w") as f:
                 json.dump(results, f, indent=2, default=str)
 
             logger.info(f"💾 Optimization results saved to {filepath}")

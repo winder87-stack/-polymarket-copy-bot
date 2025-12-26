@@ -16,18 +16,16 @@ Features:
 """
 
 import json
-import os
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
-import plotly.graph_objects as go
-import plotly.express as px
-from plotly.subplots import make_subplots
 import pandas as pd
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
-from core.market_maker_detector import MarketMakerDetector
 from config.settings import settings
+from core.market_maker_detector import MarketMakerDetector
 
 
 class MarketMakerDashboard:
@@ -46,13 +44,13 @@ class MarketMakerDashboard:
 
         # Chart styling
         self.colors = {
-            'market_maker': '#e74c3c',      # Red
-            'directional_trader': '#27ae60', # Green
-            'high_frequency_trader': '#f39c12', # Orange
-            'arbitrage_trader': '#9b59b6',     # Purple
-            'mixed_trader': '#3498db',        # Blue
-            'low_activity': '#95a5a6',       # Gray
-            'unknown': '#34495e'             # Dark gray
+            "market_maker": "#e74c3c",  # Red
+            "directional_trader": "#27ae60",  # Green
+            "high_frequency_trader": "#f39c12",  # Orange
+            "arbitrage_trader": "#9b59b6",  # Purple
+            "mixed_trader": "#3498db",  # Blue
+            "low_activity": "#95a5a6",  # Gray
+            "unknown": "#34495e",  # Dark gray
         }
 
     async def generate_comprehensive_dashboard(self) -> Dict[str, Any]:
@@ -68,7 +66,7 @@ class MarketMakerDashboard:
             "charts": {},
             "summary_stats": {},
             "insights": [],
-            "alerts": []
+            "alerts": [],
         }
 
         try:
@@ -88,7 +86,7 @@ class MarketMakerDashboard:
             # Generate HTML dashboard
             html_content = self._generate_html_dashboard(dashboard_data)
             html_file = self.market_maker_dir / "market_maker_dashboard.html"
-            with open(html_file, 'w', encoding='utf-8') as f:
+            with open(html_file, "w", encoding="utf-8") as f:
                 f.write(html_content)
 
             print(f"🎯 Market maker dashboard generated: {html_file}")
@@ -112,8 +110,8 @@ class MarketMakerDashboard:
                 return charts
 
             # Convert to DataFrame for analysis
-            df = pd.DataFrame.from_dict(all_classifications, orient='index')
-            df['wallet_address'] = df.index
+            df = pd.DataFrame.from_dict(all_classifications, orient="index")
+            df["wallet_address"] = df.index
 
             # 1. Classification Distribution Pie Chart
             charts["classification_distribution"] = self._create_classification_pie_chart(df)
@@ -144,27 +142,34 @@ class MarketMakerDashboard:
     def _create_classification_pie_chart(self, df: pd.DataFrame) -> Dict[str, Any]:
         """Create classification distribution pie chart"""
 
-        classification_counts = df['classification'].value_counts()
+        classification_counts = df["classification"].value_counts()
 
-        fig = go.Figure(data=[go.Pie(
-            labels=classification_counts.index,
-            values=classification_counts.values,
-            marker_colors=[self.colors.get(cls, '#95a5a6') for cls in classification_counts.index],
-            title="Wallet Classification Distribution"
-        )])
-
-        fig.update_layout(
-            title="Market Maker Classification Distribution",
-            font=dict(size=12)
+        fig = go.Figure(
+            data=[
+                go.Pie(
+                    labels=classification_counts.index,
+                    values=classification_counts.values,
+                    marker_colors=[
+                        self.colors.get(cls, "#95a5a6") for cls in classification_counts.index
+                    ],
+                    title="Wallet Classification Distribution",
+                )
+            ]
         )
+
+        fig.update_layout(title="Market Maker Classification Distribution", font=dict(size=12))
 
         return {
             "data": fig.to_json(),
             "summary": {
                 "total_wallets": len(df),
-                "market_makers": classification_counts.get('market_maker', 0),
-                "mm_percentage": classification_counts.get('market_maker', 0) / len(df) * 100 if len(df) > 0 else 0
-            }
+                "market_makers": classification_counts.get("market_maker", 0),
+                "mm_percentage": (
+                    classification_counts.get("market_maker", 0) / len(df) * 100
+                    if len(df) > 0
+                    else 0
+                ),
+            },
         }
 
     def _create_mm_probability_histogram(self, df: pd.DataFrame) -> Dict[str, Any]:
@@ -173,41 +178,50 @@ class MarketMakerDashboard:
         fig = go.Figure()
 
         # Add histogram
-        fig.add_trace(go.Histogram(
-            x=df['market_maker_probability'],
-            nbinsx=20,
-            name="Market Maker Probability",
-            marker_color='#3498db',
-            opacity=0.7
-        ))
+        fig.add_trace(
+            go.Histogram(
+                x=df["market_maker_probability"],
+                nbinsx=20,
+                name="Market Maker Probability",
+                marker_color="#3498db",
+                opacity=0.7,
+            )
+        )
 
         # Add vertical lines for thresholds
-        fig.add_vline(x=0.7, line_dash="dash", line_color="red",
-                     annotation_text="Market Maker Threshold (0.7)")
-        fig.add_vline(x=0.4, line_dash="dot", line_color="orange",
-                     annotation_text="Mixed Trader Threshold (0.4)")
+        fig.add_vline(
+            x=0.7,
+            line_dash="dash",
+            line_color="red",
+            annotation_text="Market Maker Threshold (0.7)",
+        )
+        fig.add_vline(
+            x=0.4,
+            line_dash="dot",
+            line_color="orange",
+            annotation_text="Mixed Trader Threshold (0.4)",
+        )
 
         fig.update_layout(
             title="Market Maker Probability Distribution",
             xaxis_title="Market Maker Probability",
             yaxis_title="Number of Wallets",
-            bargap=0.1
+            bargap=0.1,
         )
 
         # Calculate statistics
-        probs = df['market_maker_probability']
+        probs = df["market_maker_probability"]
         stats = {
             "mean": probs.mean(),
             "median": probs.median(),
             "std": probs.std(),
             "high_probability_count": (probs >= 0.7).sum(),
-            "high_probability_percentage": (probs >= 0.7).sum() / len(probs) * 100 if len(probs) > 0 else 0
+            "high_probability_percentage": (
+                (probs >= 0.7).sum() / len(probs) * 100 if len(probs) > 0 else 0
+            ),
         }
 
-        return {
-            "data": fig.to_json(),
-            "statistics": stats
-        }
+        return {"data": fig.to_json(), "statistics": stats}
 
     def _create_confidence_distribution_chart(self, df: pd.DataFrame) -> Dict[str, Any]:
         """Create confidence score distribution chart"""
@@ -215,31 +229,34 @@ class MarketMakerDashboard:
         fig = go.Figure()
 
         # Create confidence distribution by classification
-        for classification in df['classification'].unique():
-            class_data = df[df['classification'] == classification]
-            fig.add_trace(go.Box(
-                y=class_data['confidence_score'],
-                name=classification.replace('_', ' ').title(),
-                marker_color=self.colors.get(classification, '#95a5a6'),
-                boxpoints='all',
-                jitter=0.3,
-                pointpos=-1.8
-            ))
+        for classification in df["classification"].unique():
+            class_data = df[df["classification"] == classification]
+            fig.add_trace(
+                go.Box(
+                    y=class_data["confidence_score"],
+                    name=classification.replace("_", " ").title(),
+                    marker_color=self.colors.get(classification, "#95a5a6"),
+                    boxpoints="all",
+                    jitter=0.3,
+                    pointpos=-1.8,
+                )
+            )
 
         fig.update_layout(
             title="Confidence Score Distribution by Classification",
             yaxis_title="Confidence Score",
             xaxis_title="Classification Type",
-            showlegend=False
+            showlegend=False,
         )
 
         # Calculate confidence statistics
-        confidence_stats = df.groupby('classification')['confidence_score'].agg(['mean', 'std', 'min', 'max']).round(3)
+        confidence_stats = (
+            df.groupby("classification")["confidence_score"]
+            .agg(["mean", "std", "min", "max"])
+            .round(3)
+        )
 
-        return {
-            "data": fig.to_json(),
-            "statistics": confidence_stats.to_dict()
-        }
+        return {"data": fig.to_json(), "statistics": confidence_stats.to_dict()}
 
     def _create_frequency_balance_scatter(self, df: pd.DataFrame) -> Dict[str, Any]:
         """Create trading frequency vs balance score scatter plot"""
@@ -249,57 +266,70 @@ class MarketMakerDashboard:
         # Extract metrics from nested data
         plot_data = []
         for idx, row in df.iterrows():
-            metrics = row.get('metrics_snapshot', {})
-            temporal = metrics.get('temporal_metrics', {})
-            directional = metrics.get('directional_metrics', {})
+            metrics = row.get("metrics_snapshot", {})
+            temporal = metrics.get("temporal_metrics", {})
+            directional = metrics.get("directional_metrics", {})
 
-            plot_data.append({
-                'wallet': idx[:10] + '...',  # Truncate for display
-                'frequency': temporal.get('trades_per_hour', 0),
-                'balance': directional.get('balance_score', 0),
-                'classification': row.get('classification', 'unknown'),
-                'mm_probability': row.get('market_maker_probability', 0)
-            })
+            plot_data.append(
+                {
+                    "wallet": idx[:10] + "...",  # Truncate for display
+                    "frequency": temporal.get("trades_per_hour", 0),
+                    "balance": directional.get("balance_score", 0),
+                    "classification": row.get("classification", "unknown"),
+                    "mm_probability": row.get("market_maker_probability", 0),
+                }
+            )
 
         if plot_data:
             plot_df = pd.DataFrame(plot_data)
 
-            for classification in plot_df['classification'].unique():
-                class_data = plot_df[plot_df['classification'] == classification]
-                fig.add_trace(go.Scatter(
-                    x=class_data['frequency'],
-                    y=class_data['balance'],
-                    mode='markers',
-                    name=classification.replace('_', ' ').title(),
-                    marker=dict(
-                        size=8,
-                        color=self.colors.get(classification, '#95a5a6'),
-                        opacity=0.7
-                    ),
-                    text=class_data['wallet'],
-                    hovertemplate=
-                    '<b>Wallet:</b> %{text}<br>' +
-                    '<b>Trades/Hour:</b> %{x:.2f}<br>' +
-                    '<b>Balance Score:</b> %{y:.3f}<br>' +
-                    '<b>MM Probability:</b> ' + class_data['mm_probability'].astype(str) + '<extra></extra>'
-                ))
+            for classification in plot_df["classification"].unique():
+                class_data = plot_df[plot_df["classification"] == classification]
+                fig.add_trace(
+                    go.Scatter(
+                        x=class_data["frequency"],
+                        y=class_data["balance"],
+                        mode="markers",
+                        name=classification.replace("_", " ").title(),
+                        marker=dict(
+                            size=8, color=self.colors.get(classification, "#95a5a6"), opacity=0.7
+                        ),
+                        text=class_data["wallet"],
+                        hovertemplate="<b>Wallet:</b> %{text}<br>"
+                        + "<b>Trades/Hour:</b> %{x:.2f}<br>"
+                        + "<b>Balance Score:</b> %{y:.3f}<br>"
+                        + "<b>MM Probability:</b> "
+                        + class_data["mm_probability"].astype(str)
+                        + "<extra></extra>",
+                    )
+                )
 
         # Add reference lines
-        fig.add_hline(y=0.7, line_dash="dash", line_color="red", opacity=0.5,
-                     annotation_text="High Balance Threshold")
-        fig.add_vline(x=5, line_dash="dash", line_color="orange", opacity=0.5,
-                     annotation_text="High Frequency Threshold")
+        fig.add_hline(
+            y=0.7,
+            line_dash="dash",
+            line_color="red",
+            opacity=0.5,
+            annotation_text="High Balance Threshold",
+        )
+        fig.add_vline(
+            x=5,
+            line_dash="dash",
+            line_color="orange",
+            opacity=0.5,
+            annotation_text="High Frequency Threshold",
+        )
 
         fig.update_layout(
             title="Trading Frequency vs Balance Score",
             xaxis_title="Trades per Hour",
             yaxis_title="Buy/Sell Balance Score",
-            xaxis=dict(range=[0, max(plot_df['frequency'].max() * 1.1, 10) if plot_data else 10])
+            xaxis=dict(range=[0, max(plot_df["frequency"].max() * 1.1, 10) if plot_data else 10]),
         )
 
         return {
             "data": fig.to_json(),
-            "insights": self._analyze_scatter_plot_insights(plot_data) if plot_data else []
+            "insights": self._analyze_scatter_plot_insights(plot_data) if plot_data else [],
         }
 
     def _create_classification_heatmap(self, df: pd.DataFrame) -> Dict[str, Any]:
@@ -307,37 +337,34 @@ class MarketMakerDashboard:
 
         # Create pivot table for heatmap
         heatmap_data = df.pivot_table(
-            values='confidence_score',
-            index='classification',
-            aggfunc=['count', 'mean', 'std']
+            values="confidence_score", index="classification", aggfunc=["count", "mean", "std"]
         ).round(3)
 
         # Flatten column names
-        heatmap_data.columns = ['_'.join(col).strip() for col in heatmap_data.columns.values]
+        heatmap_data.columns = ["_".join(col).strip() for col in heatmap_data.columns.values]
         heatmap_data = heatmap_data.reset_index()
 
-        fig = go.Figure(data=go.Heatmap(
-            z=heatmap_data['mean_confidence_score'],
-            x=heatmap_data['classification'],
-            y=['Average Confidence'],
-            colorscale='RdYlGn',
-            text=heatmap_data['mean_confidence_score'].round(3),
-            texttemplate='%{text}',
-            textfont={"size": 12},
-            hoverongaps=False
-        ))
+        fig = go.Figure(
+            data=go.Heatmap(
+                z=heatmap_data["mean_confidence_score"],
+                x=heatmap_data["classification"],
+                y=["Average Confidence"],
+                colorscale="RdYlGn",
+                text=heatmap_data["mean_confidence_score"].round(3),
+                texttemplate="%{text}",
+                textfont={"size": 12},
+                hoverongaps=False,
+            )
+        )
 
         fig.update_layout(
             title="Classification Confidence Heatmap",
             xaxis_title="Classification Type",
             yaxis_title="",
-            height=300
+            height=300,
         )
 
-        return {
-            "data": fig.to_json(),
-            "statistics": heatmap_data.to_dict('records')
-        }
+        return {"data": fig.to_json(), "statistics": heatmap_data.to_dict("records")}
 
     async def _create_probability_trends_chart(self) -> Dict[str, Any]:
         """Create market maker probability trends chart"""
@@ -347,32 +374,37 @@ class MarketMakerDashboard:
         # Get recent behavior history for top market makers
         all_classifications = self.detector.storage.get_all_classifications()
         market_makers = [
-            wallet for wallet, data in all_classifications.items()
-            if data.get('classification') == 'market_maker'
-        ][:5]  # Top 5 market makers
+            wallet
+            for wallet, data in all_classifications.items()
+            if data.get("classification") == "market_maker"
+        ][
+            :5
+        ]  # Top 5 market makers
 
         for wallet in market_makers:
             history = self.detector.storage.get_wallet_behavior_history(wallet, limit=20)
 
             if len(history) >= 2:
-                timestamps = [datetime.fromisoformat(entry['timestamp']) for entry in history]
-                probabilities = [entry['market_maker_probability'] for entry in history]
+                timestamps = [datetime.fromisoformat(entry["timestamp"]) for entry in history]
+                probabilities = [entry["market_maker_probability"] for entry in history]
 
-                fig.add_trace(go.Scatter(
-                    x=timestamps,
-                    y=probabilities,
-                    mode='lines+markers',
-                    name=f"{wallet[:8]}...",
-                    line=dict(width=2),
-                    marker=dict(size=6)
-                ))
+                fig.add_trace(
+                    go.Scatter(
+                        x=timestamps,
+                        y=probabilities,
+                        mode="lines+markers",
+                        name=f"{wallet[:8]}...",
+                        line=dict(width=2),
+                        marker=dict(size=6),
+                    )
+                )
 
         if fig.data:
             fig.update_layout(
                 title="Market Maker Probability Trends (Top 5)",
                 xaxis_title="Time",
                 yaxis_title="Market Maker Probability",
-                xaxis=dict(tickformat='%m/%d %H:%M')
+                xaxis=dict(tickformat="%m/%d %H:%M"),
             )
 
         return {"data": fig.to_json()}
@@ -383,52 +415,72 @@ class MarketMakerDashboard:
         # Extract risk data from classifications
         risk_data = []
         for idx, row in df.iterrows():
-            behavior = row.get('metrics_snapshot', {})
-            risk = behavior.get('risk_metrics', {})
+            behavior = row.get("metrics_snapshot", {})
+            risk = behavior.get("risk_metrics", {})
 
-            risk_data.append({
-                'classification': row.get('classification', 'unknown'),
-                'price_impact': risk.get('avg_price_impact', 0),
-                'position_breaches': risk.get('position_limit_breaches', 0),
-                'net_position': abs(risk.get('net_position_drift', 0))
-            })
+            risk_data.append(
+                {
+                    "classification": row.get("classification", "unknown"),
+                    "price_impact": risk.get("avg_price_impact", 0),
+                    "position_breaches": risk.get("position_limit_breaches", 0),
+                    "net_position": abs(risk.get("net_position_drift", 0)),
+                }
+            )
 
         if risk_data:
             risk_df = pd.DataFrame(risk_data)
 
             fig = make_subplots(
-                rows=1, cols=3,
-                subplot_titles=("Average Price Impact", "Position Limit Breaches", "Net Position Drift")
+                rows=1,
+                cols=3,
+                subplot_titles=(
+                    "Average Price Impact",
+                    "Position Limit Breaches",
+                    "Net Position Drift",
+                ),
             )
 
             # Price impact by classification
-            impact_by_class = risk_df.groupby('classification')['price_impact'].mean()
+            impact_by_class = risk_df.groupby("classification")["price_impact"].mean()
             fig.add_trace(
-                go.Bar(x=impact_by_class.index, y=impact_by_class.values, name="Price Impact",
-                      marker_color='lightblue'),
-                row=1, col=1
+                go.Bar(
+                    x=impact_by_class.index,
+                    y=impact_by_class.values,
+                    name="Price Impact",
+                    marker_color="lightblue",
+                ),
+                row=1,
+                col=1,
             )
 
             # Position breaches by classification
-            breaches_by_class = risk_df.groupby('classification')['position_breaches'].mean()
+            breaches_by_class = risk_df.groupby("classification")["position_breaches"].mean()
             fig.add_trace(
-                go.Bar(x=breaches_by_class.index, y=breaches_by_class.values, name="Position Breaches",
-                      marker_color='lightcoral'),
-                row=1, col=2
+                go.Bar(
+                    x=breaches_by_class.index,
+                    y=breaches_by_class.values,
+                    name="Position Breaches",
+                    marker_color="lightcoral",
+                ),
+                row=1,
+                col=2,
             )
 
             # Net position drift by classification
-            drift_by_class = risk_df.groupby('classification')['net_position'].mean()
+            drift_by_class = risk_df.groupby("classification")["net_position"].mean()
             fig.add_trace(
-                go.Bar(x=drift_by_class.index, y=drift_by_class.values, name="Position Drift",
-                      marker_color='lightgreen'),
-                row=1, col=3
+                go.Bar(
+                    x=drift_by_class.index,
+                    y=drift_by_class.values,
+                    name="Position Drift",
+                    marker_color="lightgreen",
+                ),
+                row=1,
+                col=3,
             )
 
             fig.update_layout(
-                title="Risk Assessment by Classification Type",
-                showlegend=False,
-                height=400
+                title="Risk Assessment by Classification Type", showlegend=False, height=400
             )
 
         return {"data": fig.to_json() if risk_data else None}
@@ -444,31 +496,29 @@ class MarketMakerDashboard:
 
         # High frequency, high balance = likely market makers
         mm_candidates = df[
-            (df['frequency'] >= 5) &
-            (df['balance'] >= 0.7) &
-            (df['mm_probability'] >= 0.7)
+            (df["frequency"] >= 5) & (df["balance"] >= 0.7) & (df["mm_probability"] >= 0.7)
         ]
 
         if len(mm_candidates) > 0:
-            insights.append(f"🎯 Identified {len(mm_candidates)} strong market maker candidates with high frequency and balanced trading")
+            insights.append(
+                f"🎯 Identified {len(mm_candidates)} strong market maker candidates with high frequency and balanced trading"
+            )
 
         # Low frequency, low balance = directional traders
-        directional = df[
-            (df['frequency'] < 1) &
-            (df['balance'] < 0.5)
-        ]
+        directional = df[(df["frequency"] < 1) & (df["balance"] < 0.5)]
 
         if len(directional) > 0:
-            insights.append(f"📈 Found {len(directional)} directional traders with low frequency and imbalanced trading")
+            insights.append(
+                f"📈 Found {len(directional)} directional traders with low frequency and imbalanced trading"
+            )
 
         # High frequency, low balance = scalpers/arbitrageurs
-        scalpers = df[
-            (df['frequency'] >= 3) &
-            (df['balance'] < 0.6)
-        ]
+        scalpers = df[(df["frequency"] >= 3) & (df["balance"] < 0.6)]
 
         if len(scalpers) > 0:
-            insights.append(f"⚡ Detected {len(scalpers)} high-frequency traders with directional bias (potential scalpers)")
+            insights.append(
+                f"⚡ Detected {len(scalpers)} high-frequency traders with directional bias (potential scalpers)"
+            )
 
         return insights
 
@@ -480,31 +530,39 @@ class MarketMakerDashboard:
         try:
             summary = await self.detector.get_market_maker_summary()
 
-            if summary.get('total_wallets_analyzed', 0) == 0:
+            if summary.get("total_wallets_analyzed", 0) == 0:
                 return ["No wallet analysis data available yet"]
 
-            total_wallets = summary['total_wallets_analyzed']
-            mm_percentage = summary.get('market_maker_percentage', 0) * 100
-            avg_confidence = summary.get('average_confidence', 0)
+            total_wallets = summary["total_wallets_analyzed"]
+            mm_percentage = summary.get("market_maker_percentage", 0) * 100
+            avg_confidence = summary.get("average_confidence", 0)
 
-            insights.append(f"📊 Analyzed {total_wallets} wallets with {mm_percentage:.1f}% classified as market makers")
+            insights.append(
+                f"📊 Analyzed {total_wallets} wallets with {mm_percentage:.1f}% classified as market makers"
+            )
             insights.append(f"🎯 Average classification confidence: {avg_confidence:.2f}")
 
             # Classification distribution insights
-            distribution = summary.get('classification_distribution', {})
+            distribution = summary.get("classification_distribution", {})
             if distribution:
                 top_classification = max(distribution.items(), key=lambda x: x[1])
-                insights.append(f"🏆 Most common classification: {top_classification[0].replace('_', ' ')} ({top_classification[1]} wallets)")
+                insights.append(
+                    f"🏆 Most common classification: {top_classification[0].replace('_', ' ')} ({top_classification[1]} wallets)"
+                )
 
             # Risk insights
-            high_confidence_count = summary.get('high_confidence_classifications', 0)
+            high_confidence_count = summary.get("high_confidence_classifications", 0)
             if high_confidence_count > 0:
                 confidence_percentage = high_confidence_count / total_wallets * 100
-                insights.append(f"✅ {high_confidence_count} wallets ({confidence_percentage:.1f}%) have high confidence classifications")
+                insights.append(
+                    f"✅ {high_confidence_count} wallets ({confidence_percentage:.1f}%) have high confidence classifications"
+                )
 
             # Market maker concentration analysis
             if mm_percentage > 20:
-                insights.append("⚠️ High market maker concentration detected - potential market manipulation concerns")
+                insights.append(
+                    "⚠️ High market maker concentration detected - potential market manipulation concerns"
+                )
             elif mm_percentage < 5:
                 insights.append("📉 Low market maker activity - limited liquidity provision")
 
@@ -523,30 +581,34 @@ class MarketMakerDashboard:
 
             for change in changes:
                 alert_level = "warning"
-                if change['mm_probability_change'] > 0.3:
+                if change["mm_probability_change"] > 0.3:
                     alert_level = "critical"
-                elif change['mm_probability_change'] > 0.1:
+                elif change["mm_probability_change"] > 0.1:
                     alert_level = "info"
 
-                alerts.append({
-                    "level": alert_level,
-                    "title": f"Classification Change: {change['wallet_address'][:10]}...",
-                    "message": f"Changed from '{change['previous_classification']}' to '{change['current_classification']}'",
-                    "details": {
-                        "mm_probability_change": change['mm_probability_change'],
-                        "hours_since_change": change['hours_since_change'],
-                        "confidence_current": change['confidence_current']
-                    },
-                    "timestamp": datetime.now().isoformat()
-                })
+                alerts.append(
+                    {
+                        "level": alert_level,
+                        "title": f"Classification Change: {change['wallet_address'][:10]}...",
+                        "message": f"Changed from '{change['previous_classification']}' to '{change['current_classification']}'",
+                        "details": {
+                            "mm_probability_change": change["mm_probability_change"],
+                            "hours_since_change": change["hours_since_change"],
+                            "confidence_current": change["confidence_current"],
+                        },
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                )
 
         except Exception as e:
-            alerts.append({
-                "level": "error",
-                "title": "Alert Generation Error",
-                "message": f"Could not generate classification alerts: {e}",
-                "timestamp": datetime.now().isoformat()
-            })
+            alerts.append(
+                {
+                    "level": "error",
+                    "title": "Alert Generation Error",
+                    "message": f"Could not generate classification alerts: {e}",
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
 
         return alerts
 
@@ -595,14 +657,14 @@ class MarketMakerDashboard:
             <div class="summary-stats">
 """
 
-        summary = dashboard_data.get('summary_stats', {})
+        summary = dashboard_data.get("summary_stats", {})
 
         # Key metrics cards
         metrics = [
-            ("Total Wallets", summary.get('total_wallets_analyzed', 0), "wallets"),
+            ("Total Wallets", summary.get("total_wallets_analyzed", 0), "wallets"),
             ("Market Makers", f"{summary.get('market_maker_percentage', 0)*100:.1f}%", "of total"),
             ("Avg MM Probability", f"{summary.get('average_mm_probability', 0):.2f}", "score"),
-            ("High Confidence", summary.get('high_confidence_classifications', 0), "wallets")
+            ("High Confidence", summary.get("high_confidence_classifications", 0), "wallets"),
         ]
 
         for label, value, unit in metrics:
@@ -624,7 +686,7 @@ class MarketMakerDashboard:
         """
 
         # Add charts
-        charts = dashboard_data.get('charts', {})
+        charts = dashboard_data.get("charts", {})
 
         chart_configs = [
             ("classification_distribution", "Classification Distribution", "pie"),
@@ -633,12 +695,12 @@ class MarketMakerDashboard:
             ("frequency_balance_scatter", "Trading Patterns", "scatter"),
             ("classification_heatmap", "Confidence Heatmap", "heatmap"),
             ("probability_trends", "Probability Trends", "line"),
-            ("risk_assessment", "Risk Assessment", "bar")
+            ("risk_assessment", "Risk Assessment", "bar"),
         ]
 
         for chart_key, title, chart_type in chart_configs:
-            if chart_key in charts and charts[chart_key].get('data'):
-                chart_data = charts[chart_key]['data']
+            if chart_key in charts and charts[chart_key].get("data"):
+                chart_data = charts[chart_key]["data"]
                 html += f"""
                 <div class="chart-container">
                     <h3>{title}</h3>
@@ -662,7 +724,7 @@ class MarketMakerDashboard:
                 <ul>
         """
 
-        for insight in dashboard_data.get('insights', []):
+        for insight in dashboard_data.get("insights", []):
             html += f"<li>{insight}</li>"
 
         html += """
@@ -672,7 +734,7 @@ class MarketMakerDashboard:
             <h3 style="margin-top: 30px;">🚨 Classification Alerts</h3>
         """
 
-        for alert in dashboard_data.get('alerts', []):
+        for alert in dashboard_data.get("alerts", []):
             alert_class = f"alert-{alert['level']}"
             html += f"""
             <div class="{alert_class} alert">
@@ -707,7 +769,7 @@ class MarketMakerDashboard:
 
         try:
             dashboard_file = self.market_maker_dir / "dashboard_data.json"
-            with open(dashboard_file, 'w', encoding='utf-8') as f:
+            with open(dashboard_file, "w", encoding="utf-8") as f:
                 # Convert datetime objects to strings for JSON serialization
                 serializable_data = json.loads(json.dumps(dashboard_data, default=str))
                 json.dump(serializable_data, f, indent=2, ensure_ascii=False)

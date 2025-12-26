@@ -3,38 +3,58 @@ import logging
 import time
 from datetime import datetime
 from decimal import Decimal, InvalidOperation, getcontext
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 import aiohttp
-from tenacity import (
-    after_log,
-    before_log,
-    retry,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_exponential,
-)
-from web3.exceptions import BadFunctionCallOutput, ContractLogicError, Web3ValidationError
 
 from config.settings import settings
 from core.clob_client import PolymarketClient
 from utils.alerts import send_error_alert, send_telegram_alert
-from utils.helpers import calculate_position_size, format_currency, get_time_ago, normalize_address
-from utils.security import secure_log
+from utils.helpers import BoundedCache, normalize_address
 from utils.validation import InputValidator, ValidationError
 
 logger = logging.getLogger(__name__)
 
 
 class TradeExecutor:
+    """
+    Executes copy trades on Polymarket with comprehensive risk management.
+
+    This class handles the complete trade execution workflow including:
+    - Position sizing calculations based on account balance and risk
+    - Circuit breaker protection against excessive losses
+    - Order placement and execution monitoring
+    - Stop-loss and take-profit order management
+    - Performance tracking and alerting
+
+    Attributes:
+        clob_client: Polymarket CLOB API client
+        wallet_address: Trading wallet address
+        daily_loss: Accumulated losses for the current day
+        total_trades: Total number of trades executed
+        successful_trades: Number of profitable trades
+        failed_trades: Number of failed trades
+        circuit_breaker_active: Whether circuit breaker is currently active
+        open_positions: Dictionary of currently open positions
+
+    Thread Safety:
+        Uses asyncio locks to prevent race conditions in concurrent operations
+    """
+
     def __init__(self, clob_client: PolymarketClient):
+        """
+        Initialize the trade executor with Polymarket client.
+
+        Args:
+            clob_client: Configured Polymarket CLOB API client for order execution
+        """
         self.settings = settings
         self.clob_client = clob_client
         self.wallet_address = self.clob_client.wallet_address
 
         # Thread safety for concurrent operations
         self._state_lock = asyncio.Lock()
-        self._position_locks = {}  # Per-position locks for position-specific operations
+        self._position_locks = BoundedCache(max_size=1000, ttl_seconds=3600)  # 1 hour TTL
 
         # State tracking
         self.daily_loss = 0.0
@@ -50,8 +70,9 @@ class TradeExecutor:
         self.circuit_breaker_reason = ""
         self.circuit_breaker_time = None
 
-        # Performance tracking
+        # Performance tracking (limited to prevent unbounded growth)
         self.trade_performance = []
+        self.max_performance_history = 1000  # Keep last 1000 trades
 
         SecureLogger.log(
             "info",
@@ -61,9 +82,12 @@ class TradeExecutor:
 
     def _get_position_lock(self, position_key: str) -> asyncio.Lock:
         """Get or create a lock for position-specific operations."""
-        if position_key not in self._position_locks:
-            self._position_locks[position_key] = asyncio.Lock()
-        return self._position_locks[position_key]
+        existing_lock = self._position_locks.get(position_key)
+        if existing_lock is None:
+            lock = asyncio.Lock()
+            self._position_locks.set(position_key, lock)
+            return lock
+        return existing_lock
 
     async def execute_copy_trade(self, original_trade: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a copy trade based on an original trade"""
@@ -93,6 +117,7 @@ class TradeExecutor:
             )
 
         except Exception as e:
+            logger.exception(f"❌ Unexpected error in trade execution: {e}")
             return await self._handle_trade_execution_error(e, original_trade)
 
     def _generate_trade_id(self, original_trade: Dict[str, Any]) -> str:
@@ -120,7 +145,7 @@ class TradeExecutor:
                 logger.error(f"Data error checking circuit breaker: {str(e)[:100]}")
                 return None  # Continue with trade if circuit breaker check fails
             except Exception as e:
-                logger.error(f"Unexpected error checking circuit breaker: {str(e)}")
+                logger.exception(f"Unexpected error checking circuit breaker: {e}")
                 return None  # Continue with trade if circuit breaker check fails
 
     async def _validate_and_apply_risk_management(
@@ -262,6 +287,10 @@ class TradeExecutor:
         }
         self.trade_performance.append(performance)
 
+        # Maintain history size limit
+        if len(self.trade_performance) > self.max_performance_history:
+            self.trade_performance = self.trade_performance[-self.max_performance_history :]
+
         # Track position
         position_key = f"{original_trade['condition_id']}_{original_trade['side']}"
         self.open_positions[position_key] = {
@@ -304,6 +333,10 @@ class TradeExecutor:
             "status": "failed",
         }
         self.trade_performance.append(performance)
+
+        # Maintain history size limit
+        if len(self.trade_performance) > self.max_performance_history:
+            self.trade_performance = self.trade_performance[-self.max_performance_history :]
 
         logger.error("❌ Copy trade failed to execute")
 
@@ -418,7 +451,7 @@ class TradeExecutor:
             logger.error(f"❌ Trade validation failed: {e}")
             return False
         except Exception as e:
-            logger.error(f"❌ Unexpected error during trade validation: {e}")
+            logger.exception(f"❌ Unexpected error during trade validation: {e}")
             return False
 
         # Validate timestamp (not too old)
@@ -497,8 +530,8 @@ class TradeExecutor:
 
                 # Calculate price risk with minimum threshold
                 price_risk_dec = abs(current_price_dec - entry_price_dec)
-                MIN_PRICE_RISK = Decimal("0.0001")
-                price_risk_dec = max(price_risk_dec, MIN_PRICE_RISK)
+                min_price_risk = Decimal("0.0001")
+                price_risk_dec = max(price_risk_dec, min_price_risk)
 
                 # Calculate account risk (1% of balance)
                 account_risk_dec = account_balance_dec * risk_percentage_dec
@@ -552,7 +585,7 @@ class TradeExecutor:
             # Performance optimization: Pre-calculate fallback value
             return min(original_trade["amount"] * 0.1, self.settings.risk.max_position_size)
         except Exception as e:
-            logger.critical(f"Unexpected error calculating copy amount: {str(e)}", exc_info=True)
+            logger.exception(f"Unexpected error calculating copy amount: {e}")
             # Performance optimization: Pre-calculate fallback value
             return min(original_trade["amount"] * 0.1, self.settings.risk.max_position_size)
 
@@ -582,7 +615,7 @@ class TradeExecutor:
             logger.error(f"Data error getting token ID: {str(e)[:100]}")
             return None
         except Exception as e:
-            logger.critical(f"Unexpected error getting token ID: {str(e)}", exc_info=True)
+            logger.exception(f"Unexpected error getting token ID: {e}")
             return None
 
     async def manage_positions(self) -> None:
@@ -598,7 +631,7 @@ class TradeExecutor:
             self._check_circuit_breaker_conditions()
             await self._perform_periodic_cleanup()
         except Exception as e:
-            logger.error(f"Error managing positions: {e}", exc_info=True)
+            logger.exception(f"Error managing positions: {e}")
             await self._handle_position_management_failure(e)
 
     async def _should_manage_positions(self) -> bool:
@@ -629,11 +662,15 @@ class TradeExecutor:
         price_results = await asyncio.gather(*price_tasks, return_exceptions=True)
 
         # Create price lookup map
-        price_map = {}
+        price_map = {
+            condition_id: price_result
+            for condition_id, price_result in zip(unique_condition_ids, price_results)
+            if isinstance(price_result, float)
+        }
+
+        # Log warnings for failed price fetches
         for condition_id, price_result in zip(unique_condition_ids, price_results):
-            if isinstance(price_result, float):
-                price_map[condition_id] = price_result
-            else:
+            if not isinstance(price_result, float):
                 logger.warning(f"Failed to get price for condition {condition_id}: {price_result}")
 
         return price_map
@@ -656,10 +693,7 @@ class TradeExecutor:
                 logger.error(f"Data error evaluating position {position_key}: {str(e)[:100]}")
                 continue
             except Exception as e:
-                logger.critical(
-                    f"Unexpected error evaluating position {position_key}: {str(e)}",
-                    exc_info=True,
-                )
+                logger.exception(f"Unexpected error evaluating position {position_key}: {e}")
                 continue
 
         return positions_to_close
@@ -777,7 +811,7 @@ class TradeExecutor:
 
     async def _handle_position_management_failure(self, error: Exception) -> None:
         """Handle failures in position management"""
-        logger.error(f"Position management failed: {error}", exc_info=True)
+        logger.exception(f"Position management failed: {error}")
 
     async def _close_position(self, position_key: str, reason: str) -> None:
         """Close a specific position and clean up associated resources"""
@@ -823,10 +857,8 @@ class TradeExecutor:
                         f"📉 Position closed at loss: ${abs(pnl):.2f}. Daily loss: ${self.daily_loss:.2f}"
                     )
         finally:
-            # Always clean up the lock, even if position closing fails
-            if position_key in self._position_locks:
-                del self._position_locks[position_key]
-                logger.debug(f"🧹 Cleaned up lock for position: {position_key}")
+            # BoundedCache handles automatic cleanup with TTL
+            pass
 
     async def _update_daily_loss(self) -> float:
         """Update daily loss tracking"""
@@ -848,7 +880,7 @@ class TradeExecutor:
             logger.error(f"Data error updating daily loss: {str(e)[:100]}")
             return self.daily_loss
         except Exception as e:
-            logger.critical(f"Unexpected error updating daily loss: {str(e)}", exc_info=True)
+            logger.exception(f"Unexpected error updating daily loss: {e}")
             return self.daily_loss
 
     def _check_circuit_breaker_conditions(self) -> None:
@@ -882,9 +914,7 @@ class TradeExecutor:
         except (ValueError, TypeError, KeyError) as e:
             logger.error(f"Data error checking circuit breaker conditions: {str(e)[:100]}")
         except Exception as e:
-            logger.critical(
-                f"Unexpected error checking circuit breaker conditions: {str(e)}", exc_info=True
-            )
+            logger.exception(f"Unexpected error checking circuit breaker conditions: {e}")
 
     def _get_circuit_breaker_remaining_time(self) -> float:
         """Get remaining time for circuit breaker in minutes"""
@@ -930,16 +960,11 @@ class TradeExecutor:
             self.circuit_breaker_time = None
 
     async def _cleanup_stale_locks(self) -> None:
-        """Periodically clean up locks for positions that no longer exist"""
-        stale_keys = [key for key in self._position_locks if key not in self.open_positions]
-        for key in stale_keys:
-            del self._position_locks[key]
-            logger.debug(f"🧹 Cleaned up stale lock: {key}")
-        if stale_keys:
-            logger.info(f"🧹 Cleaned up {len(stale_keys)} stale position locks")
+        """Position locks are automatically cleaned up by BoundedCache with TTL"""
+        # BoundedCache handles automatic cleanup - this method kept for compatibility
 
         # Monitor lock usage for memory leak detection
-        lock_count = len(self._position_locks)
+        lock_count = self._position_locks.get_stats()["size"]
         position_count = len(self.open_positions)
         if lock_count > position_count + 10:  # Allow some buffer
             logger.warning(
@@ -985,7 +1010,7 @@ class TradeExecutor:
             logger.error(f"❌ Data error during health check: {str(e)[:100]}")
             return False
         except Exception as e:
-            logger.critical(f"❌ Unexpected error during health check: {str(e)}", exc_info=True)
+            logger.exception(f"❌ Unexpected error during health check: {e}")
             return False
 
     def get_performance_metrics(self) -> Dict[str, Any]:

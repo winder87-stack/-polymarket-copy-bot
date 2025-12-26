@@ -13,18 +13,12 @@ Features:
 - Scenario-based portfolio optimization
 """
 
-import asyncio
 import json
 import logging
-import time
-from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional
 
 import numpy as np
-import pandas as pd
-from scipy.optimize import minimize
-from scipy.spatial.distance import pdist, squareform
 from sklearn.cluster import KMeans
 
 from core.real_time_scorer import RealTimeScoringEngine
@@ -45,19 +39,19 @@ class AutomaticWalletSelector:
 
         # Selection parameters
         self.selection_params = {
-            "default_top_n": 15,                  # Default number of wallets to select
-            "min_quality_score": 50,              # Minimum quality score for selection
-            "max_wallet_allocation": 0.15,        # Maximum allocation per wallet (15%)
-            "min_wallet_allocation": 0.02,        # Minimum allocation per wallet (2%)
-            "max_correlation_threshold": 0.7,     # Maximum allowed correlation between wallets
-            "diversification_clusters": 5,        # Number of diversification clusters
-            "rotation_threshold": 0.15,           # Score change threshold for rotation (15%)
-            "rotation_cooldown_days": 7,          # Minimum days between rotations
-            "risk_budget_tiers": 3,               # Number of risk budget tiers
-            "rebalancing_threshold": 0.05,        # 5% deviation triggers rebalancing
-            "scenario_stress_tests": 100,         # Number of stress test scenarios
-            "performance_lookback_days": 30,     # Days for performance evaluation
-            "manual_override_expiry_hours": 24,   # Manual overrides expire after 24 hours
+            "default_top_n": 15,  # Default number of wallets to select
+            "min_quality_score": 50,  # Minimum quality score for selection
+            "max_wallet_allocation": 0.15,  # Maximum allocation per wallet (15%)
+            "min_wallet_allocation": 0.02,  # Minimum allocation per wallet (2%)
+            "max_correlation_threshold": 0.7,  # Maximum allowed correlation between wallets
+            "diversification_clusters": 5,  # Number of diversification clusters
+            "rotation_threshold": 0.15,  # Score change threshold for rotation (15%)
+            "rotation_cooldown_days": 7,  # Minimum days between rotations
+            "risk_budget_tiers": 3,  # Number of risk budget tiers
+            "rebalancing_threshold": 0.05,  # 5% deviation triggers rebalancing
+            "scenario_stress_tests": 100,  # Number of stress test scenarios
+            "performance_lookback_days": 30,  # Days for performance evaluation
+            "manual_override_expiry_hours": 24,  # Manual overrides expire after 24 hours
         }
 
         # Portfolio state
@@ -83,7 +77,7 @@ class AutomaticWalletSelector:
         self,
         available_wallets: List[Dict[str, Any]],
         total_capital: float,
-        selection_criteria: Optional[Dict[str, Any]] = None
+        selection_criteria: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Select optimal wallet portfolio based on quality scores and constraints.
@@ -114,7 +108,9 @@ class AutomaticWalletSelector:
             top_wallets = self._select_top_wallets(qualified_wallets, criteria)
 
             # Apply diversification constraints
-            diversified_portfolio = await self._apply_diversification_constraints(top_wallets, criteria)
+            diversified_portfolio = await self._apply_diversification_constraints(
+                top_wallets, criteria
+            )
 
             # Calculate risk-budgeted allocations
             risk_budgeted_allocations = self._calculate_risk_budgeted_allocations(
@@ -132,16 +128,15 @@ class AutomaticWalletSelector:
             # Store portfolio state
             self._store_portfolio_state(final_allocations, criteria)
 
-            logger.info(f"✅ Selected portfolio with {len(final_allocations)} wallets, total allocation: ${sum(a['allocated_capital'] for a in final_allocations.values()):.2f}")
+            logger.info(
+                f"✅ Selected portfolio with {len(final_allocations)} wallets, total allocation: ${sum(a['allocated_capital'] for a in final_allocations.values()):.2f}"
+            )
 
             return portfolio_summary
 
         except Exception as e:
             logger.error(f"Error selecting optimal portfolio: {e}")
-            return {
-                "error": str(e),
-                "selection_timestamp": datetime.now().isoformat()
-            }
+            return {"error": str(e), "selection_timestamp": datetime.now().isoformat()}
 
     def _get_default_selection_criteria(self) -> Dict[str, Any]:
         """Get default selection criteria."""
@@ -155,10 +150,12 @@ class AutomaticWalletSelector:
             "risk_budgeting_enabled": True,
             "correlation_constraint": self.selection_params["max_correlation_threshold"],
             "cluster_diversification": True,
-            "quality_weighted_allocation": True
+            "quality_weighted_allocation": True,
         }
 
-    async def _get_wallet_quality_scores(self, wallets: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+    async def _get_wallet_quality_scores(
+        self, wallets: List[Dict[str, Any]]
+    ) -> Dict[str, Dict[str, Any]]:
         """Get real-time quality scores for all wallets."""
 
         wallet_scores = {}
@@ -176,7 +173,7 @@ class AutomaticWalletSelector:
                     "stability": score_data.get("stability_metrics", {}),
                     "wallet_info": wallet,
                     "last_update": score_data.get("last_update"),
-                    "alerts": score_data.get("alerts", [])
+                    "alerts": score_data.get("alerts", []),
                 }
             else:
                 # Use fallback scoring for wallets without real-time data
@@ -186,7 +183,7 @@ class AutomaticWalletSelector:
                     "confidence": {"confidence_level": 0.5},
                     "stability": {"stability_score": 0.5},
                     "wallet_info": wallet,
-                    "fallback": True
+                    "fallback": True,
                 }
 
         return wallet_scores
@@ -204,7 +201,7 @@ class AutomaticWalletSelector:
             "arbitrage_trader": 70,
             "high_frequency_trader": 55,
             "mixed_trader": 58,
-            "unknown": 50
+            "unknown": 50,
         }
 
         base_score = base_scores.get(wallet_type, 50)
@@ -213,9 +210,7 @@ class AutomaticWalletSelector:
         return adjusted_score
 
     def _filter_qualified_wallets(
-        self,
-        wallet_scores: Dict[str, Dict[str, Any]],
-        criteria: Dict[str, Any]
+        self, wallet_scores: Dict[str, Dict[str, Any]], criteria: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
         """Filter wallets that meet minimum qualification criteria."""
 
@@ -229,7 +224,8 @@ class AutomaticWalletSelector:
             if score >= criteria["min_quality_score"] and confidence >= 0.3:
                 # Check for active alerts that might disqualify
                 disqualifying_alerts = [
-                    alert for alert in score_data.get("alerts", [])
+                    alert
+                    for alert in score_data.get("alerts", [])
                     if alert.get("severity") in ["high", "critical"]
                 ]
 
@@ -241,7 +237,7 @@ class AutomaticWalletSelector:
                         "stability_score": score_data["stability"].get("stability_score", 0.5),
                         "wallet_info": score_data["wallet_info"],
                         "alerts": score_data.get("alerts", []),
-                        "fallback": score_data.get("fallback", False)
+                        "fallback": score_data.get("fallback", False),
                     }
                     qualified.append(qualified_wallet)
 
@@ -250,21 +246,21 @@ class AutomaticWalletSelector:
 
         return qualified
 
-    def _select_top_wallets(self, qualified_wallets: List[Dict[str, Any]], criteria: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _select_top_wallets(
+        self, qualified_wallets: List[Dict[str, Any]], criteria: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """Select top N wallets by quality score."""
 
         top_n = criteria["top_n_wallets"]
         max_count = criteria["max_wallet_count"]
 
         # Select top wallets
-        selected = qualified_wallets[:min(top_n, max_count, len(qualified_wallets))]
+        selected = qualified_wallets[: min(top_n, max_count, len(qualified_wallets))]
 
         return selected
 
     async def _apply_diversification_constraints(
-        self,
-        selected_wallets: List[Dict[str, Any]],
-        criteria: Dict[str, Any]
+        self, selected_wallets: List[Dict[str, Any]], criteria: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
         """Apply diversification constraints to selected wallets."""
 
@@ -280,7 +276,9 @@ class AutomaticWalletSelector:
 
             # Apply cluster-based diversification if enabled
             if criteria.get("cluster_diversification", False):
-                cluster_diversified = await self._apply_cluster_diversification(correlation_filtered, criteria)
+                cluster_diversified = await self._apply_cluster_diversification(
+                    correlation_filtered, criteria
+                )
                 return cluster_diversified
 
             return correlation_filtered
@@ -309,9 +307,7 @@ class AutomaticWalletSelector:
             logger.error(f"Error updating wallet correlations: {e}")
 
     def _apply_correlation_filtering(
-        self,
-        wallets: List[Dict[str, Any]],
-        criteria: Dict[str, Any]
+        self, wallets: List[Dict[str, Any]], criteria: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
         """Filter wallets based on correlation constraints."""
 
@@ -333,9 +329,7 @@ class AutomaticWalletSelector:
         return filtered_wallets
 
     async def _apply_cluster_diversification(
-        self,
-        wallets: List[Dict[str, Any]],
-        criteria: Dict[str, Any]
+        self, wallets: List[Dict[str, Any]], criteria: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
         """Apply cluster-based diversification to ensure broad coverage."""
 
@@ -374,7 +368,10 @@ class AutomaticWalletSelector:
             cluster_best = {}
             for i, wallet in enumerate(wallets):
                 cluster_id = clusters[i]
-                if cluster_id not in cluster_best or wallet["quality_score"] > cluster_best[cluster_id]["quality_score"]:
+                if (
+                    cluster_id not in cluster_best
+                    or wallet["quality_score"] > cluster_best[cluster_id]["quality_score"]
+                ):
                     cluster_best[cluster_id] = wallet
 
             # Return one wallet per cluster
@@ -392,16 +389,19 @@ class AutomaticWalletSelector:
     def _encode_wallet_type(self, wallet_type: str) -> List[int]:
         """Encode wallet type as binary features."""
 
-        types = ["market_maker", "directional_trader", "arbitrage_trader", "high_frequency_trader", "mixed_trader"]
+        types = [
+            "market_maker",
+            "directional_trader",
+            "arbitrage_trader",
+            "high_frequency_trader",
+            "mixed_trader",
+        ]
         encoding = [1 if t == wallet_type else 0 for t in types]
 
         return encoding
 
     def _calculate_risk_budgeted_allocations(
-        self,
-        wallets: List[Dict[str, Any]],
-        total_capital: float,
-        criteria: Dict[str, Any]
+        self, wallets: List[Dict[str, Any]], total_capital: float, criteria: Dict[str, Any]
     ) -> Dict[str, float]:
         """Calculate risk-budgeted capital allocations."""
 
@@ -428,10 +428,7 @@ class AutomaticWalletSelector:
             return self._equal_weight_allocation(wallets, total_capital)
 
     def _quality_weighted_allocation(
-        self,
-        wallets: List[Dict[str, Any]],
-        total_capital: float,
-        criteria: Dict[str, Any]
+        self, wallets: List[Dict[str, Any]], total_capital: float, criteria: Dict[str, Any]
     ) -> Dict[str, float]:
         """Allocate capital based on quality scores with risk adjustments."""
 
@@ -445,11 +442,13 @@ class AutomaticWalletSelector:
             # Risk-adjusted weight (higher quality and stability = higher weight)
             risk_adjusted_score = quality_score * stability_score * confidence
 
-            wallet_data.append({
-                "address": wallet["address"],
-                "score": risk_adjusted_score,
-                "quality_score": quality_score
-            })
+            wallet_data.append(
+                {
+                    "address": wallet["address"],
+                    "score": risk_adjusted_score,
+                    "quality_score": quality_score,
+                }
+            )
 
         # Sort by risk-adjusted score
         wallet_data.sort(key=lambda x: x["score"], reverse=True)
@@ -476,7 +475,9 @@ class AutomaticWalletSelector:
 
             # Allocate within tier
             tier_total_score = sum(w["score"] for w in tier_wallets)
-            tier_capital = min(remaining_capital, total_capital * (0.6 / (tier + 1)))  # Decreasing allocation per tier
+            tier_capital = min(
+                remaining_capital, total_capital * (0.6 / (tier + 1))
+            )  # Decreasing allocation per tier
 
             for wallet in tier_wallets:
                 if tier_total_score > 0:
@@ -488,13 +489,17 @@ class AutomaticWalletSelector:
 
         return allocations
 
-    def _equal_weight_allocation(self, wallets: List[Dict[str, Any]], total_capital: float) -> Dict[str, float]:
+    def _equal_weight_allocation(
+        self, wallets: List[Dict[str, Any]], total_capital: float
+    ) -> Dict[str, float]:
         """Simple equal weight allocation."""
 
         equal_allocation = total_capital / len(wallets)
         return {wallet["address"]: equal_allocation for wallet in wallets}
 
-    def _apply_position_limits(self, allocations: Dict[str, float], total_capital: float) -> Dict[str, float]:
+    def _apply_position_limits(
+        self, allocations: Dict[str, float], total_capital: float
+    ) -> Dict[str, float]:
         """Apply minimum and maximum position limits."""
 
         min_allocation = total_capital * self.selection_params["min_wallet_allocation"]
@@ -550,7 +555,7 @@ class AutomaticWalletSelector:
         self,
         allocations: Dict[str, float],
         qualified_wallets: List[Dict[str, Any]],
-        criteria: Dict[str, Any]
+        criteria: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Generate comprehensive portfolio summary."""
 
@@ -563,16 +568,19 @@ class AutomaticWalletSelector:
         for wallet in qualified_wallets:
             wallet_address = wallet["address"]
             if wallet_address in allocations:
-                wallet_allocations.append({
-                    "address": wallet_address,
-                    "type": wallet["wallet_info"].get("classification", "unknown"),
-                    "quality_score": wallet["quality_score"],
-                    "allocated_capital": allocations[wallet_address],
-                    "allocation_percentage": (allocations[wallet_address] / total_allocated) * 100,
-                    "confidence": wallet["confidence"],
-                    "stability_score": wallet["stability_score"],
-                    "alerts": wallet["alerts"]
-                })
+                wallet_allocations.append(
+                    {
+                        "address": wallet_address,
+                        "type": wallet["wallet_info"].get("classification", "unknown"),
+                        "quality_score": wallet["quality_score"],
+                        "allocated_capital": allocations[wallet_address],
+                        "allocation_percentage": (allocations[wallet_address] / total_allocated)
+                        * 100,
+                        "confidence": wallet["confidence"],
+                        "stability_score": wallet["stability_score"],
+                        "alerts": wallet["alerts"],
+                    }
+                )
 
         # Sort by allocation size
         wallet_allocations.sort(key=lambda x: x["allocated_capital"], reverse=True)
@@ -592,18 +600,16 @@ class AutomaticWalletSelector:
                 "average_quality_score": avg_quality_score,
                 "average_stability_score": avg_stability,
                 "quality_score_diversity": quality_diversity,
-                "selection_criteria": criteria
+                "selection_criteria": criteria,
             },
             "wallet_allocations": wallet_allocations,
             "portfolio_risk_assessment": risk_assessment,
             "selection_timestamp": datetime.now().isoformat(),
-            "manual_overrides_applied": bool(self.manual_overrides)
+            "manual_overrides_applied": bool(self.manual_overrides),
         }
 
     def _assess_portfolio_risk(
-        self,
-        wallet_allocations: List[Dict[str, Any]],
-        allocations: Dict[str, float]
+        self, wallet_allocations: List[Dict[str, Any]], allocations: Dict[str, float]
     ) -> Dict[str, Any]:
         """Assess overall portfolio risk."""
 
@@ -611,15 +617,15 @@ class AutomaticWalletSelector:
             # Concentration risk
             total_capital = sum(allocations.values())
             allocations_pct = [(alloc / total_capital) for alloc in allocations.values()]
-            hhi_index = sum(pct ** 2 for pct in allocations_pct)  # Herfindahl-Hirschman Index
+            hhi_index = sum(pct**2 for pct in allocations_pct)  # Herfindahl-Hirschman Index
 
             # Quality risk
             quality_scores = [w["quality_score"] for w in wallet_allocations]
-            quality_volatility = np.std(quality_scores)
+            np.std(quality_scores)
 
             # Stability risk
             stability_scores = [w["stability_score"] for w in wallet_allocations]
-            stability_volatility = np.std(stability_scores)
+            np.std(stability_scores)
 
             # Alert risk
             total_alerts = sum(len(w["alerts"]) for w in wallet_allocations)
@@ -632,10 +638,10 @@ class AutomaticWalletSelector:
             alert_risk_score = alert_risk * 50  # Scale alerts to 0-100
 
             overall_risk = (
-                concentration_risk * 0.3 +
-                quality_risk * 0.3 +
-                stability_risk * 0.2 +
-                alert_risk_score * 0.2
+                concentration_risk * 0.3
+                + quality_risk * 0.3
+                + stability_risk * 0.2
+                + alert_risk_score * 0.2
             )
 
             # Risk rating
@@ -658,7 +664,7 @@ class AutomaticWalletSelector:
                 "stability_risk": stability_risk,
                 "alert_risk": alert_risk_score,
                 "hhi_concentration_index": hhi_index,
-                "risk_factors": self._identify_risk_factors(wallet_allocations)
+                "risk_factors": self._identify_risk_factors(wallet_allocations),
             }
 
         except Exception as e:
@@ -673,7 +679,8 @@ class AutomaticWalletSelector:
         # Check for concentration
         total_capital = sum(w["allocated_capital"] for w in wallet_allocations)
         large_positions = [
-            w for w in wallet_allocations
+            w
+            for w in wallet_allocations
             if (w["allocated_capital"] / total_capital) > 0.2  # >20% allocation
         ]
         if large_positions:
@@ -704,7 +711,7 @@ class AutomaticWalletSelector:
             "allocations": allocations,
             "criteria": criteria,
             "total_capital": sum(allocations.values()),
-            "wallet_count": len(allocations)
+            "wallet_count": len(allocations),
         }
 
         self.portfolio_history.append(portfolio_state)
@@ -714,7 +721,9 @@ class AutomaticWalletSelector:
         if len(self.portfolio_history) > max_history:
             self.portfolio_history = self.portfolio_history[-max_history:]
 
-    async def check_portfolio_rotation(self, current_portfolio: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+    async def check_portfolio_rotation(
+        self, current_portfolio: Dict[str, Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """
         Check if portfolio rotation is needed based on performance and score changes.
 
@@ -732,7 +741,7 @@ class AutomaticWalletSelector:
             "wallets_to_add": [],
             "rotation_rationale": [],
             "expected_impact": {},
-            "check_timestamp": datetime.now().isoformat()
+            "check_timestamp": datetime.now().isoformat(),
         }
 
         try:
@@ -756,8 +765,12 @@ class AutomaticWalletSelector:
             if rotation_benefits["net_benefit"] > self.selection_params["rotation_threshold"]:
                 rotation_decision["rotation_needed"] = True
                 rotation_decision["rotation_type"] = rotation_benefits["recommended_type"]
-                rotation_decision["wallets_to_remove"] = [w["address"] for w in underperformers[:rotation_benefits["removal_count"]]]
-                rotation_decision["wallets_to_add"] = [w["address"] for w in new_candidates[:rotation_benefits["addition_count"]]]
+                rotation_decision["wallets_to_remove"] = [
+                    w["address"] for w in underperformers[: rotation_benefits["removal_count"]]
+                ]
+                rotation_decision["wallets_to_add"] = [
+                    w["address"] for w in new_candidates[: rotation_benefits["addition_count"]]
+                ]
                 rotation_decision["rotation_rationale"] = rotation_benefits["rationale"]
                 rotation_decision["expected_impact"] = rotation_benefits["expected_impact"]
 
@@ -783,7 +796,9 @@ class AutomaticWalletSelector:
 
         return datetime.now() - last_rotation_time < cooldown_period
 
-    async def _identify_underperforming_wallets(self, current_portfolio: Dict[str, Dict[str, Any]]) -> List[Dict[str, Any]]:
+    async def _identify_underperforming_wallets(
+        self, current_portfolio: Dict[str, Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """Identify wallets that are underperforming in the current portfolio."""
 
         underperformers = []
@@ -801,30 +816,36 @@ class AutomaticWalletSelector:
 
                 # Check for significant deterioration
                 if score_change < -self.selection_params["rotation_threshold"]:
-                    underperformers.append({
-                        "address": wallet_address,
-                        "current_score": current_score,
-                        "initial_score": initial_score,
-                        "score_change": score_change,
-                        "reason": "significant_score_decline"
-                    })
+                    underperformers.append(
+                        {
+                            "address": wallet_address,
+                            "current_score": current_score,
+                            "initial_score": initial_score,
+                            "score_change": score_change,
+                            "reason": "significant_score_decline",
+                        }
+                    )
 
             # Check for stability issues
             stability = current_score_data.get("stability_metrics", {})
             if stability.get("stability_score", 1.0) < 0.5:
                 if not any(u["address"] == wallet_address for u in underperformers):
-                    underperformers.append({
-                        "address": wallet_address,
-                        "current_score": current_score_data.get("current_score", 0),
-                        "reason": "low_stability"
-                    })
+                    underperformers.append(
+                        {
+                            "address": wallet_address,
+                            "current_score": current_score_data.get("current_score", 0),
+                            "reason": "low_stability",
+                        }
+                    )
 
         # Sort by severity
         underperformers.sort(key=lambda x: x.get("score_change", 0))
 
         return underperformers
 
-    async def _identify_new_wallet_candidates(self, current_portfolio: Dict[str, Dict[str, Any]]) -> List[Dict[str, Any]]:
+    async def _identify_new_wallet_candidates(
+        self, current_portfolio: Dict[str, Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """Identify high-quality wallets not currently in the portfolio."""
 
         # This would query available wallets and score them
@@ -840,7 +861,7 @@ class AutomaticWalletSelector:
         self,
         underperformers: List[Dict[str, Any]],
         new_candidates: List[Dict[str, Any]],
-        current_portfolio: Dict[str, Dict[str, Any]]
+        current_portfolio: Dict[str, Dict[str, Any]],
     ) -> Dict[str, Any]:
         """Evaluate the benefits of portfolio rotation."""
 
@@ -850,7 +871,7 @@ class AutomaticWalletSelector:
             "removal_count": 0,
             "addition_count": 0,
             "rationale": [],
-            "expected_impact": {}
+            "expected_impact": {},
         }
 
         try:
@@ -866,7 +887,7 @@ class AutomaticWalletSelector:
 
                 # Calculate expected new average score
                 remaining_scores = [s for s in current_scores if s not in removal_scores]
-                new_portfolio_scores = remaining_scores + addition_scores[:len(underperformers)]
+                new_portfolio_scores = remaining_scores + addition_scores[: len(underperformers)]
 
                 if new_portfolio_scores:
                     new_avg_score = np.mean(new_portfolio_scores)
@@ -876,15 +897,17 @@ class AutomaticWalletSelector:
                         benefits_analysis["net_benefit"] = score_improvement
                         benefits_analysis["recommended_type"] = "partial_rotation"
                         benefits_analysis["removal_count"] = len(underperformers)
-                        benefits_analysis["addition_count"] = min(len(underperformers), len(new_candidates))
+                        benefits_analysis["addition_count"] = min(
+                            len(underperformers), len(new_candidates)
+                        )
                         benefits_analysis["rationale"] = [
                             f"Expected score improvement: +{score_improvement:.1f} points",
-                            f"Replacing {len(underperformers)} underperforming wallets"
+                            f"Replacing {len(underperformers)} underperforming wallets",
                         ]
                         benefits_analysis["expected_impact"] = {
                             "score_improvement": score_improvement,
                             "risk_change": "moderate",  # Assumes similar risk profiles
-                            "diversification_impact": "neutral"
+                            "diversification_impact": "neutral",
                         }
 
         except Exception as e:
@@ -901,7 +924,7 @@ class AutomaticWalletSelector:
             "wallets_removed": rotation_decision["wallets_to_remove"],
             "wallets_added": rotation_decision["wallets_to_add"],
             "rationale": rotation_decision["rotation_rationale"],
-            "expected_impact": rotation_decision["expected_impact"]
+            "expected_impact": rotation_decision["expected_impact"],
         }
 
         self.rotation_history.append(rotation_record)
@@ -917,7 +940,7 @@ class AutomaticWalletSelector:
         override_type: str,
         override_value: Any,
         reason: str,
-        override_duration_hours: int = 24
+        override_duration_hours: int = 24,
     ) -> Dict[str, Any]:
         """
         Apply manual override to wallet selection logic.
@@ -943,7 +966,7 @@ class AutomaticWalletSelector:
                 "reason": reason,
                 "applied_at": datetime.now().isoformat(),
                 "expiry_time": expiry_time.isoformat(),
-                "applied_by": "manual_override"
+                "applied_by": "manual_override",
             }
 
             self.manual_overrides[wallet_address] = override_record
@@ -956,15 +979,12 @@ class AutomaticWalletSelector:
                 "success": True,
                 "override_id": f"{wallet_address}_{override_record['applied_at']}",
                 "expiry_time": expiry_time.isoformat(),
-                "message": f"Manual override applied to {wallet_address}"
+                "message": f"Manual override applied to {wallet_address}",
             }
 
         except Exception as e:
             logger.error(f"Error applying manual override: {e}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     def _clean_expired_overrides(self):
         """Remove expired manual overrides."""
@@ -993,7 +1013,7 @@ class AutomaticWalletSelector:
                 "last_rotation": self.rotation_history[-1] if self.rotation_history else None,
                 "portfolio_count": len(current_portfolio.get("allocations", {})),
                 "total_allocated": current_portfolio.get("total_capital", 0),
-                "selection_system_health": "healthy" if current_portfolio else "no_portfolio"
+                "selection_system_health": "healthy" if current_portfolio else "no_portfolio",
             }
 
         except Exception as e:
@@ -1008,20 +1028,22 @@ class AutomaticWalletSelector:
             state_dir.mkdir(parents=True, exist_ok=True)
 
             # Save portfolio history
-            with open(state_dir / "portfolio_history.json", 'w') as f:
+            with open(state_dir / "portfolio_history.json", "w") as f:
                 json.dump(self.portfolio_history, f, indent=2, default=str)
 
             # Save rotation history
-            with open(state_dir / "rotation_history.json", 'w') as f:
+            with open(state_dir / "rotation_history.json", "w") as f:
                 json.dump(self.rotation_history, f, indent=2, default=str)
 
             # Save manual overrides
-            with open(state_dir / "manual_overrides.json", 'w') as f:
+            with open(state_dir / "manual_overrides.json", "w") as f:
                 json.dump(self.manual_overrides, f, indent=2, default=str)
 
             # Save override audit log
-            with open(state_dir / "override_audit.json", 'w') as f:
-                json.dump(self.override_audit_log[-200:], f, indent=2, default=str)  # Last 200 entries
+            with open(state_dir / "override_audit.json", "w") as f:
+                json.dump(
+                    self.override_audit_log[-200:], f, indent=2, default=str
+                )  # Last 200 entries
 
             logger.info(f"💾 Wallet selector state saved to {state_dir}")
 
@@ -1037,25 +1059,25 @@ class AutomaticWalletSelector:
             # Load portfolio history
             portfolio_file = state_dir / "portfolio_history.json"
             if portfolio_file.exists():
-                with open(portfolio_file, 'r') as f:
+                with open(portfolio_file, "r") as f:
                     self.portfolio_history = json.load(f)
 
             # Load rotation history
             rotation_file = state_dir / "rotation_history.json"
             if rotation_file.exists():
-                with open(rotation_file, 'r') as f:
+                with open(rotation_file, "r") as f:
                     self.rotation_history = json.load(f)
 
             # Load manual overrides
             overrides_file = state_dir / "manual_overrides.json"
             if overrides_file.exists():
-                with open(overrides_file, 'r') as f:
+                with open(overrides_file, "r") as f:
                     self.manual_overrides = json.load(f)
 
             # Load override audit log
             audit_file = state_dir / "override_audit.json"
             if audit_file.exists():
-                with open(audit_file, 'r') as f:
+                with open(audit_file, "r") as f:
                     self.override_audit_log = json.load(f)
 
             logger.info(f"📊 Wallet selector state loaded from {state_dir}")
@@ -1063,7 +1085,9 @@ class AutomaticWalletSelector:
         except Exception as e:
             logger.error(f"Error loading selector state: {e}")
 
-    def _create_insufficient_wallets_response(self, qualified_wallets: List[Dict[str, Any]], criteria: Dict[str, Any]) -> Dict[str, Any]:
+    def _create_insufficient_wallets_response(
+        self, qualified_wallets: List[Dict[str, Any]], criteria: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Create response when insufficient qualified wallets are available."""
 
         return {
@@ -1074,9 +1098,9 @@ class AutomaticWalletSelector:
                 {
                     "address": w["address"],
                     "quality_score": w["quality_score"],
-                    "reason": "below_minimum_count"
+                    "reason": "below_minimum_count",
                 }
                 for w in qualified_wallets
             ],
-            "selection_timestamp": datetime.now().isoformat()
+            "selection_timestamp": datetime.now().isoformat(),
         }

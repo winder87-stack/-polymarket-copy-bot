@@ -16,14 +16,12 @@ Features:
 
 import json
 import logging
-import os
-import shutil
 import time
 import zlib
 from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -82,8 +80,8 @@ class WalletBehaviorStore:
                     "total_classifications": 0,
                     "total_history_entries": 0,
                     "compressed_size_mb": 0,
-                    "last_optimization": None
-                }
+                    "last_optimization": None,
+                },
             }
             self._save_metadata(metadata)
 
@@ -95,9 +93,7 @@ class WalletBehaviorStore:
             self._save_compressed_json(self.behavior_history_file, {})
 
     def store_wallet_classification(
-        self,
-        wallet_address: str,
-        classification_data: Dict[str, Any]
+        self, wallet_address: str, classification_data: Dict[str, Any]
     ) -> bool:
         """
         Store wallet classification data with metadata and timestamps.
@@ -136,11 +132,7 @@ class WalletBehaviorStore:
             logger.error(f"Error storing classification for {wallet_address}: {e}")
             return False
 
-    def store_behavior_history(
-        self,
-        wallet_address: str,
-        behavior_entry: Dict[str, Any]
-    ) -> bool:
+    def store_behavior_history(self, wallet_address: str, behavior_entry: Dict[str, Any]) -> bool:
         """
         Store behavior analysis history entry.
 
@@ -168,7 +160,9 @@ class WalletBehaviorStore:
             # Maintain size limits (keep most recent entries)
             if len(behavior_history[wallet_address]) > self.max_history_per_wallet:
                 # Keep the most recent entries
-                behavior_history[wallet_address] = behavior_history[wallet_address][-self.max_history_per_wallet:]
+                behavior_history[wallet_address] = behavior_history[wallet_address][
+                    -self.max_history_per_wallet :
+                ]
 
             # Save to disk
             self._save_compressed_json(self.behavior_history_file, behavior_history)
@@ -192,10 +186,7 @@ class WalletBehaviorStore:
         return classifications.get(wallet_address)
 
     def get_wallet_behavior_history(
-        self,
-        wallet_address: str,
-        limit: Optional[int] = None,
-        days_back: Optional[int] = None
+        self, wallet_address: str, limit: Optional[int] = None, days_back: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """
         Retrieve wallet behavior history with optional filtering.
@@ -219,15 +210,14 @@ class WalletBehaviorStore:
         if days_back:
             cutoff_date = datetime.now() - timedelta(days=days_back)
             history = [
-                entry for entry in history
-                if datetime.fromisoformat(entry.get('timestamp', datetime.min.isoformat())) >= cutoff_date
+                entry
+                for entry in history
+                if datetime.fromisoformat(entry.get("timestamp", datetime.min.isoformat()))
+                >= cutoff_date
             ]
 
         # Sort by timestamp (newest first)
-        history.sort(
-            key=lambda x: x.get('timestamp', datetime.min.isoformat()),
-            reverse=True
-        )
+        history.sort(key=lambda x: x.get("timestamp", datetime.min.isoformat()), reverse=True)
 
         # Apply limit
         if limit:
@@ -251,11 +241,11 @@ class WalletBehaviorStore:
         confidence_scores = []
 
         for wallet_data in classifications.values():
-            classification = wallet_data.get('classification', 'unknown')
+            classification = wallet_data.get("classification", "unknown")
             classification_counts[classification] += 1
 
-            mm_prob = wallet_data.get('market_maker_probability', 0)
-            conf_score = wallet_data.get('confidence_score', 0)
+            mm_prob = wallet_data.get("market_maker_probability", 0)
+            conf_score = wallet_data.get("confidence_score", 0)
 
             mm_probabilities.append(mm_prob)
             confidence_scores.append(conf_score)
@@ -265,7 +255,7 @@ class WalletBehaviorStore:
         wallets_with_history = len(behavior_history)
 
         # Market maker concentration
-        market_makers = classification_counts.get('market_maker', 0)
+        market_makers = classification_counts.get("market_maker", 0)
         total_classified = len(classifications)
 
         return {
@@ -273,17 +263,22 @@ class WalletBehaviorStore:
             "total_history_entries": total_history_entries,
             "wallets_with_history": wallets_with_history,
             "classification_distribution": dict(classification_counts),
-            "market_maker_percentage": market_makers / total_classified if total_classified > 0 else 0,
-            "avg_market_maker_probability": sum(mm_probabilities) / len(mm_probabilities) if mm_probabilities else 0,
-            "avg_confidence_score": sum(confidence_scores) / len(confidence_scores) if confidence_scores else 0,
-            "high_confidence_classifications": sum(1 for score in confidence_scores if score >= 0.8),
-            "storage_stats": self.get_storage_stats()
+            "market_maker_percentage": (
+                market_makers / total_classified if total_classified > 0 else 0
+            ),
+            "avg_market_maker_probability": (
+                sum(mm_probabilities) / len(mm_probabilities) if mm_probabilities else 0
+            ),
+            "avg_confidence_score": (
+                sum(confidence_scores) / len(confidence_scores) if confidence_scores else 0
+            ),
+            "high_confidence_classifications": sum(
+                1 for score in confidence_scores if score >= 0.8
+            ),
+            "storage_stats": self.get_storage_stats(),
         }
 
-    def detect_classification_changes(
-        self,
-        hours_back: int = 24
-    ) -> List[Dict[str, Any]]:
+    def detect_classification_changes(self, hours_back: int = 24) -> List[Dict[str, Any]]:
         """
         Detect wallets with recent classification changes.
 
@@ -303,30 +298,43 @@ class WalletBehaviorStore:
 
             # Get recent entries
             recent_entries = [
-                entry for entry in history
-                if datetime.fromisoformat(entry.get('timestamp', datetime.min.isoformat())) >= cutoff_time
+                entry
+                for entry in history
+                if datetime.fromisoformat(entry.get("timestamp", datetime.min.isoformat()))
+                >= cutoff_time
             ]
 
             if len(recent_entries) < 2:
                 continue
 
             # Sort by timestamp
-            recent_entries.sort(key=lambda x: x.get('timestamp', ''))
+            recent_entries.sort(key=lambda x: x.get("timestamp", ""))
 
             # Check for classification changes
-            first_classification = recent_entries[0].get('classification')
-            last_classification = recent_entries[-1].get('classification')
+            first_classification = recent_entries[0].get("classification")
+            last_classification = recent_entries[-1].get("classification")
 
             if first_classification != last_classification:
-                changes.append({
-                    "wallet_address": wallet_address,
-                    "previous_classification": first_classification,
-                    "current_classification": last_classification,
-                    "change_timestamp": recent_entries[-1].get('timestamp'),
-                    "hours_since_change": (datetime.now() - datetime.fromisoformat(recent_entries[-1].get('timestamp', datetime.now().isoformat()))).total_seconds() / 3600,
-                    "confidence_current": recent_entries[-1].get('confidence_score', 0),
-                    "mm_probability_change": recent_entries[-1].get('market_maker_probability', 0) - recent_entries[0].get('market_maker_probability', 0)
-                })
+                changes.append(
+                    {
+                        "wallet_address": wallet_address,
+                        "previous_classification": first_classification,
+                        "current_classification": last_classification,
+                        "change_timestamp": recent_entries[-1].get("timestamp"),
+                        "hours_since_change": (
+                            datetime.now()
+                            - datetime.fromisoformat(
+                                recent_entries[-1].get("timestamp", datetime.now().isoformat())
+                            )
+                        ).total_seconds()
+                        / 3600,
+                        "confidence_current": recent_entries[-1].get("confidence_score", 0),
+                        "mm_probability_change": recent_entries[-1].get(
+                            "market_maker_probability", 0
+                        )
+                        - recent_entries[0].get("market_maker_probability", 0),
+                    }
+                )
 
         return changes
 
@@ -338,7 +346,7 @@ class WalletBehaviorStore:
             "size_before_mb": 0,
             "size_after_mb": 0,
             "compression_ratio": 0,
-            "optimization_timestamp": datetime.now().isoformat()
+            "optimization_timestamp": datetime.now().isoformat(),
         }
 
         try:
@@ -374,7 +382,8 @@ class WalletBehaviorStore:
             optimization_stats["size_after_mb"] = self._get_directory_size_mb()
             optimization_stats["compression_ratio"] = (
                 optimization_stats["size_before_mb"] / optimization_stats["size_after_mb"]
-                if optimization_stats["size_after_mb"] > 0 else 1
+                if optimization_stats["size_after_mb"] > 0
+                else 1
             )
 
             # Clear cache
@@ -400,9 +409,14 @@ class WalletBehaviorStore:
 
             # Create backup archive
             import tarfile
+
             with tarfile.open(backup_file, "w:gz") as tar:
                 # Add all data files
-                for file_path in [self.classifications_file, self.behavior_history_file, self.metadata_file]:
+                for file_path in [
+                    self.classifications_file,
+                    self.behavior_history_file,
+                    self.metadata_file,
+                ]:
                     if file_path.exists():
                         tar.add(file_path, arcname=file_path.name)
 
@@ -426,7 +440,7 @@ class WalletBehaviorStore:
 
             # Extract backup
             with tarfile.open(backup_file, "r:gz") as tar:
-                tar.extractall(self.data_dir, filter='data')
+                tar.extractall(self.data_dir, filter="data")
 
             # Clear cache
             self._invalidate_cache()
@@ -442,8 +456,16 @@ class WalletBehaviorStore:
         """Get detailed storage statistics"""
 
         try:
-            classifications_size = self.classifications_file.stat().st_size if self.classifications_file.exists() else 0
-            behavior_size = self.behavior_history_file.stat().st_size if self.behavior_history_file.exists() else 0
+            classifications_size = (
+                self.classifications_file.stat().st_size
+                if self.classifications_file.exists()
+                else 0
+            )
+            behavior_size = (
+                self.behavior_history_file.stat().st_size
+                if self.behavior_history_file.exists()
+                else 0
+            )
             metadata_size = self.metadata_file.stat().st_size if self.metadata_file.exists() else 0
 
             total_size_mb = (classifications_size + behavior_size + metadata_size) / (1024 * 1024)
@@ -460,10 +482,14 @@ class WalletBehaviorStore:
                 "metadata_file_mb": round(metadata_size / (1024 * 1024), 2),
                 "total_wallets": len(classifications),
                 "total_history_entries": total_history_entries,
-                "avg_history_per_wallet": total_history_entries / len(classifications) if classifications else 0,
+                "avg_history_per_wallet": (
+                    total_history_entries / len(classifications) if classifications else 0
+                ),
                 "compression_ratio": self._calculate_compression_ratio(),
                 "last_backup": self._load_metadata().get("last_backup"),
-                "last_optimization": self._load_metadata().get("storage_stats", {}).get("last_optimization")
+                "last_optimization": self._load_metadata()
+                .get("storage_stats", {})
+                .get("last_optimization"),
             }
 
         except Exception as e:
@@ -509,7 +535,7 @@ class WalletBehaviorStore:
 
         try:
             if self.metadata_file.exists():
-                with open(self.metadata_file, 'r', encoding='utf-8') as f:
+                with open(self.metadata_file, "r", encoding="utf-8") as f:
                     metadata = json.load(f)
             else:
                 metadata = {}
@@ -522,7 +548,7 @@ class WalletBehaviorStore:
     def _save_metadata(self, metadata: Dict[str, Any]):
         """Save metadata"""
         try:
-            with open(self.metadata_file, 'w', encoding='utf-8') as f:
+            with open(self.metadata_file, "w", encoding="utf-8") as f:
                 json.dump(metadata, f, indent=2, default=str)
             self._metadata_cache = metadata
         except Exception as e:
@@ -549,7 +575,9 @@ class WalletBehaviorStore:
             behavior_history = self._load_behavior_history()
 
             stats["total_classifications"] = len(classifications)
-            stats["total_history_entries"] = sum(len(history) for history in behavior_history.values())
+            stats["total_history_entries"] = sum(
+                len(history) for history in behavior_history.values()
+            )
             stats["compressed_size_mb"] = self._get_directory_size_mb()
 
             metadata["storage_stats"] = stats
@@ -566,10 +594,10 @@ class WalletBehaviorStore:
             return {}
 
         try:
-            with open(file_path, 'rb') as f:
+            with open(file_path, "rb") as f:
                 compressed_data = f.read()
                 json_data = zlib.decompress(compressed_data)
-                return json.loads(json_data.decode('utf-8'))
+                return json.loads(json_data.decode("utf-8"))
         except Exception as e:
             logger.error(f"Error loading compressed JSON from {file_path}: {e}")
             return {}
@@ -577,10 +605,10 @@ class WalletBehaviorStore:
     def _save_compressed_json(self, file_path: Path, data: Any):
         """Save data as compressed JSON"""
         try:
-            json_str = json.dumps(data, default=str, separators=(',', ':'))
-            compressed_data = zlib.compress(json_str.encode('utf-8'), level=self.compression_level)
+            json_str = json.dumps(data, default=str, separators=(",", ":"))
+            compressed_data = zlib.compress(json_str.encode("utf-8"), level=self.compression_level)
 
-            with open(file_path, 'wb') as f:
+            with open(file_path, "wb") as f:
                 f.write(compressed_data)
 
         except Exception as e:
@@ -590,7 +618,7 @@ class WalletBehaviorStore:
         """Get total size of data directory in MB"""
         try:
             total_size = 0
-            for file_path in self.data_dir.rglob('*'):
+            for file_path in self.data_dir.rglob("*"):
                 if file_path.is_file():
                     total_size += file_path.stat().st_size
             return total_size / (1024 * 1024)
@@ -605,10 +633,17 @@ class WalletBehaviorStore:
             behavior_history = self._load_behavior_history()
 
             # Rough estimate of uncompressed size
-            uncompressed_size = len(json.dumps(classifications, default=str)) + len(json.dumps(behavior_history, default=str))
+            uncompressed_size = len(json.dumps(classifications, default=str)) + len(
+                json.dumps(behavior_history, default=str)
+            )
             compressed_size = (
-                (self.classifications_file.stat().st_size if self.classifications_file.exists() else 0) +
-                (self.behavior_history_file.stat().st_size if self.behavior_history_file.exists() else 0)
+                self.classifications_file.stat().st_size
+                if self.classifications_file.exists()
+                else 0
+            ) + (
+                self.behavior_history_file.stat().st_size
+                if self.behavior_history_file.exists()
+                else 0
             )
 
             return uncompressed_size / compressed_size if compressed_size > 0 else 1
@@ -640,7 +675,7 @@ class WalletBehaviorStore:
             for backup_file in self.backups_dir.glob("*.tar.gz"):
                 try:
                     # Extract timestamp from filename
-                    timestamp_str = backup_file.stem.split('_')[-1]
+                    timestamp_str = backup_file.stem.split("_")[-1]
                     file_date = datetime.strptime(timestamp_str, "%Y%m%d_%H%M%S")
 
                     if file_date < cutoff_date:

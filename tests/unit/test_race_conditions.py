@@ -11,14 +11,13 @@ Tests cover:
 
 import asyncio
 import signal
-import threading
 import time
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from concurrent.futures import ThreadPoolExecutor
+from unittest.mock import MagicMock, patch
 
-from core.trade_executor import TradeExecutor
+import pytest
+
 from config.settings import Settings
+from core.trade_executor import TradeExecutor
 
 
 @pytest.fixture
@@ -57,9 +56,9 @@ class TestConcurrentTradeExecution:
                 "side": "BUY",
                 "amount": 10.0,
                 "price": 0.5,
-                "confidence_score": 0.9
+                "confidence_score": 0.9,
             },
-            "order_id": "order123"
+            "order_id": "order123",
         }
 
         async def execute_trade_on_position(trade_id):
@@ -71,7 +70,7 @@ class TestConcurrentTradeExecution:
                 "side": "SELL",  # Close position
                 "amount": 10.0,
                 "price": 0.55,
-                "confidence_score": 0.95
+                "confidence_score": 0.95,
             }
 
             return await trade_executor.execute_copy_trade(trade)
@@ -81,7 +80,9 @@ class TestConcurrentTradeExecution:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Analyze results - should handle concurrency gracefully
-        successful_closes = sum(1 for r in results if isinstance(r, dict) and r.get("status") == "success")
+        successful_closes = sum(
+            1 for r in results if isinstance(r, dict) and r.get("status") == "success"
+        )
         exceptions = sum(1 for r in results if isinstance(r, Exception))
 
         # Only one close should succeed, others should fail gracefully
@@ -108,9 +109,9 @@ class TestConcurrentTradeExecution:
                     "side": "BUY",
                     "amount": 10.0,
                     "price": 0.5,
-                    "confidence_score": 0.9
+                    "confidence_score": 0.9,
                 },
-                "order_id": f"order{i}"
+                "order_id": f"order{i}",
             }
 
         async def manage_positions():
@@ -127,6 +128,7 @@ class TestConcurrentTradeExecution:
     @pytest.mark.asyncio
     async def test_concurrent_circuit_breaker_operations(self, trade_executor):
         """Test concurrent circuit breaker activation/deactivation"""
+
         async def toggle_circuit_breaker(task_id):
             """Randomly activate/deactivate circuit breaker"""
             if task_id % 2 == 0:
@@ -140,7 +142,7 @@ class TestConcurrentTradeExecution:
 
         # Run concurrent circuit breaker operations
         tasks = [toggle_circuit_breaker(i) for i in range(10)]
-        results = await asyncio.gather(*tasks)
+        await asyncio.gather(*tasks)
 
         # Final state should be deterministic (last operation wins)
         final_state = trade_executor.circuit_breaker_active
@@ -276,11 +278,12 @@ class TestNetworkFailureRaceConditions:
             "side": "BUY",
             "amount": 10.0,
             "price": 0.5,
-            "confidence_score": 0.9
+            "confidence_score": 0.9,
         }
 
         # Mock network failure at different points
         call_count = 0
+
         def failing_network_call(*args, **kwargs):
             nonlocal call_count
             call_count += 1
@@ -288,7 +291,9 @@ class TestNetworkFailureRaceConditions:
                 raise ConnectionError("Network failure")
             return {"orderID": f"order_{call_count}"}
 
-        with patch.object(trade_executor.clob_client, 'place_order', side_effect=failing_network_call):
+        with patch.object(
+            trade_executor.clob_client, "place_order", side_effect=failing_network_call
+        ):
             # Execute trade - should handle network failure gracefully
             result = await trade_executor.execute_copy_trade(trade)
 
@@ -299,6 +304,7 @@ class TestNetworkFailureRaceConditions:
     @pytest.mark.asyncio
     async def test_concurrent_network_failures(self, trade_executor):
         """Test concurrent operations during network failures"""
+
         async def failing_operation(operation_id):
             """Operation that may fail due to network issues"""
             try:
@@ -332,7 +338,9 @@ class TestNetworkFailureRaceConditions:
         async def operation_with_timeout(operation_id):
             """Operation that may timeout"""
             try:
-                await asyncio.wait_for(asyncio.sleep(0.1), timeout=0.05 if operation_id % 2 == 0 else 0.2)
+                await asyncio.wait_for(
+                    asyncio.sleep(0.1), timeout=0.05 if operation_id % 2 == 0 else 0.2
+                )
                 return f"completed_{operation_id}"
             except asyncio.TimeoutError:
                 timeout_events.append(operation_id)
@@ -364,7 +372,7 @@ class TestStateConsistencyRaceConditions:
             # Update various state variables concurrently
             async with trade_executor._state_lock:
                 trade_executor.total_trades += 1
-                trade_executor.successful_trades += (task_id % 2)  # Some succeed
+                trade_executor.successful_trades += task_id % 2  # Some succeed
                 update_count += 1
                 await asyncio.sleep(0.001)  # Simulate work
 
@@ -398,9 +406,9 @@ class TestStateConsistencyRaceConditions:
                         "side": "BUY",
                         "amount": 10.0,
                         "price": 0.5,
-                        "confidence_score": 0.9
+                        "confidence_score": 0.9,
                     },
-                    "order_id": "order123"
+                    "order_id": "order123",
                 }
             else:
                 # Other tasks try to access/modify

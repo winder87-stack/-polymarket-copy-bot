@@ -13,19 +13,20 @@ Orchestrates all monitoring activities:
 Can be run manually or scheduled via cron/systemd.
 """
 
-import asyncio
 import argparse
-from datetime import datetime
-from typing import Dict, List, Any, Optional
+import asyncio
 import logging
 import sys
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
-from monitoring.monitoring_config import monitoring_config
-from monitoring.security_scanner import run_daily_security_scan
-from monitoring.performance_benchmark import run_performance_benchmark
 from monitoring.alert_health_checker import run_alert_health_check
+from monitoring.monitoring_config import monitoring_config
+from monitoring.performance_benchmark import run_performance_benchmark
+from monitoring.security_scanner import run_daily_security_scan
 
 logger = logging.getLogger(__name__)
+
 
 class MonitoringOrchestrator:
     """Orchestrates all monitoring activities"""
@@ -44,7 +45,7 @@ class MonitoringOrchestrator:
             "checks_run": [],
             "summary": {},
             "alerts": [],
-            "recommendations": []
+            "recommendations": [],
         }
 
         # Determine which checks to run
@@ -121,7 +122,7 @@ class MonitoringOrchestrator:
             "overall_status": "healthy",
             "critical_issues": 0,
             "high_issues": 0,
-            "medium_issues": 0
+            "medium_issues": 0,
         }
 
         # Count alerts by severity
@@ -154,7 +155,9 @@ class MonitoringOrchestrator:
 
         # Check for critical issues
         if summary.get("critical_issues", 0) > 0:
-            recommendations.append("🚨 Address critical issues immediately - system may be compromised or unstable")
+            recommendations.append(
+                "🚨 Address critical issues immediately - system may be compromised or unstable"
+            )
 
         # Check security issues
         security = results.get("security", {})
@@ -165,7 +168,9 @@ class MonitoringOrchestrator:
         performance = results.get("performance", {})
         regressions = performance.get("comparison", {}).get("regressions", [])
         if regressions:
-            recommendations.append("📊 Investigate performance regressions and optimize bottlenecks")
+            recommendations.append(
+                "📊 Investigate performance regressions and optimize bottlenecks"
+            )
 
         # Check alert system issues
         alerts_health = results.get("alerts_health", {})
@@ -185,19 +190,21 @@ class MonitoringOrchestrator:
 
         # Ensure directory exists
         import os
+
         os.makedirs("monitoring/reports", exist_ok=True)
 
-        with open(results_file, 'w') as f:
+        with open(results_file, "w") as f:
             # Convert to JSON-serializable format
             json_results = self._make_json_serializable(results)
             import json
+
             json.dump(json_results, f, indent=2, default=str)
 
         logger.info(f"💾 Monitoring results saved to {results_file}")
 
         # Also save latest results
         latest_file = "monitoring/reports/latest_monitoring_run.json"
-        with open(latest_file, 'w') as f:
+        with open(latest_file, "w") as f:
             json.dump(json_results, f, indent=2, default=str)
 
     def _make_json_serializable(self, obj):
@@ -215,7 +222,7 @@ class MonitoringOrchestrator:
         """Send alerts about monitoring results"""
         try:
             summary = results.get("summary", {})
-            alerts = results.get("alerts", [])
+            results.get("alerts", [])
             recommendations = results.get("recommendations", [])
 
             # Only send alert if there are significant issues
@@ -223,7 +230,7 @@ class MonitoringOrchestrator:
             high_issues = summary.get("high_issues", 0)
 
             if critical_issues > 0 or high_issues > 0:
-                alert_message = f"🚨 MONITORING ALERT\n"
+                alert_message = "🚨 MONITORING ALERT\n"
                 alert_message += f"Status: {summary.get('overall_status', 'unknown').upper()}\n"
                 alert_message += f"Critical Issues: {critical_issues}\n"
                 alert_message += f"High Issues: {high_issues}\n"
@@ -236,12 +243,14 @@ class MonitoringOrchestrator:
 
                 # Send alert
                 from utils.alerts import send_telegram_alert
+
                 await send_telegram_alert(alert_message)
 
                 logger.info("🚨 Monitoring alert sent")
 
         except Exception as e:
             logger.error(f"Error sending monitoring alert: {e}")
+
 
 async def main():
     """Main entry point"""
@@ -250,27 +259,22 @@ async def main():
         "--checks",
         nargs="*",
         choices=["security", "performance", "alerts"],
-        help="Specific checks to run (default: all enabled)"
+        help="Specific checks to run (default: all enabled)",
     )
     parser.add_argument(
         "--schedule",
         choices=["daily", "weekly", "manual"],
         default="manual",
-        help="Run type for logging purposes"
+        help="Run type for logging purposes",
     )
-    parser.add_argument(
-        "--verbose", "-v",
-        action="store_true",
-        help="Verbose logging"
-    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Verbose logging")
 
     args = parser.parse_args()
 
     # Setup logging
     log_level = logging.DEBUG if args.verbose else logging.INFO
     logging.basicConfig(
-        level=log_level,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        level=log_level, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
 
     logger.info(f"🚀 Starting monitoring run (schedule: {args.schedule})")
@@ -297,6 +301,7 @@ async def main():
     except Exception as e:
         logger.error(f"❌ Monitoring run failed: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

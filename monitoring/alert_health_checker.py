@@ -14,16 +14,17 @@ Generates health reports and alerts about alert system issues.
 """
 
 import asyncio
+import json
+import logging
 import time
 from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional, Tuple
-import logging
-import json
+from typing import Any, Dict, List
 
 from monitoring.monitoring_config import monitoring_config
-from utils.alerts import send_telegram_alert, send_error_alert
+from utils.alerts import send_telegram_alert
 
 logger = logging.getLogger(__name__)
+
 
 class AlertHealthChecker:
     """Health checker for alert systems"""
@@ -44,7 +45,7 @@ class AlertHealthChecker:
             "checks": {},
             "overall_health": "unknown",
             "issues": [],
-            "recommendations": []
+            "recommendations": [],
         }
 
         # Run health checks
@@ -99,7 +100,7 @@ class AlertHealthChecker:
             "bot_info": None,
             "test_message_sent": False,
             "test_message_delivered": False,
-            "error": None
+            "error": None,
         }
 
         try:
@@ -108,6 +109,7 @@ class AlertHealthChecker:
 
             # Try to get bot info (this tests API connectivity)
             from telegram import Bot
+
             from config.settings import settings
 
             if not settings.alerts.telegram_bot_token:
@@ -125,7 +127,7 @@ class AlertHealthChecker:
                 "first_name": bot_info.first_name,
                 "can_join_groups": bot_info.can_join_groups,
                 "can_read_all_group_messages": bot_info.can_read_all_group_messages,
-                "supports_inline_queries": bot_info.supports_inline_queries
+                "supports_inline_queries": bot_info.supports_inline_queries,
             }
 
             response_time = (time.time() - start_time) * 1000
@@ -134,24 +136,28 @@ class AlertHealthChecker:
             # Check response time threshold
             if response_time > self.config.max_alert_delay_seconds * 1000:
                 result["status"] = "slow"
-                self.alerts.append({
-                    "level": "medium",
-                    "component": "telegram",
-                    "message": f"Telegram API response time {response_time:.1f}ms exceeds threshold {self.config.max_alert_delay_seconds * 1000}ms",
-                    "details": {"response_time_ms": response_time}
-                })
+                self.alerts.append(
+                    {
+                        "level": "medium",
+                        "component": "telegram",
+                        "message": f"Telegram API response time {response_time:.1f}ms exceeds threshold {self.config.max_alert_delay_seconds * 1000}ms",
+                        "details": {"response_time_ms": response_time},
+                    }
+                )
             else:
                 result["status"] = "healthy"
 
             # Send test message if configured
             if settings.alerts.telegram_chat_id and self.config.test_alert_enabled:
-                test_message = f"🔍 Alert System Health Check - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                test_message = (
+                    f"🔍 Alert System Health Check - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                )
 
                 try:
                     message = await bot.send_message(
                         chat_id=settings.alerts.telegram_chat_id,
                         text=test_message,
-                        disable_notification=True  # Don't notify for test messages
+                        disable_notification=True,  # Don't notify for test messages
                     )
                     result["test_message_sent"] = True
                     result["test_message_delivered"] = True
@@ -161,32 +167,33 @@ class AlertHealthChecker:
                     result["error"] = f"Failed to send test message: {str(e)}"
                     result["status"] = "degraded"
 
-                    self.alerts.append({
-                        "level": "high",
-                        "component": "telegram",
-                        "message": "Failed to send test message to Telegram",
-                        "details": {"error": str(e)}
-                    })
+                    self.alerts.append(
+                        {
+                            "level": "high",
+                            "component": "telegram",
+                            "message": "Failed to send test message to Telegram",
+                            "details": {"error": str(e)},
+                        }
+                    )
 
         except Exception as e:
             result["status"] = "failed"
             result["error"] = str(e)
 
-            self.alerts.append({
-                "level": "critical",
-                "component": "telegram",
-                "message": "Telegram health check completely failed",
-                "details": {"error": str(e)}
-            })
+            self.alerts.append(
+                {
+                    "level": "critical",
+                    "component": "telegram",
+                    "message": "Telegram health check completely failed",
+                    "details": {"error": str(e)},
+                }
+            )
 
         return result
 
     async def _check_email_health(self) -> Dict[str, Any]:
         """Check email alert system health"""
-        result = {
-            "status": "not_implemented",
-            "note": "Email alerting not currently implemented"
-        }
+        result = {"status": "not_implemented", "note": "Email alerting not currently implemented"}
 
         # Placeholder for future email health checking
         # Would include SMTP connectivity tests, delivery confirmation, etc.
@@ -195,10 +202,7 @@ class AlertHealthChecker:
 
     async def _check_webhook_health(self) -> Dict[str, Any]:
         """Check webhook alert system health"""
-        result = {
-            "status": "not_implemented",
-            "note": "Webhook alerting not currently implemented"
-        }
+        result = {"status": "not_implemented", "note": "Webhook alerting not currently implemented"}
 
         # Placeholder for future webhook health checking
         # Would include HTTP connectivity tests, response validation, etc.
@@ -243,32 +247,38 @@ class AlertHealthChecker:
             error = check_result.get("error")
 
             if status == "failed":
-                issues.append({
-                    "component": check_name,
-                    "severity": "critical",
-                    "issue": "complete_failure",
-                    "description": f"{check_name.capitalize()} alert system completely failed",
-                    "details": {"error": error}
-                })
+                issues.append(
+                    {
+                        "component": check_name,
+                        "severity": "critical",
+                        "issue": "complete_failure",
+                        "description": f"{check_name.capitalize()} alert system completely failed",
+                        "details": {"error": error},
+                    }
+                )
 
             elif status == "degraded":
-                issues.append({
-                    "component": check_name,
-                    "severity": "high",
-                    "issue": "degraded_performance",
-                    "description": f"{check_name.capitalize()} alert system is degraded",
-                    "details": {"error": error}
-                })
+                issues.append(
+                    {
+                        "component": check_name,
+                        "severity": "high",
+                        "issue": "degraded_performance",
+                        "description": f"{check_name.capitalize()} alert system is degraded",
+                        "details": {"error": error},
+                    }
+                )
 
             elif status == "slow":
                 response_time = check_result.get("response_time_ms")
-                issues.append({
-                    "component": check_name,
-                    "severity": "medium",
-                    "issue": "slow_response",
-                    "description": f"{check_name.capitalize()} alert system response is slow",
-                    "details": {"response_time_ms": response_time}
-                })
+                issues.append(
+                    {
+                        "component": check_name,
+                        "severity": "medium",
+                        "issue": "slow_response",
+                        "description": f"{check_name.capitalize()} alert system response is slow",
+                        "details": {"response_time_ms": response_time},
+                    }
+                )
 
         return issues
 
@@ -288,7 +298,9 @@ class AlertHealthChecker:
         elif telegram_result.get("status") == "slow":
             recommendations.append("⚡ Investigate and optimize Telegram API response times")
 
-        if not any(check.get("status") in ["healthy", "not_configured"] for check in checks.values()):
+        if not any(
+            check.get("status") in ["healthy", "not_configured"] for check in checks.values()
+        ):
             recommendations.append("📱 Consider implementing backup alert mechanisms (email, SMS)")
 
         # General recommendations
@@ -304,16 +316,17 @@ class AlertHealthChecker:
 
         # Ensure directory exists
         import os
+
         os.makedirs("monitoring/alert_health", exist_ok=True)
 
-        with open(results_file, 'w') as f:
+        with open(results_file, "w") as f:
             json.dump(results, f, indent=2, default=str)
 
         logger.info(f"💾 Alert health check results saved to {results_file}")
 
         # Also save latest results
         latest_file = "monitoring/alert_health/latest_health_check.json"
-        with open(latest_file, 'w') as f:
+        with open(latest_file, "w") as f:
             json.dump(results, f, indent=2, default=str)
 
     async def _send_test_alert(self, results: Dict[str, Any]) -> None:
@@ -356,6 +369,7 @@ class AlertHealthChecker:
 
         if os.path.exists(health_dir):
             import glob
+
             health_files = glob.glob(f"{health_dir}/health_check_*.json")
             health_files.sort(reverse=True)  # Most recent first
 
@@ -363,7 +377,7 @@ class AlertHealthChecker:
 
             for health_file in health_files[:50]:  # Limit to last 50 checks
                 try:
-                    with open(health_file, 'r') as f:
+                    with open(health_file, "r") as f:
                         result = json.load(f)
 
                     check_time = datetime.fromisoformat(result["timestamp"])
@@ -388,7 +402,7 @@ class AlertHealthChecker:
             "health_distribution": {},
             "average_response_time_ms": 0,
             "success_rate": 0,
-            "most_common_issues": []
+            "most_common_issues": [],
         }
 
         total_response_time = 0
@@ -398,7 +412,9 @@ class AlertHealthChecker:
         for check in history:
             # Count health statuses
             health = check.get("overall_health", "unknown")
-            summary["health_distribution"][health] = summary["health_distribution"].get(health, 0) + 1
+            summary["health_distribution"][health] = (
+                summary["health_distribution"].get(health, 0) + 1
+            )
 
             # Calculate response times
             telegram_check = check.get("checks", {}).get("telegram", {})
@@ -418,10 +434,12 @@ class AlertHealthChecker:
         # Find most common issues
         if all_issues:
             from collections import Counter
+
             issue_counts = Counter(all_issues)
             summary["most_common_issues"] = issue_counts.most_common(5)
 
         return summary
+
 
 async def run_alert_health_check() -> Dict[str, Any]:
     """Run the alert system health check"""
@@ -437,6 +455,7 @@ async def run_alert_health_check() -> Dict[str, Any]:
     logger.info(f"   Issues Found: {issues_count}")
 
     return results
+
 
 if __name__ == "__main__":
     # Run alert health check
