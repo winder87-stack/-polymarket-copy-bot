@@ -1,0 +1,16 @@
+# Requirements for production environment
+# Generated on 2025-12-25T22:32:08.905948
+# DO NOT EDIT MANUALLY - Use dependency_manager.py
+
+web3==6.15.1
+py-clob-client==0.16.0
+pydantic==2.5.3
+tenacity==8.2.3
+cryptography==41.0.7
+requests==2.31.0
+aiohttp==3.9.1
+pandas==2.1.4
+APScheduler==3.10.4
+python-telegram-bot==20.7
+loguru==0.7.2
+python-json-logger==2.0.7

@@ -1,0 +1,97 @@
+# Environment Configuration for DEVELOPMENT Environment
+# Network: Polygon Amoy Testnet
+# Local development - safe for testing and debugging
+# Generated on $(date)
+
+# ===========================================
+# 🛠️  DEVELOPMENT ENVIRONMENT
+# ===========================================
+
+# REQUIRED: Wallet Configuration (TESTNET ONLY)
+# Use a development testnet wallet
+DEV_PRIVATE_KEY=your_dev_testnet_private_key_here
+
+# REQUIRED: Network Configuration
+POLYGON_RPC_URL=https://rpc-amoy.polygon.technology
+CHAIN_ID=80002
+BLOCK_EXPLORER=https://amoy.polygonscan.com
+
+# REQUIRED: Polymarket Configuration (Testnet)
+CLOB_HOST=https://clob.polymarket.com
+# Development API credentials
+CLOB_API_KEY=your_dev_api_key
+CLOB_API_SECRET=your_dev_api_secret
+
+# OPTIONAL: Monitoring (can be disabled for local dev)
+DEV_TELEGRAM_BOT_TOKEN=your_dev_telegram_bot_token
+DEV_TELEGRAM_CHAT_ID=your_dev_telegram_chat_id
+
+# Development Risk Settings (Very Conservative)
+MAX_POSITION_SIZE=0.01
+MAX_DAILY_LOSS=0.005
+ENABLE_REAL_TRADING=false
+DRY_RUN=true
+
+# Logging and Monitoring
+LOG_LEVEL=DEBUG
+ENABLE_PROMETHEUS_METRICS=false
+METRICS_PORT=9092
+
+# Database (development)
+DATABASE_URL=sqlite:///data/development.db
+
+# Security Settings (disabled for development)
+ENCRYPT_SENSITIVE_DATA=false
+BACKUP_ENCRYPTION_KEY=dev_backup_key
+
+# Environment Information
+POLYMARKET_ENV=development
+NETWORK=polygon_amoy
+IS_TESTNET=true
+DEPLOYMENT=development
+
+# Performance Settings (single-threaded for debugging)
+MAX_WORKERS=1
+BATCH_SIZE=1
+RATE_LIMIT_CALLS_PER_MINUTE=5
+
+# Alert Thresholds (disabled/sensitive for development)
+ALERT_LOW_BALANCE=0.001
+ALERT_HIGH_POSITION_SIZE=0.005
+ALERT_CONSECUTIVE_LOSSES=1
+
+# Development Settings
+ENABLE_VERBOSE_LOGGING=true
+RECORD_ALL_TRADES=true
+MOCK_EXTERNAL_APIS=true
+ENABLE_DEBUG_MODE=true
+DISABLE_RATE_LIMITS=true
+
+# Testing Settings
+PYTEST_VERBOSE=true
+COVERAGE_REPORT=true
+ENABLE_INTEGRATION_TESTS=false
+
+# Backup Settings (disabled for development)
+BACKUP_INTERVAL_HOURS=0
+BACKUP_RETENTION_DAYS=1
+
+# ===========================================
+# 🐛 DEVELOPMENT GUIDELINES
+# ===========================================
+#
+# [ ] Use DRY_RUN=true for initial testing
+#
+# [ ] Enable MOCK_EXTERNAL_APIS=true to avoid real API calls
+#
+# [ ] Set LOG_LEVEL=DEBUG for detailed logs
+#
+# [ ] Use small position sizes (0.01 MATIC max)
+#
+# [ ] Test with Amoy faucet: https://faucet.polygon.technology/
+#
+# [ ] Run tests: python -m pytest tests/
+#
+# [ ] Check coverage: python -m pytest --cov=. --cov-report=html
+#
+# 💡 Perfect for debugging and feature development

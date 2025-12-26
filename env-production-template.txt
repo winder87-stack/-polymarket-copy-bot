@@ -1,0 +1,77 @@
+# Environment Configuration for PRODUCTION Environment
+# Network: Polygon Mainnet
+# WARNING: This is for MAINNET - REAL FUNDS WILL BE USED
+# Generated on $(date)
+
+# ===========================================
+# 🚨 MAINNET CONFIGURATION - USE CAUTION 🚨
+# ===========================================
+
+# REQUIRED: Wallet Configuration
+# NEVER share this private key - it controls real funds
+PRIVATE_KEY=your_mainnet_private_key_here
+
+# REQUIRED: Network Configuration
+POLYGON_RPC_URL=https://polygon-rpc.com/
+CHAIN_ID=137
+BLOCK_EXPLORER=https://polygonscan.com
+
+# REQUIRED: Polymarket Configuration
+CLOB_HOST=https://clob.polymarket.com
+# API credentials for production
+CLOB_API_KEY=your_production_api_key
+CLOB_API_SECRET=your_production_api_secret
+
+# REQUIRED: Monitoring
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+TELEGRAM_CHAT_ID=your_telegram_chat_id
+
+# Production Risk Settings
+MAX_POSITION_SIZE=1.0
+MAX_DAILY_LOSS=0.1
+ENABLE_REAL_TRADING=true
+DRY_RUN=false
+
+# Logging and Monitoring
+LOG_LEVEL=INFO
+ENABLE_PROMETHEUS_METRICS=true
+METRICS_PORT=9090
+
+# Database (if used)
+DATABASE_URL=sqlite:///data/production.db
+
+# Security Settings
+ENCRYPT_SENSITIVE_DATA=true
+BACKUP_ENCRYPTION_KEY=your_backup_key_here
+
+# Environment Information
+POLYMARKET_ENV=production
+NETWORK=polygon_mainnet
+IS_TESTNET=false
+DEPLOYMENT=mainnet
+
+# Performance Settings
+MAX_WORKERS=4
+BATCH_SIZE=10
+RATE_LIMIT_CALLS_PER_MINUTE=30
+
+# Alert Thresholds
+ALERT_LOW_BALANCE=0.1
+ALERT_HIGH_POSITION_SIZE=0.8
+ALERT_CONSECUTIVE_LOSSES=3
+
+# Backup Settings
+BACKUP_INTERVAL_HOURS=6
+BACKUP_RETENTION_DAYS=30
+
+# ===========================================
+# ⚠️  VERIFY THESE SETTINGS BEFORE STARTING
+# ===========================================
+#
+# 1. PRIVATE_KEY: Must be a valid Ethereum private key with MATIC
+# 2. POLYGON_RPC_URL: Must be a reliable mainnet RPC endpoint
+# 3. CLOB_API_KEY/SECRET: Valid Polymarket API credentials
+# 4. TELEGRAM_*: Working Telegram bot for alerts
+# 5. Risk limits: Appropriate for your risk tolerance
+#
+# 💡 Test with staging environment first!

@@ -1,0 +1,857 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html">
+
+    <!-- Generated with Sphinx 7.4.7 and Furo 2025.12.19 -->
+        <title>utils.logging_security - Polymarket Copy Bot API Documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=acfd86a5" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=15d1efc9" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  --color-brand-primary: #2980b9;
+  --color-brand-content: #1f618d;
+  --color-api-background: #2c3e50;
+  --color-api-name: #3498db;
+  --color-api-pre-name: #2980b9;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-brand-primary: #3498db;
+  --color-brand-content: #2980b9;
+  --color-api-background: #1a1a1a;
+  --color-api-name: #3498db;
+  --color-api-pre-name: #2980b9;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-brand-primary: #3498db;
+  --color-brand-content: #2980b9;
+  --color-api-background: #1a1a1a;
+  --color-api-name: #3498db;
+  --color-api-pre-name: #2980b9;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../index.html"><div class="brand">Polymarket Copy Bot API Documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../index.html">
+  
+  <span class="sidebar-brand-text">Polymarket Copy Bot API Documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../configuration.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../deployment.html">Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../troubleshooting.html">Troubleshooting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference:</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../api/modules.html">core</a><input aria-label="Toggle navigation of core" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/core.html">core package</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../api/core/modules.html">core</a><input aria-label="Toggle navigation of core" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/core/core.html">core package</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../api/config/modules.html">config</a><input aria-label="Toggle navigation of config" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/config/config.html">config package</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../api/utils/modules.html">utils</a><input aria-label="Toggle navigation of utils" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/utils/utils.html">utils package</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../configuration.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../deployment.html">Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../troubleshooting.html">Troubleshooting</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <h1>Source code for utils.logging_security</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Secure logging utilities for blockchain trading application.</span>
+
+<span class="sd">This module provides comprehensive protection against sensitive data leakage in logs:</span>
+<span class="sd">- Automatic masking of private keys, wallet addresses, API keys, and tokens</span>
+<span class="sd">- Secure logging wrapper with data sanitization</span>
+<span class="sd">- Audit logging for security events</span>
+<span class="sd">- Log file encryption and access controls</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">import</span> <span class="nn">hashlib</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">lru_cache</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">filelock</span>
+    <span class="n">FILELOCK_AVAILABLE</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">FILELOCK_AVAILABLE</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;filelock not available - audit logging will be degraded&quot;</span><span class="p">)</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SensitiveDataMasker">
+<a class="viewcode-back" href="../../api/utils/utils.html#utils.logging_security.SensitiveDataMasker">[docs]</a>
+<span class="k">class</span> <span class="nc">SensitiveDataMasker</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Advanced sensitive data masking for secure logging&quot;&quot;&quot;</span>
+
+    <span class="c1"># Pre-compiled regex patterns for sensitive data detection</span>
+    <span class="c1"># Order matters - more specific patterns first</span>
+    <span class="n">_SENSITIVE_PATTERNS</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="c1"># Private keys (64 hex chars - most specific)</span>
+        <span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\b0x[a-f0-9]</span><span class="si">{64}</span><span class="s1">\b&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">0</span><span class="p">)[:</span><span class="mi">6</span><span class="p">]</span><span class="si">}</span><span class="s2">...[PRIVATE_KEY]&quot;</span><span class="p">),</span>
+        <span class="c1"># Wallet addresses (40 hex chars)</span>
+        <span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\b0x[a-f0-9]</span><span class="si">{40}</span><span class="s1">\b&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">0</span><span class="p">)[:</span><span class="mi">6</span><span class="p">]</span><span class="si">}</span><span class="s2">...</span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">0</span><span class="p">)[</span><span class="o">-</span><span class="mi">4</span><span class="p">:]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
+        <span class="c1"># JSON Web Tokens</span>
+        <span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;eyJ[a-zA-Z0-9\-_]+\.eyJ[a-zA-Z0-9\-_]+\.?[a-zA-Z0-9\-_]+&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">),</span>
+         <span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="s1">&#39;[JWT_TOKEN_REDACTED]&#39;</span><span class="p">),</span>
+        <span class="c1"># API keys and tokens (more general patterns)</span>
+        <span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(?:api_key|token|secret|password)[&quot;\s]*[:=][&quot;\s]*[a-z0-9_\-]{20,}&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">),</span>
+         <span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;[a-z0-9_\-]{5,}$&#39;</span><span class="p">,</span> <span class="s1">&#39;...&#39;</span> <span class="o">+</span> <span class="s1">&#39;[REDACTED]&#39;</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)),</span>
+        <span class="c1"># Credit card numbers</span>
+        <span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\b(?:\d[ -]*?){13,16}\b&#39;</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="s1">&#39;[CARD_NUMBER_REDACTED]&#39;</span><span class="p">),</span>
+        <span class="c1"># Email addresses</span>
+        <span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}&#39;</span><span class="p">),</span>
+         <span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;@&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">][:</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s2">...@</span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;@&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
+    <span class="p">]</span>
+
+    <span class="n">_SENSITIVE_KEYS</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s1">&#39;private_key&#39;</span><span class="p">,</span> <span class="s1">&#39;secret&#39;</span><span class="p">,</span> <span class="s1">&#39;password&#39;</span><span class="p">,</span> <span class="s1">&#39;token&#39;</span><span class="p">,</span> <span class="s1">&#39;api_key&#39;</span><span class="p">,</span> <span class="s1">&#39;auth&#39;</span><span class="p">,</span> <span class="s1">&#39;credential&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;wallet&#39;</span><span class="p">,</span> <span class="s1">&#39;address&#39;</span><span class="p">,</span> <span class="s1">&#39;signature&#39;</span><span class="p">,</span> <span class="s1">&#39;seed&#39;</span><span class="p">,</span> <span class="s1">&#39;mnemonic&#39;</span><span class="p">,</span> <span class="s1">&#39;passphrase&#39;</span>
+    <span class="p">]</span>
+
+<div class="viewcode-block" id="SensitiveDataMasker.__init__">
+<a class="viewcode-back" href="../../api/utils/utils.html#utils.logging_security.SensitiveDataMasker.__init__">[docs]</a>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_masking_cache</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_compiled_patterns</span> <span class="o">=</span> <span class="p">[(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">replacer</span><span class="p">)</span> <span class="k">for</span> <span class="n">pattern</span><span class="p">,</span> <span class="n">replacer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_SENSITIVE_PATTERNS</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="SensitiveDataMasker.mask_sensitive_data">
+<a class="viewcode-back" href="../../api/utils/utils.html#utils.logging_security.SensitiveDataMasker.mask_sensitive_data">[docs]</a>
+    <span class="k">def</span> <span class="nf">mask_sensitive_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Recursively mask sensitive data in any structure</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data: Data to mask</span>
+<span class="sd">            context: Context for logging masking decisions</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Masked data with same structure</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_recursive</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error masking sensitive data: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="c1"># Return minimal safe data instead of failing</span>
+            <span class="k">return</span> <span class="s2">&quot;[MASKING_ERROR]&quot;</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_mask_recursive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Recursive masking implementation&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_string</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="n">data</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_dict</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_mask_recursive</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">context</span><span class="si">}</span><span class="s2">[list]&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">data</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mask_recursive</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">context</span><span class="si">}</span><span class="s2">[tuple]&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">data</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">&#39;__dict__&#39;</span><span class="p">):</span>
+            <span class="c1"># Handle objects by converting to dict</span>
+            <span class="n">obj_dict</span> <span class="o">=</span> <span class="nb">vars</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">masked_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_dict</span><span class="p">(</span><span class="n">obj_dict</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">context</span><span class="si">}</span><span class="s2">[object]&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="p">)(</span><span class="o">**</span><span class="n">masked_dict</span><span class="p">)</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">&#39;__init__&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="n">masked_dict</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Fallback for unknown types - convert to string and mask</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_string</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">context</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_mask_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Mask sensitive patterns in strings with context awareness&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">text</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">text</span>
+
+        <span class="c1"># Check cache first</span>
+        <span class="n">cache_key</span> <span class="o">=</span> <span class="nb">hash</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cache_key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_masking_cache</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_masking_cache</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
+
+        <span class="n">masked_text</span> <span class="o">=</span> <span class="n">text</span>
+
+        <span class="c1"># Context-aware masking - don&#39;t mask transaction hashes as private keys</span>
+        <span class="n">is_transaction_hash</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;hash&#39;</span> <span class="ow">in</span> <span class="n">context</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">or</span> <span class="s1">&#39;tx_&#39;</span> <span class="ow">in</span> <span class="n">context</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+
+        <span class="c1"># Apply sensitive patterns with context awareness</span>
+        <span class="k">for</span> <span class="n">pattern</span><span class="p">,</span> <span class="n">replacer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compiled_patterns</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">pattern</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">masked_text</span><span class="p">):</span>
+                <span class="c1"># Skip private key masking for transaction hashes and similar contexts</span>
+                <span class="n">replacer_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">replacer</span><span class="p">)</span>
+                <span class="k">if</span> <span class="s1">&#39;[PRIVATE_KEY]&#39;</span> <span class="ow">in</span> <span class="n">replacer_str</span> <span class="ow">and</span> <span class="n">is_transaction_hash</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">masked_text</span> <span class="o">=</span> <span class="n">pattern</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">replacer</span><span class="p">,</span> <span class="n">masked_text</span><span class="p">)</span>
+
+        <span class="c1"># Cache result</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_masking_cache</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">masked_text</span><span class="p">[:</span><span class="mi">1000</span><span class="p">]</span>  <span class="c1"># Limit cache size</span>
+
+        <span class="k">return</span> <span class="n">masked_text</span>
+
+    <span class="k">def</span> <span class="nf">_mask_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">context</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Mask sensitive keys and values in dictionaries&quot;&quot;&quot;</span>
+        <span class="n">masked</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">key_lower</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+            <span class="c1"># Check if key contains sensitive terms</span>
+            <span class="n">is_sensitive_key</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span><span class="n">sensitive</span> <span class="ow">in</span> <span class="n">key_lower</span> <span class="k">for</span> <span class="n">sensitive</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_SENSITIVE_KEYS</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">is_sensitive_key</span><span class="p">:</span>
+                <span class="c1"># Mask the entire value for sensitive keys</span>
+                <span class="n">masked</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_sensitive_value</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">context</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Check if value might contain sensitive data</span>
+                <span class="n">masked</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_recursive</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">context</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">masked</span>
+
+    <span class="k">def</span> <span class="nf">_mask_sensitive_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Mask values that are known to be sensitive&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;[NULL]&quot;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">:</span>  <span class="c1"># Long strings are likely sensitive</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;[REDACTED:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_value_type</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">context</span><span class="p">)</span><span class="si">}</span><span class="s2">]&quot;</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;[REDACTED:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_value_type</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">context</span><span class="p">)</span><span class="si">}</span><span class="s2">]&quot;</span>
+
+        <span class="k">return</span> <span class="s2">&quot;[REDACTED]&quot;</span>
+
+    <span class="k">def</span> <span class="nf">_get_value_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine the type of sensitive value for logging with context awareness&quot;&quot;&quot;</span>
+        <span class="c1"># Context-aware detection</span>
+        <span class="n">context_lower</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="c1"># Transaction hashes should not be treated as private keys</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">keyword</span> <span class="ow">in</span> <span class="n">context_lower</span> <span class="k">for</span> <span class="n">keyword</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;hash&#39;</span><span class="p">,</span> <span class="s1">&#39;tx_&#39;</span><span class="p">,</span> <span class="s1">&#39;transaction&#39;</span><span class="p">]):</span>
+            <span class="k">return</span> <span class="s2">&quot;HASH&quot;</span>
+
+        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;^0x[a-f0-9]</span><span class="si">{64}</span><span class="s1">$&#39;</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s2">&quot;PRIVATE_KEY&quot;</span>
+        <span class="k">elif</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;^0x[a-f0-9]</span><span class="si">{40}</span><span class="s1">$&#39;</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s2">&quot;WALLET_ADDRESS&quot;</span>
+        <span class="k">elif</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;^[a-z0-9]{32,}$&#39;</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s2">&quot;API_KEY&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;UNKNOWN_SENSITIVE&quot;</span></div>
+
+
+<div class="viewcode-block" id="SecureLogger">
+<a class="viewcode-back" href="../../api/utils/utils.html#utils.logging_security.SecureLogger">[docs]</a>
+<span class="k">class</span> <span class="nc">SecureLogger</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Secure logging wrapper with automatic sensitive data masking&quot;&quot;&quot;</span>
+
+    <span class="n">_masker</span> <span class="o">=</span> <span class="n">SensitiveDataMasker</span><span class="p">()</span>
+
+<div class="viewcode-block" id="SecureLogger.log">
+<a class="viewcode-back" href="../../api/utils/utils.html#utils.logging_security.SecureLogger.log">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">log</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">context</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">exc_info</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Secure logging method with automatic data masking</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            level: Log level (&#39;debug&#39;, &#39;info&#39;, &#39;warning&#39;, &#39;error&#39;, &#39;critical&#39;)</span>
+<span class="sd">            message: Log message</span>
+<span class="sd">            data: Additional data to log (will be masked)</span>
+<span class="sd">            context: Context information for masking decisions</span>
+<span class="sd">            exc_info: Whether to include exception information</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Mask sensitive data</span>
+            <span class="n">masked_data</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_masker</span><span class="o">.</span><span class="n">mask_sensitive_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="s2">&quot;log_data&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">data</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="n">masked_context</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_masker</span><span class="o">.</span><span class="n">mask_sensitive_data</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="s2">&quot;log_context&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">context</span> <span class="k">else</span> <span class="kc">None</span>
+
+            <span class="c1"># Get the appropriate logger method</span>
+            <span class="n">log_method</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">logger</span><span class="p">,</span> <span class="n">level</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+
+            <span class="c1"># Log with appropriate parameters</span>
+            <span class="k">if</span> <span class="n">masked_data</span><span class="p">:</span>
+                <span class="n">log_method</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2"> | data=</span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">masked_data</span><span class="p">,</span><span class="w"> </span><span class="n">default</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="n">exc_info</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">log_method</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="n">exc_info</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c1"># Fallback to basic logging if secure logging fails</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Secure logging failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2"> | Original message: </span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="c1"># Ultimate fallback - print to stderr</span>
+                <span class="kn">import</span> <span class="nn">sys</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SECURE LOGGING FAILURE: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SecureLogger.audit_log">
+<a class="viewcode-back" href="../../api/utils/utils.html#utils.logging_security.SecureLogger.audit_log">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">audit_log</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">details</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">user</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;system&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Log security audit events</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            action: Action performed</span>
+<span class="sd">            details: Details of the action</span>
+<span class="sd">            user: User who performed the action</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">masked_details</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_masker</span><span class="o">.</span><span class="n">mask_sensitive_data</span><span class="p">(</span><span class="n">details</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="s2">&quot;audit_log&quot;</span><span class="p">)</span>
+
+        <span class="n">audit_entry</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;timestamp&#39;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+            <span class="s1">&#39;action&#39;</span><span class="p">:</span> <span class="n">action</span><span class="p">,</span>
+            <span class="s1">&#39;user&#39;</span><span class="p">:</span> <span class="n">user</span><span class="p">,</span>
+            <span class="s1">&#39;details&#39;</span><span class="p">:</span> <span class="n">masked_details</span><span class="p">,</span>
+            <span class="s1">&#39;source_ip&#39;</span><span class="p">:</span> <span class="n">details</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;source_ip&#39;</span><span class="p">,</span> <span class="s1">&#39;unknown&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;severity&#39;</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_get_audit_severity</span><span class="p">(</span><span class="n">action</span><span class="p">)</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Log to separate audit file</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_write_audit_log</span><span class="p">(</span><span class="n">audit_entry</span><span class="p">)</span>
+
+        <span class="c1"># Also log to main logger with appropriate level</span>
+        <span class="n">level</span> <span class="o">=</span> <span class="s1">&#39;warning&#39;</span> <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_get_audit_severity</span><span class="p">(</span><span class="n">action</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;high&#39;</span> <span class="k">else</span> <span class="s1">&#39;info&#39;</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Audit: </span><span class="si">{</span><span class="n">action</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">masked_details</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SecureLogger.audit_security_event">
+<a class="viewcode-back" href="../../api/utils/utils.html#utils.logging_security.SecureLogger.audit_security_event">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">audit_security_event</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">event_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">details</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Log security-related events with high priority&quot;&quot;&quot;</span>
+        <span class="n">details</span><span class="p">[</span><span class="s1">&#39;event_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">event_type</span>
+        <span class="n">details</span><span class="p">[</span><span class="s1">&#39;security_event&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="bp">cls</span><span class="o">.</span><span class="n">audit_log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;security_</span><span class="si">{</span><span class="n">event_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">details</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="s2">&quot;system&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SecureLogger.audit_configuration_change">
+<a class="viewcode-back" href="../../api/utils/utils.html#utils.logging_security.SecureLogger.audit_configuration_change">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">audit_configuration_change</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">component</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">old_value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">new_value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;system&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Audit configuration changes&quot;&quot;&quot;</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">audit_log</span><span class="p">(</span><span class="s2">&quot;configuration_change&quot;</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s1">&#39;component&#39;</span><span class="p">:</span> <span class="n">component</span><span class="p">,</span>
+            <span class="s1">&#39;old_value&#39;</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_masker</span><span class="o">.</span><span class="n">mask_sensitive_data</span><span class="p">(</span><span class="n">old_value</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="s2">&quot;config_audit&quot;</span><span class="p">),</span>
+            <span class="s1">&#39;new_value&#39;</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_masker</span><span class="o">.</span><span class="n">mask_sensitive_data</span><span class="p">(</span><span class="n">new_value</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="s2">&quot;config_audit&quot;</span><span class="p">),</span>
+            <span class="s1">&#39;change_type&#39;</span><span class="p">:</span> <span class="s1">&#39;modification&#39;</span>
+        <span class="p">},</span> <span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SecureLogger.audit_file_access">
+<a class="viewcode-back" href="../../api/utils/utils.html#utils.logging_security.SecureLogger.audit_file_access">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">audit_file_access</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">operation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;system&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Audit file access operations&quot;&quot;&quot;</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">audit_log</span><span class="p">(</span><span class="s2">&quot;file_access&quot;</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s1">&#39;file_path&#39;</span><span class="p">:</span> <span class="n">file_path</span><span class="p">,</span>
+            <span class="s1">&#39;operation&#39;</span><span class="p">:</span> <span class="n">operation</span><span class="p">,</span>
+            <span class="s1">&#39;file_type&#39;</span><span class="p">:</span> <span class="s1">&#39;log&#39;</span> <span class="k">if</span> <span class="n">file_path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.log&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="s1">&#39;unknown&#39;</span>
+        <span class="p">},</span> <span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SecureLogger.audit_authentication_event">
+<a class="viewcode-back" href="../../api/utils/utils.html#utils.logging_security.SecureLogger.audit_authentication_event">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">audit_authentication_event</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">event_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">details</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Audit authentication-related events&quot;&quot;&quot;</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">audit_log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;auth_</span><span class="si">{</span><span class="n">event_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">details</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="n">details</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;username&#39;</span><span class="p">,</span> <span class="s1">&#39;unknown&#39;</span><span class="p">))</span></div>
+
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_get_audit_severity</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine audit event severity&quot;&quot;&quot;</span>
+        <span class="n">high_severity_actions</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s1">&#39;security_breach&#39;</span><span class="p">,</span> <span class="s1">&#39;unauthorized_access&#39;</span><span class="p">,</span> <span class="s1">&#39;configuration_change&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;log_file_insecure_permissions&#39;</span><span class="p">,</span> <span class="s1">&#39;log_file_integrity_issue&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;sensitive_data_exposure&#39;</span><span class="p">,</span> <span class="s1">&#39;authentication_failure&#39;</span>
+        <span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">severity_action</span> <span class="ow">in</span> <span class="n">action</span> <span class="k">for</span> <span class="n">severity_action</span> <span class="ow">in</span> <span class="n">high_severity_actions</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s1">&#39;high&#39;</span>
+
+        <span class="n">medium_severity_actions</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s1">&#39;file_access&#39;</span><span class="p">,</span> <span class="s1">&#39;log_rotation&#39;</span><span class="p">,</span> <span class="s1">&#39;permission_change&#39;</span>
+        <span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">severity_action</span> <span class="ow">in</span> <span class="n">action</span> <span class="k">for</span> <span class="n">severity_action</span> <span class="ow">in</span> <span class="n">medium_severity_actions</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s1">&#39;medium&#39;</span>
+
+        <span class="k">return</span> <span class="s1">&#39;low&#39;</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_write_audit_log</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">entry</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Write audit log to secure file&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">audit_log_path</span> <span class="o">=</span> <span class="s2">&quot;logs/audit.log&quot;</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">audit_log_path</span><span class="p">),</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="c1"># Use file lock to prevent concurrent writes if available</span>
+            <span class="k">if</span> <span class="n">FILELOCK_AVAILABLE</span><span class="p">:</span>
+                <span class="n">lock_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">audit_log_path</span><span class="si">}</span><span class="s2">.lock&quot;</span>
+                <span class="k">with</span> <span class="n">filelock</span><span class="o">.</span><span class="n">FileLock</span><span class="p">(</span><span class="n">lock_path</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+                    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">audit_log_path</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Fallback without locking (less secure but functional)</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">audit_log_path</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to write audit log: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<span class="c1"># Enhanced secure_log function</span>
+<div class="viewcode-block" id="secure_log">
+<a class="viewcode-back" href="../../api/utils/utils.html#utils.logging_security.secure_log">[docs]</a>
+<span class="k">def</span> <span class="nf">secure_log</span><span class="p">(</span><span class="n">logger</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;info&#39;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enhanced secure logging with comprehensive masking&quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Use the secure logger</span>
+        <span class="n">SecureLogger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">,</span>
+            <span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">action</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;action&#39;</span><span class="p">:</span> <span class="n">action</span><span class="p">,</span> <span class="s1">&#39;logger&#39;</span><span class="p">:</span> <span class="n">logger</span><span class="o">.</span><span class="n">name</span><span class="p">}</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="c1"># Fallback to basic logging</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Secure logging failed for action &#39;</span><span class="si">{</span><span class="n">action</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="LogFileSecurity">
+<a class="viewcode-back" href="../../api/utils/utils.html#utils.logging_security.LogFileSecurity">[docs]</a>
+<span class="k">class</span> <span class="nc">LogFileSecurity</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Secure log file management with access controls and audit logging&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="LogFileSecurity.__init__">
+<a class="viewcode-back" href="../../api/utils/utils.html#utils.logging_security.LogFileSecurity.__init__">[docs]</a>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">log_file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_file_path</span> <span class="o">=</span> <span class="n">log_file_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">audit_enabled</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="LogFileSecurity.secure_file_permissions">
+<a class="viewcode-back" href="../../api/utils/utils.html#utils.logging_security.LogFileSecurity.secure_file_permissions">[docs]</a>
+    <span class="k">def</span> <span class="nf">secure_file_permissions</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set secure file permissions for log files&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">stat</span>
+
+            <span class="c1"># Set owner read/write only (0o600)</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_file_path</span><span class="p">,</span> <span class="n">stat</span><span class="o">.</span><span class="n">S_IRUSR</span> <span class="o">|</span> <span class="n">stat</span><span class="o">.</span><span class="n">S_IWUSR</span><span class="p">)</span>
+
+            <span class="c1"># Audit the permission change</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">audit_enabled</span><span class="p">:</span>
+                <span class="n">SecureLogger</span><span class="o">.</span><span class="n">audit_log</span><span class="p">(</span>
+                    <span class="s2">&quot;log_file_permissions_changed&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;file_path&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_file_path</span><span class="p">,</span>
+                        <span class="s2">&quot;new_permissions&quot;</span><span class="p">:</span> <span class="s2">&quot;0o600&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;secure_permissions&quot;</span>
+                    <span class="p">}</span>
+                <span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to set secure log file permissions: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LogFileSecurity.rotate_log_file">
+<a class="viewcode-back" href="../../api/utils/utils.html#utils.logging_security.LogFileSecurity.rotate_log_file">[docs]</a>
+    <span class="k">def</span> <span class="nf">rotate_log_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">backup_count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Rotate log files securely&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">shutil</span>
+
+            <span class="n">log_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_file_path</span><span class="p">)</span>
+            <span class="n">base_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_file_path</span><span class="p">)</span>
+
+            <span class="c1"># Rotate existing backups</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">backup_count</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                <span class="n">src</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">log_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base_name</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">dst</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">log_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base_name</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">src</span><span class="p">):</span>
+                    <span class="n">shutil</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">)</span>
+
+            <span class="c1"># Move current log to backup</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_file_path</span><span class="p">):</span>
+                <span class="n">backup_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">log_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base_name</span><span class="si">}</span><span class="s2">.1&quot;</span><span class="p">)</span>
+                <span class="n">shutil</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_file_path</span><span class="p">,</span> <span class="n">backup_path</span><span class="p">)</span>
+
+                <span class="c1"># Set secure permissions on backup</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="n">backup_path</span><span class="p">,</span> <span class="mo">0o600</span><span class="p">)</span>
+
+            <span class="c1"># Audit the rotation</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">audit_enabled</span><span class="p">:</span>
+                <span class="n">SecureLogger</span><span class="o">.</span><span class="n">audit_log</span><span class="p">(</span>
+                    <span class="s2">&quot;log_file_rotated&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;file_path&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_file_path</span><span class="p">,</span>
+                        <span class="s2">&quot;backup_count&quot;</span><span class="p">:</span> <span class="n">backup_count</span><span class="p">,</span>
+                        <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;rotate_logs&quot;</span>
+                    <span class="p">}</span>
+                <span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to rotate log file: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LogFileSecurity.monitor_log_access">
+<a class="viewcode-back" href="../../api/utils/utils.html#utils.logging_security.LogFileSecurity.monitor_log_access">[docs]</a>
+    <span class="k">def</span> <span class="nf">monitor_log_access</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Monitor log file access (basic implementation)&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Check if log file exists and is accessible</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_file_path</span><span class="p">):</span>
+                <span class="n">stat_info</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_file_path</span><span class="p">)</span>
+
+                <span class="c1"># Check for suspicious permissions</span>
+                <span class="n">mode</span> <span class="o">=</span> <span class="n">stat_info</span><span class="o">.</span><span class="n">st_mode</span>
+                <span class="k">if</span> <span class="n">mode</span> <span class="o">&amp;</span> <span class="mo">0o077</span><span class="p">:</span>  <span class="c1"># Group or other permissions</span>
+                    <span class="n">SecureLogger</span><span class="o">.</span><span class="n">audit_log</span><span class="p">(</span>
+                        <span class="s2">&quot;log_file_insecure_permissions&quot;</span><span class="p">,</span>
+                        <span class="p">{</span>
+                            <span class="s2">&quot;file_path&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_file_path</span><span class="p">,</span>
+                            <span class="s2">&quot;current_permissions&quot;</span><span class="p">:</span> <span class="nb">oct</span><span class="p">(</span><span class="n">mode</span><span class="p">),</span>
+                            <span class="s2">&quot;issue&quot;</span><span class="p">:</span> <span class="s2">&quot;group_or_other_permissions_set&quot;</span>
+                        <span class="p">}</span>
+                    <span class="p">)</span>
+
+                <span class="c1"># Check file size for potential issues</span>
+                <span class="n">size</span> <span class="o">=</span> <span class="n">stat_info</span><span class="o">.</span><span class="n">st_size</span>
+                <span class="k">if</span> <span class="n">size</span> <span class="o">&gt;</span> <span class="mi">100</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">:</span>  <span class="c1"># 100MB warning</span>
+                    <span class="n">SecureLogger</span><span class="o">.</span><span class="n">audit_log</span><span class="p">(</span>
+                        <span class="s2">&quot;log_file_large_size&quot;</span><span class="p">,</span>
+                        <span class="p">{</span>
+                            <span class="s2">&quot;file_path&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_file_path</span><span class="p">,</span>
+                            <span class="s2">&quot;size_bytes&quot;</span><span class="p">:</span> <span class="n">size</span><span class="p">,</span>
+                            <span class="s2">&quot;size_mb&quot;</span><span class="p">:</span> <span class="n">size</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">),</span>
+                            <span class="s2">&quot;warning&quot;</span><span class="p">:</span> <span class="s2">&quot;log_file_exceeds_100mb&quot;</span>
+                        <span class="p">}</span>
+                    <span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to monitor log file access: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LogFileSecurity.validate_log_integrity">
+<a class="viewcode-back" href="../../api/utils/utils.html#utils.logging_security.LogFileSecurity.validate_log_integrity">[docs]</a>
+    <span class="k">def</span> <span class="nf">validate_log_integrity</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate log file integrity (basic checks)&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_file_path</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">False</span>
+
+            <span class="c1"># Check file is readable</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_file_path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="c1"># Try to read first few lines</span>
+                <span class="n">lines</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()[:</span><span class="mi">10</span><span class="p">]</span>
+
+            <span class="c1"># Basic format validation</span>
+            <span class="n">json_lines</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">invalid_lines</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+                    <span class="n">json_lines</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">except</span> <span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+                    <span class="n">invalid_lines</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="c1"># If more than 50% of lines are invalid, flag as suspicious</span>
+            <span class="k">if</span> <span class="n">invalid_lines</span> <span class="o">&gt;</span> <span class="n">json_lines</span><span class="p">:</span>
+                <span class="n">SecureLogger</span><span class="o">.</span><span class="n">audit_log</span><span class="p">(</span>
+                    <span class="s2">&quot;log_file_integrity_issue&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;file_path&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_file_path</span><span class="p">,</span>
+                        <span class="s2">&quot;json_lines&quot;</span><span class="p">:</span> <span class="n">json_lines</span><span class="p">,</span>
+                        <span class="s2">&quot;invalid_lines&quot;</span><span class="p">:</span> <span class="n">invalid_lines</span><span class="p">,</span>
+                        <span class="s2">&quot;issue&quot;</span><span class="p">:</span> <span class="s2">&quot;high_invalid_line_ratio&quot;</span>
+                    <span class="p">}</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="kc">False</span>
+
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to validate log integrity: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+</div>
+
+
+
+<span class="c1"># Global log security manager</span>
+<span class="n">_log_security_manager</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="get_log_security_manager">
+<a class="viewcode-back" href="../../api/utils/utils.html#utils.logging_security.get_log_security_manager">[docs]</a>
+<span class="k">def</span> <span class="nf">get_log_security_manager</span><span class="p">(</span><span class="n">log_file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LogFileSecurity</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get or create log security manager instance&quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">_log_security_manager</span>
+    <span class="k">if</span> <span class="n">_log_security_manager</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">_log_security_manager</span><span class="o">.</span><span class="n">log_file_path</span> <span class="o">!=</span> <span class="n">log_file_path</span><span class="p">:</span>
+        <span class="n">_log_security_manager</span> <span class="o">=</span> <span class="n">LogFileSecurity</span><span class="p">(</span><span class="n">log_file_path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_log_security_manager</span></div>
+
+</pre></div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, Contributors
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script src="../../_static/documentation_options.js?v=4ebf8126"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/custom.js"></script>
+    </body>
+</html>

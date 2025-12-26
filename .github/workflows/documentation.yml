@@ -1,0 +1,46 @@
+name: Documentation Build & Deploy
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-documentation:
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        python -m venv venv
+        source venv/bin/activate
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r docs/requirements.txt
+
+    - name: Build documentation
+      run: |
+        source venv/bin/activate
+        ./docs/build_docs.sh
+
+    - name: Upload documentation artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: api-documentation
+        path: docs/_build/html/
+
+    - name: Deploy to GitHub Pages
+      if: github.ref == 'refs/heads/main'
+      run: |
+        source venv/bin/activate
+        ./docs/build_docs.sh
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

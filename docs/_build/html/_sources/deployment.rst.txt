@@ -1,0 +1,568 @@
+Deployment
+===========
+
+This guide covers production deployment, monitoring, and maintenance of the Polymarket Copy Bot.
+
+Production Deployment Checklist
+-------------------------------
+
+Before deploying to production:
+
+1. ✅ **Security Review:**
+   - Private keys secured and not in version control
+   - API keys rotated and restricted
+   - File permissions set correctly (600 for .env)
+   - No sensitive data in logs
+
+2. ✅ **Configuration Validation:**
+   - All required environment variables set
+   - Wallet addresses validated and checksummed
+   - Risk parameters set conservatively
+   - Testnet testing completed successfully
+
+3. ✅ **System Requirements:**
+   - Ubuntu 24.04 LTS installed
+   - Python 3.12 with virtual environment
+   - 4GB RAM minimum, 8GB recommended
+   - Stable internet connection
+   - 24/7 uptime guaranteed
+
+4. ✅ **Monitoring Setup:**
+   - Telegram alerts configured
+   - Log rotation configured
+   - Health check endpoints working
+   - Backup strategy in place
+
+Systemd Service Setup
+---------------------
+
+The bot includes systemd service files for production deployment:
+
+1. **Install Service Files:**
+
+   .. code-block:: bash
+
+      # Copy service files
+      sudo cp systemd/polymarket-bot.service /etc/systemd/system/
+      sudo cp systemd/polymarket-bot.timer /etc/systemd/system/
+
+      # Reload systemd
+      sudo systemctl daemon-reload
+
+2. **Configure Service User:**
+
+   .. code-block:: bash
+
+      # Create dedicated user
+      sudo useradd -r -s /bin/false polymarket-bot
+
+      # Set ownership of bot directory
+      sudo chown -R polymarket-bot:polymarket-bot /path/to/polymarket-copy-bot
+
+      # Allow service user to read configuration
+      sudo chmod 640 /path/to/polymarket-copy-bot/.env
+
+3. **Start Services:**
+
+   .. code-block:: bash
+
+      # Enable and start main service
+      sudo systemctl enable polymarket-bot
+      sudo systemctl start polymarket-bot
+
+      # Enable and start daily restart timer
+      sudo systemctl enable polymarket-bot.timer
+      sudo systemctl start polymarket-bot.timer
+
+4. **Monitor Service:**
+
+   .. code-block:: bash
+
+      # Check service status
+      sudo systemctl status polymarket-bot
+
+      # View logs
+      journalctl -u polymarket-bot -f
+
+      # View timer status
+      sudo systemctl list-timers | grep polymarket
+
+Service Management
+------------------
+
+**Common Service Commands:**
+
+.. code-block:: bash
+
+   # Start service
+   sudo systemctl start polymarket-bot
+
+   # Stop service
+   sudo systemctl stop polymarket-bot
+
+   # Restart service
+   sudo systemctl restart polymarket-bot
+
+   # Check status
+   sudo systemctl status polymarket-bot
+
+   # View logs
+   journalctl -u polymarket-bot -n 50
+
+   # Follow logs in real-time
+   journalctl -u polymarket-bot -f
+
+**Automatic Restart Configuration:**
+
+The bot includes a systemd timer for daily restarts to prevent memory leaks:
+
+.. code-block:: ini
+
+   # /etc/systemd/system/polymarket-bot.timer
+   [Unit]
+   Description=Daily restart timer for Polymarket bot
+   Requires=polymarket-bot.service
+
+   [Timer]
+   OnCalendar=daily
+   Persistent=true
+
+   [Install]
+   WantedBy=timers.target
+
+Monitoring and Alerting
+-----------------------
+
+**Telegram Alerts:**
+
+Configure Telegram bot for real-time notifications:
+
+1. **Create Telegram Bot:**
+
+   - Message @BotFather on Telegram
+   - Create new bot with ``/newbot``
+   - Save the bot token
+
+2. **Get Chat ID:**
+
+   - Message your bot: ``/start``
+   - Visit: ``https://api.telegram.org/bot<YourBOTToken>/getUpdates``
+   - Extract chat_id from the response
+
+3. **Configure Environment:**
+
+   .. code-block:: bash
+
+      TELEGRAM_BOT_TOKEN=your_bot_token_here
+      TELEGRAM_CHAT_ID=your_chat_id_here
+
+**Alert Types:**
+
+- ✅ **Trade Executed:** Successful trade notifications
+- ⚠️ **Circuit Breaker:** Risk limit reached
+- ❌ **Error Alerts:** Critical errors requiring attention
+- 🔄 **Daily Reports:** Position summaries and P&L
+
+**Log Monitoring:**
+
+.. code-block:: bash
+
+   # Monitor for errors
+   journalctl -u polymarket-bot -f | grep -i error
+
+   # Monitor for trades
+   journalctl -u polymarket-bot -f | grep "Trade executed"
+
+   # Search recent logs for specific pattern
+   journalctl -u polymarket-bot --since "1 hour ago" | grep "balance"
+
+Health Checks
+-------------
+
+**Built-in Health Checks:**
+
+The bot includes comprehensive health monitoring:
+
+.. code-block:: bash
+
+   # Run health check
+   python -c "from main import health_check; health_check()"
+
+**Health Check Components:**
+
+1. **API Connectivity:**
+   - Polygon RPC connection
+   - PolygonScan API access
+   - CLOB API availability
+
+2. **Wallet Status:**
+   - Balance retrieval
+   - Transaction monitoring
+   - Address validation
+
+3. **Risk Management:**
+   - Circuit breaker status
+   - Position limits
+   - Daily loss tracking
+
+4. **System Resources:**
+   - Memory usage monitoring
+   - Disk space checks
+   - Network connectivity
+
+**Automated Health Monitoring:**
+
+.. code-block:: bash
+
+   #!/bin/bash
+   # /usr/local/bin/health_check.sh
+
+   # Run health check
+   if ! python -c "from main import health_check; health_check()"; then
+       echo "$(date): Health check failed" >> /var/log/polymarket/health.log
+       # Send alert via Telegram or email
+       curl -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
+            -d chat_id="$TELEGRAM_CHAT_ID" \
+            -d text="🚨 Polymarket Bot Health Check Failed"
+       exit 1
+   fi
+
+Backup Strategy
+---------------
+
+**Critical Data to Backup:**
+
+1. **Configuration Files:**
+   - ``.env`` (secure storage only)
+   - ``config/wallets.json``
+   - ``config/settings.py``
+
+2. **Database Files:**
+   - SQLite databases (if used)
+   - Transaction caches
+   - Performance logs
+
+3. **Logs:**
+   - Application logs
+   - Systemd logs
+   - Error logs
+
+**Automated Backup Script:**
+
+.. code-block:: bash
+
+   #!/bin/bash
+   # /usr/local/bin/backup_polymarket.sh
+
+   BACKUP_DIR="/var/backups/polymarket"
+   TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+   # Create backup directory
+   mkdir -p "$BACKUP_DIR"
+
+   # Backup configuration (exclude sensitive data)
+   tar -czf "$BACKUP_DIR/config_$TIMESTAMP.tar.gz" \
+       -C /path/to/polymarket-copy-bot \
+       config/ \
+       --exclude="*.pyc" \
+       --exclude="__pycache__"
+
+   # Backup logs
+   tar -czf "$BACKUP_DIR/logs_$TIMESTAMP.tar.gz" \
+       /var/log/polymarket/
+
+   # Backup database files
+   tar -czf "$BACKUP_DIR/data_$TIMESTAMP.tar.gz" \
+       /path/to/polymarket-copy-bot/data/
+
+   # Clean old backups (keep last 7 days)
+   find "$BACKUP_DIR" -name "*.tar.gz" -mtime +7 -delete
+
+   echo "Backup completed: $TIMESTAMP"
+
+**Backup Schedule:**
+
+.. code-block:: bash
+
+   # Add to crontab for daily backups at 2 AM
+   0 2 * * * /usr/local/bin/backup_polymarket.sh
+
+Performance Optimization
+------------------------
+
+**Memory Management:**
+
+.. code-block:: bash
+
+   # Monitor memory usage
+   ps aux | grep polymarket-bot
+
+   # Check memory limits in systemd
+   sudo systemctl show polymarket-bot | grep Memory
+
+   # Adjust memory limits if needed
+   # /etc/systemd/system/polymarket-bot.service
+   [Service]
+   MemoryLimit=2G
+   MemoryHigh=1.5G
+
+**CPU Optimization:**
+
+.. code-block:: bash
+
+   # Monitor CPU usage
+   top -p $(pgrep -f polymarket-bot)
+
+   # Adjust CPU affinity if needed
+   # /etc/systemd/system/polymarket-bot.service
+   [Service]
+   CPUSchedulingPolicy=idle
+   Nice=19
+
+**Network Optimization:**
+
+.. code-block:: bash
+
+   # Monitor network usage
+   sudo nload
+
+   # Adjust timeouts for slower connections
+   REQUEST_TIMEOUT=60
+   MAX_RETRIES=5
+
+Update Strategy
+---------------
+
+**Safe Update Process:**
+
+1. **Backup Current State:**
+
+   .. code-block:: bash
+
+      # Stop service
+      sudo systemctl stop polymarket-bot
+
+      # Backup configuration and data
+      ./scripts/backup.sh
+
+2. **Update Code:**
+
+   .. code-block:: bash
+
+      # Pull latest changes
+      git pull origin main
+
+      # Update dependencies
+      source venv/bin/activate
+      pip install -r requirements.txt
+
+3. **Test Configuration:**
+
+   .. code-block:: bash
+
+      # Validate configuration
+      python -c "from config.settings import settings; settings.validate_critical_settings()"
+
+      # Test basic functionality
+      python -c "from core.clob_client import PolymarketClient; client = PolymarketClient()"
+
+4. **Gradual Rollout:**
+
+   .. code-block:: bash
+
+      # Start with conservative settings
+      export MAX_POSITION_SIZE=0.01
+
+      # Start service
+      sudo systemctl start polymarket-bot
+
+      # Monitor for 1 hour
+      journalctl -u polymarket-bot -f
+
+      # Gradually increase limits if stable
+      # Update .env and restart
+
+**Rollback Plan:**
+
+.. code-block:: bash
+
+   # Quick rollback to previous version
+   sudo systemctl stop polymarket-bot
+   git checkout <previous_commit>
+   source venv/bin/activate
+   pip install -r requirements.txt
+   sudo systemctl start polymarket-bot
+
+Security Hardening
+------------------
+
+**System Security:**
+
+.. code-block:: bash
+
+   # Disable root login
+   sudo sed -i 's/#PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
+
+   # Use fail2ban for SSH protection
+   sudo apt install fail2ban
+
+   # Configure firewall
+   sudo ufw enable
+   sudo ufw allow ssh
+   sudo ufw allow 80  # If web dashboard is used
+
+**Application Security:**
+
+.. code-block:: bash
+
+   # Run as non-privileged user
+   sudo useradd -r -s /bin/false polymarket-bot
+   sudo chown -R polymarket-bot:polymarket-bot /path/to/bot
+
+   # Secure configuration files
+   sudo chmod 600 /path/to/bot/.env
+   sudo chmod 644 /path/to/bot/config/wallets.json
+
+   # Use secure logging
+   LOG_LEVEL=WARNING  # Reduce sensitive data in logs
+
+**Key Management:**
+
+- Store private keys in encrypted files or HSM
+- Rotate API keys regularly
+- Use environment-specific keys
+- Implement key access logging
+
+Troubleshooting Production Issues
+----------------------------------
+
+**Service Won't Start:**
+
+.. code-block:: bash
+
+   # Check service status
+   sudo systemctl status polymarket-bot
+
+   # Check for configuration errors
+   sudo -u polymarket-bot bash -c "cd /path/to/bot && source venv/bin/activate && python -c 'from config.settings import settings; print(settings)'"
+
+   # Check file permissions
+   ls -la /path/to/bot/.env
+
+**High Memory Usage:**
+
+.. code-block:: bash
+
+   # Check memory usage
+   ps aux | grep polymarket-bot
+
+   # Restart service (daily restart should handle this)
+   sudo systemctl restart polymarket-bot
+
+   # Monitor memory growth
+   watch -n 60 "ps aux | grep polymarket-bot"
+
+**API Rate Limiting:**
+
+.. code-block:: bash
+
+   # Check logs for rate limit errors
+   journalctl -u polymarket-bot | grep -i "rate limit"
+
+   # Increase monitoring interval
+   MONITOR_INTERVAL=30
+
+   # Reduce monitored wallets
+   MAX_WALLETS_TO_MONITOR=10
+
+**Network Issues:**
+
+.. code-block:: bash
+
+   # Test connectivity
+   curl -I https://polygon-rpc.com
+   curl -I https://api.polygonscan.com
+
+   # Check DNS resolution
+   nslookup polygon-rpc.com
+
+   # Test CLOB API
+   curl -I https://clob.polymarket.com
+
+Scaling Considerations
+----------------------
+
+**Horizontal Scaling:**
+
+For high-volume monitoring, consider multiple instances:
+
+1. **Separate Instances:**
+
+   .. code-block:: bash
+
+      # Instance 1: High-priority wallets
+      cp .env .env.instance1
+      # Edit .env.instance1 with specific wallet subset
+
+      # Instance 2: Medium-priority wallets
+      cp .env .env.instance2
+      # Edit .env.instance2 with different wallet subset
+
+2. **Load Balancing:**
+
+   Distribute monitoring load across instances with different configurations.
+
+**Database Scaling:**
+
+For persistent data storage, consider PostgreSQL:
+
+.. code-block:: bash
+
+   # Install PostgreSQL
+   sudo apt install postgresql postgresql-contrib
+
+   # Create database
+   sudo -u postgres createdb polymarket_bot
+
+   # Configure connection in settings
+   DATABASE_URL=postgresql://user:password@localhost/polymarket_bot
+
+**Monitoring Scaling:**
+
+Implement centralized monitoring for multiple instances:
+
+- ELK stack (Elasticsearch, Logstash, Kibana)
+- Prometheus + Grafana
+- Centralized log aggregation
+- Alert correlation
+
+Production Checklist
+-------------------
+
+**Pre-Launch:**
+
+- [ ] Security audit completed
+- [ ] Testnet testing successful
+- [ ] Backup strategy implemented
+- [ ] Monitoring and alerting configured
+- [ ] Rollback plan documented
+- [ ] Contact information for support
+
+**Launch Day:**
+
+- [ ] System resources verified
+- [ ] Network connectivity confirmed
+- [ ] API keys validated
+- [ ] Service started successfully
+- [ ] Initial trades monitored
+- [ ] Alert system tested
+
+**Post-Launch:**
+
+- [ ] 24/7 monitoring established
+- [ ] Regular backup verification
+- [ ] Performance metrics tracked
+- [ ] Update schedule established
+- [ ] Incident response plan ready
+
+For additional troubleshooting, see the :doc:`troubleshooting` guide.

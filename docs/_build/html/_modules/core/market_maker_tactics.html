@@ -1,0 +1,1369 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html">
+
+    <!-- Generated with Sphinx 7.4.7 and Furo 2025.12.19 -->
+        <title>core.market_maker_tactics - Polymarket Copy Bot API Documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=acfd86a5" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=15d1efc9" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  --color-brand-primary: #2980b9;
+  --color-brand-content: #1f618d;
+  --color-api-background: #2c3e50;
+  --color-api-name: #3498db;
+  --color-api-pre-name: #2980b9;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-brand-primary: #3498db;
+  --color-brand-content: #2980b9;
+  --color-api-background: #1a1a1a;
+  --color-api-name: #3498db;
+  --color-api-pre-name: #2980b9;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-brand-primary: #3498db;
+  --color-brand-content: #2980b9;
+  --color-api-background: #1a1a1a;
+  --color-api-name: #3498db;
+  --color-api-pre-name: #2980b9;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../index.html"><div class="brand">Polymarket Copy Bot API Documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../index.html">
+  
+  <span class="sidebar-brand-text">Polymarket Copy Bot API Documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../configuration.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../deployment.html">Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../troubleshooting.html">Troubleshooting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference:</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../api/modules.html">core</a><input aria-label="Toggle navigation of core" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/core.html">core package</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../api/core/modules.html">core</a><input aria-label="Toggle navigation of core" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/core/core.html">core package</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../api/config/modules.html">config</a><input aria-label="Toggle navigation of config" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/config/config.html">config package</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../api/utils/modules.html">utils</a><input aria-label="Toggle navigation of utils" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/utils/utils.html">utils package</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../configuration.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../deployment.html">Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../troubleshooting.html">Troubleshooting</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <h1>Source code for core.market_maker_tactics</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Market Maker Specific Tactics</span>
+<span class="sd">============================</span>
+
+<span class="sd">Specialized trading algorithms and tactics optimized for copying</span>
+<span class="sd">professional market maker behavior patterns.</span>
+
+<span class="sd">Features:</span>
+<span class="sd">- Spread capture algorithms</span>
+<span class="sd">- Latency arbitrage detection</span>
+<span class="sd">- Inventory management simulation</span>
+<span class="sd">- Cross-market arbitrage</span>
+<span class="sd">- Gas-optimized high-frequency trading</span>
+<span class="sd">- Time-based position management</span>
+<span class="sd">- Profitability threshold enforcement</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span><span class="p">,</span> <span class="n">deque</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">stats</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="MarketMakerTactics">
+<a class="viewcode-back" href="../../api/core/core.html#core.market_maker_tactics.MarketMakerTactics">[docs]</a>
+<span class="k">class</span> <span class="nc">MarketMakerTactics</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Specialized tactics for copying market maker trading patterns.</span>
+
+<span class="sd">    Implements algorithms that replicate professional market making behavior:</span>
+<span class="sd">    - Spread capture through bid-ask trading</span>
+<span class="sd">    - Inventory management and hedging</span>
+<span class="sd">    - Latency arbitrage detection</span>
+<span class="sd">    - Cross-market price discrepancies</span>
+<span class="sd">    - Gas-efficient execution strategies</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="MarketMakerTactics.__init__">
+<a class="viewcode-back" href="../../api/core/core.html#core.market_maker_tactics.MarketMakerTactics.__init__">[docs]</a>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Spread capture parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spread_capture_params</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;min_spread_capture_pct&quot;</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">,</span>    <span class="c1"># Minimum 0.05% spread to capture</span>
+            <span class="s2">&quot;max_spread_capture_pct&quot;</span><span class="p">:</span> <span class="mf">0.50</span><span class="p">,</span>    <span class="c1"># Maximum 0.50% spread to target</span>
+            <span class="s2">&quot;spread_convergence_time&quot;</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>    <span class="c1"># 5 minutes expected convergence</span>
+            <span class="s2">&quot;inventory_skew_threshold&quot;</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span>   <span class="c1"># Inventory imbalance threshold</span>
+            <span class="s2">&quot;max_inventory_position&quot;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span>     <span class="c1"># Max position as % of typical volume</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Latency arbitrage parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">latency_params</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;min_latency_edge_ms&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>          <span class="c1"># Minimum 50ms latency advantage</span>
+            <span class="s2">&quot;max_holding_time_latency&quot;</span><span class="p">:</span> <span class="mi">30</span><span class="p">,</span>     <span class="c1"># Max 30 seconds for latency arb</span>
+            <span class="s2">&quot;latency_decay_factor&quot;</span><span class="p">:</span> <span class="mf">0.95</span><span class="p">,</span>       <span class="c1"># Latency edge decay per second</span>
+            <span class="s2">&quot;min_profit_latency_pct&quot;</span><span class="p">:</span> <span class="mf">0.02</span><span class="p">,</span>     <span class="c1"># Minimum 0.02% profit for latency arb</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Inventory management parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inventory_params</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;target_inventory_ratio&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>      <span class="c1"># Target neutral inventory</span>
+            <span class="s2">&quot;inventory_rebalance_threshold&quot;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span> <span class="c1"># Rebalance when 20% off target</span>
+            <span class="s2">&quot;max_inventory_holding_time&quot;</span><span class="p">:</span> <span class="mi">1800</span><span class="p">,</span> <span class="c1"># 30 minutes max inventory hold</span>
+            <span class="s2">&quot;inventory_cost_pct&quot;</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">,</span>        <span class="c1"># 0.001% per minute inventory cost</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Gas optimization parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gas_params</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;gas_efficiency_threshold&quot;</span><span class="p">:</span> <span class="mf">0.7</span><span class="p">,</span>   <span class="c1"># Minimum gas efficiency score</span>
+            <span class="s2">&quot;gas_price_elasticity&quot;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">,</span>       <span class="c1"># Gas price sensitivity</span>
+            <span class="s2">&quot;min_gas_profit_ratio&quot;</span><span class="p">:</span> <span class="mf">3.0</span><span class="p">,</span>       <span class="c1"># Min profit/gas cost ratio</span>
+            <span class="s2">&quot;gas_batch_window_seconds&quot;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>    <span class="c1"># Batch trades within 60 seconds</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Cross-market arbitrage parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">arbitrage_params</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;min_price_discrepancy_pct&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>  <span class="c1"># Minimum 0.1% price difference</span>
+            <span class="s2">&quot;max_arbitrage_holding_time&quot;</span><span class="p">:</span> <span class="mi">120</span><span class="p">,</span> <span class="c1"># 2 minutes max hold</span>
+            <span class="s2">&quot;arbitrage_confidence_threshold&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span> <span class="c1"># Min confidence score</span>
+            <span class="s2">&quot;max_concurrent_arbitrages&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>    <span class="c1"># Max simultaneous arb positions</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Time-based management parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_params</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;market_open_buffer_minutes&quot;</span><span class="p">:</span> <span class="mi">15</span><span class="p">,</span>  <span class="c1"># Buffer after market open</span>
+            <span class="s2">&quot;market_close_buffer_minutes&quot;</span><span class="p">:</span> <span class="mi">30</span><span class="p">,</span> <span class="c1"># Buffer before market close</span>
+            <span class="s2">&quot;optimal_trading_hours_start&quot;</span><span class="p">:</span> <span class="mi">9</span><span class="p">,</span>  <span class="c1"># 9 AM UTC</span>
+            <span class="s2">&quot;optimal_trading_hours_end&quot;</span><span class="p">:</span> <span class="mi">17</span><span class="p">,</span>   <span class="c1"># 5 PM UTC</span>
+            <span class="s2">&quot;weekend_trading_penalty&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>    <span class="c1"># 50% penalty on weekends</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Performance tracking</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tactic_performance</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inventory_positions</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Batch processing</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pending_trades</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_batch_execution</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;🎯 Market maker tactics initialized&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MarketMakerTactics.evaluate_spread_capture_opportunity">
+<a class="viewcode-back" href="../../api/core/core.html#core.market_maker_tactics.MarketMakerTactics.evaluate_spread_capture_opportunity">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">evaluate_spread_capture_opportunity</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">wallet_address</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">trade_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">market_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Evaluate spread capture opportunity for market maker copying.</span>
+
+<span class="sd">        Market makers profit from buying at bid and selling at ask prices,</span>
+<span class="sd">        capturing the spread. This tactic identifies when a market maker</span>
+<span class="sd">        is likely engaging in spread capture behavior.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">evaluation</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;opportunity_detected&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">&quot;capture_probability&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;expected_spread_capture&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;recommended_action&quot;</span><span class="p">:</span> <span class="s2">&quot;hold&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;risk_assessment&quot;</span><span class="p">:</span> <span class="s2">&quot;low&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;time_to_convergence&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;inventory_impact&quot;</span><span class="p">:</span> <span class="mf">0.0</span>
+        <span class="p">}</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Extract market data</span>
+            <span class="n">bid_price</span> <span class="o">=</span> <span class="n">market_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;bid_price&quot;</span><span class="p">,</span> <span class="n">trade_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;price&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+            <span class="n">ask_price</span> <span class="o">=</span> <span class="n">market_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ask_price&quot;</span><span class="p">,</span> <span class="n">bid_price</span> <span class="o">*</span> <span class="mf">1.001</span><span class="p">)</span>  <span class="c1"># Default 0.1% spread</span>
+            <span class="n">spread_pct</span> <span class="o">=</span> <span class="p">(</span><span class="n">ask_price</span> <span class="o">-</span> <span class="n">bid_price</span><span class="p">)</span> <span class="o">/</span> <span class="n">bid_price</span> <span class="o">*</span> <span class="mi">100</span>
+
+            <span class="c1"># Check minimum spread requirements</span>
+            <span class="n">min_spread</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spread_capture_params</span><span class="p">[</span><span class="s2">&quot;min_spread_capture_pct&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">spread_pct</span> <span class="o">&lt;</span> <span class="n">min_spread</span><span class="p">:</span>
+                <span class="n">evaluation</span><span class="p">[</span><span class="s2">&quot;reason&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;.3f&quot;</span>
+                <span class="k">return</span> <span class="n">evaluation</span>
+
+            <span class="c1"># Analyze trade direction and position</span>
+            <span class="n">trade_side</span> <span class="o">=</span> <span class="n">trade_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;side&quot;</span><span class="p">,</span> <span class="s2">&quot;BUY&quot;</span><span class="p">)</span>
+            <span class="n">trade_amount</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">trade_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;amount&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)))</span>
+
+            <span class="c1"># Check for spread capture pattern</span>
+            <span class="c1"># Market makers often alternate between buy and sell in quick succession</span>
+            <span class="n">recent_trades</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_recent_wallet_trades</span><span class="p">(</span><span class="n">wallet_address</span><span class="p">,</span> <span class="n">minutes_back</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">recent_trades</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="c1"># Look for buy-sell alternation pattern</span>
+                <span class="n">sides</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;side&quot;</span><span class="p">,</span> <span class="s2">&quot;BUY&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">recent_trades</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">:]]</span>  <span class="c1"># Last 3 trades</span>
+
+                <span class="c1"># Check for market making pattern (alternating buys/sells)</span>
+                <span class="n">alternation_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_alternation_score</span><span class="p">(</span><span class="n">sides</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">alternation_score</span> <span class="o">&gt;=</span> <span class="mf">0.6</span><span class="p">:</span>  <span class="c1"># 60% alternation indicates market making</span>
+                    <span class="n">evaluation</span><span class="p">[</span><span class="s2">&quot;opportunity_detected&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="n">evaluation</span><span class="p">[</span><span class="s2">&quot;capture_probability&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">alternation_score</span>
+
+                    <span class="c1"># Estimate spread capture potential</span>
+                    <span class="n">expected_spread</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">spread_pct</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spread_capture_params</span><span class="p">[</span><span class="s2">&quot;max_spread_capture_pct&quot;</span><span class="p">])</span>
+                    <span class="n">evaluation</span><span class="p">[</span><span class="s2">&quot;expected_spread_capture&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">expected_spread</span>
+
+                    <span class="c1"># Calculate convergence time (how long until spread normalizes)</span>
+                    <span class="n">convergence_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_estimate_spread_convergence_time</span><span class="p">(</span><span class="n">spread_pct</span><span class="p">,</span> <span class="n">market_data</span><span class="p">)</span>
+                    <span class="n">evaluation</span><span class="p">[</span><span class="s2">&quot;time_to_convergence&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">convergence_time</span>
+
+                    <span class="c1"># Assess inventory impact</span>
+                    <span class="n">inventory_impact</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_inventory_impact</span><span class="p">(</span><span class="n">wallet_address</span><span class="p">,</span> <span class="n">trade_side</span><span class="p">,</span> <span class="n">trade_amount</span><span class="p">)</span>
+                    <span class="n">evaluation</span><span class="p">[</span><span class="s2">&quot;inventory_impact&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">inventory_impact</span>
+
+                    <span class="c1"># Determine recommended action</span>
+                    <span class="k">if</span> <span class="n">inventory_impact</span> <span class="o">&lt;</span> <span class="mf">0.3</span><span class="p">:</span>  <span class="c1"># Low inventory impact</span>
+                        <span class="n">evaluation</span><span class="p">[</span><span class="s2">&quot;recommended_action&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;capture_spread&quot;</span>
+                        <span class="n">evaluation</span><span class="p">[</span><span class="s2">&quot;risk_assessment&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;low&quot;</span>
+                    <span class="k">elif</span> <span class="n">inventory_impact</span> <span class="o">&lt;</span> <span class="mf">0.6</span><span class="p">:</span>  <span class="c1"># Moderate impact</span>
+                        <span class="n">evaluation</span><span class="p">[</span><span class="s2">&quot;recommended_action&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;partial_capture&quot;</span>
+                        <span class="n">evaluation</span><span class="p">[</span><span class="s2">&quot;risk_assessment&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;medium&quot;</span>
+                    <span class="k">else</span><span class="p">:</span>  <span class="c1"># High impact</span>
+                        <span class="n">evaluation</span><span class="p">[</span><span class="s2">&quot;recommended_action&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;avoid_capture&quot;</span>
+                        <span class="n">evaluation</span><span class="p">[</span><span class="s2">&quot;risk_assessment&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;high&quot;</span>
+
+                    <span class="c1"># Position sizing recommendation for spread capture</span>
+                    <span class="n">position_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_spread_capture_size</span><span class="p">(</span>
+                        <span class="n">expected_spread</span><span class="p">,</span> <span class="n">inventory_impact</span><span class="p">,</span> <span class="n">convergence_time</span>
+                    <span class="p">)</span>
+                    <span class="n">evaluation</span><span class="p">[</span><span class="s2">&quot;recommended_position_size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">position_size</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error evaluating spread capture for </span><span class="si">{</span><span class="n">wallet_address</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">evaluation</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">evaluation</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_calculate_alternation_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trade_sides</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate how alternating buy/sell trades are (0-1, higher = more alternating).&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">trade_sides</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.0</span>
+
+        <span class="n">alternations</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">trade_sides</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">trade_sides</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">trade_sides</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="n">alternations</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">max_possible_alternations</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">trade_sides</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">alternation_score</span> <span class="o">=</span> <span class="n">alternations</span> <span class="o">/</span> <span class="n">max_possible_alternations</span> <span class="k">if</span> <span class="n">max_possible_alternations</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
+
+        <span class="k">return</span> <span class="n">alternation_score</span>
+
+    <span class="k">def</span> <span class="nf">_estimate_spread_convergence_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_spread_pct</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">market_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Estimate time for spread to converge to normal levels (in seconds).&quot;&quot;&quot;</span>
+
+        <span class="c1"># Base convergence time</span>
+        <span class="n">base_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spread_capture_params</span><span class="p">[</span><span class="s2">&quot;spread_convergence_time&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Adjust for spread size (larger spreads take longer to converge)</span>
+        <span class="n">spread_multiplier</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="n">current_spread_pct</span> <span class="o">/</span> <span class="mf">0.5</span><span class="p">)</span>  <span class="c1"># 0.5% = 2x time</span>
+
+        <span class="c1"># Adjust for market liquidity (more liquid = faster convergence)</span>
+        <span class="n">liquidity_score</span> <span class="o">=</span> <span class="n">market_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;liquidity_score&quot;</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)</span>
+        <span class="n">liquidity_multiplier</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">liquidity_score</span>  <span class="c1"># Higher liquidity = faster convergence</span>
+
+        <span class="c1"># Adjust for volatility (higher volatility = slower convergence)</span>
+        <span class="n">volatility</span> <span class="o">=</span> <span class="n">market_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;volatility_index&quot;</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">)</span>
+        <span class="n">volatility_multiplier</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">volatility</span> <span class="o">*</span> <span class="mi">2</span>
+
+        <span class="n">convergence_time</span> <span class="o">=</span> <span class="n">base_time</span> <span class="o">*</span> <span class="n">spread_multiplier</span> <span class="o">*</span> <span class="n">liquidity_multiplier</span> <span class="o">*</span> <span class="n">volatility_multiplier</span>
+
+        <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">convergence_time</span><span class="p">),</span> <span class="mi">1800</span><span class="p">)</span>  <span class="c1"># Cap at 30 minutes</span>
+
+    <span class="k">def</span> <span class="nf">_calculate_inventory_impact</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wallet_address</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade_side</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade_amount</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate inventory impact of the trade (0-1, higher = more impact).&quot;&quot;&quot;</span>
+
+        <span class="c1"># Get current inventory position</span>
+        <span class="n">inventory</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inventory_positions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">wallet_address</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;net_position&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># Calculate new inventory after trade</span>
+        <span class="n">trade_direction</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">trade_side</span> <span class="o">==</span> <span class="s2">&quot;BUY&quot;</span> <span class="k">else</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">new_inventory</span> <span class="o">=</span> <span class="n">inventory</span> <span class="o">+</span> <span class="p">(</span><span class="n">trade_direction</span> <span class="o">*</span> <span class="n">trade_amount</span><span class="p">)</span>
+
+        <span class="c1"># Get typical position size for this wallet</span>
+        <span class="n">typical_position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inventory_positions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">wallet_address</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;typical_position&quot;</span><span class="p">,</span> <span class="n">trade_amount</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">typical_position</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.0</span>
+
+        <span class="c1"># Calculate inventory ratio (as % of typical position)</span>
+        <span class="n">inventory_ratio</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">new_inventory</span><span class="p">)</span> <span class="o">/</span> <span class="n">typical_position</span>
+
+        <span class="c1"># Normalize to 0-1 scale with sigmoid function for smooth transition</span>
+        <span class="n">inventory_impact</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">math</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span> <span class="o">*</span> <span class="p">(</span><span class="n">inventory_ratio</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)))</span>
+
+        <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="n">inventory_impact</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_calculate_spread_capture_size</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">expected_spread_pct</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">inventory_impact</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">convergence_time_seconds</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate optimal position size for spread capture.&quot;&quot;&quot;</span>
+
+        <span class="c1"># Base size on expected profit and risk</span>
+        <span class="n">base_profit_pct</span> <span class="o">=</span> <span class="n">expected_spread_pct</span> <span class="o">*</span> <span class="mf">0.8</span>  <span class="c1"># 80% of spread as profit estimate</span>
+        <span class="n">risk_pct</span> <span class="o">=</span> <span class="n">expected_spread_pct</span> <span class="o">*</span> <span class="mf">0.3</span>  <span class="c1"># 30% risk estimate</span>
+
+        <span class="c1"># Kelly criterion for position sizing</span>
+        <span class="k">if</span> <span class="n">risk_pct</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">kelly_fraction</span> <span class="o">=</span> <span class="n">base_profit_pct</span> <span class="o">/</span> <span class="n">risk_pct</span>
+            <span class="n">kelly_fraction</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">kelly_fraction</span> <span class="o">*</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">)</span>  <span class="c1"># Half-Kelly, max 25%</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">kelly_fraction</span> <span class="o">=</span> <span class="mf">0.05</span>  <span class="c1"># Default 5%</span>
+
+        <span class="c1"># Adjust for inventory impact (higher impact = smaller size)</span>
+        <span class="n">inventory_adjustment</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">inventory_impact</span> <span class="o">*</span> <span class="mf">0.5</span>
+
+        <span class="c1"># Adjust for convergence time (longer time = smaller size due to opportunity cost)</span>
+        <span class="n">time_adjustment</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mi">300</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="n">convergence_time_seconds</span><span class="p">,</span> <span class="mi">60</span><span class="p">))</span>  <span class="c1"># 5 min baseline</span>
+
+        <span class="n">position_size_pct</span> <span class="o">=</span> <span class="n">kelly_fraction</span> <span class="o">*</span> <span class="n">inventory_adjustment</span> <span class="o">*</span> <span class="n">time_adjustment</span>
+        <span class="n">position_size_pct</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mf">0.01</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">position_size_pct</span><span class="p">,</span> <span class="mf">0.20</span><span class="p">))</span>  <span class="c1"># 1% to 20%</span>
+
+        <span class="k">return</span> <span class="n">position_size_pct</span>
+
+<div class="viewcode-block" id="MarketMakerTactics.detect_latency_arbitrage_opportunity">
+<a class="viewcode-back" href="../../api/core/core.html#core.market_maker_tactics.MarketMakerTactics.detect_latency_arbitrage_opportunity">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">detect_latency_arbitrage_opportunity</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">wallet_address</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">trade_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">market_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Detect potential latency arbitrage opportunities.</span>
+
+<span class="sd">        Latency arbitrage exploits small price discrepancies that exist</span>
+<span class="sd">        for brief moments due to differences in trade execution speed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">evaluation</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;opportunity_detected&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">&quot;latency_edge_ms&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;expected_profit_pct&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;holding_time_seconds&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;risk_assessment&quot;</span><span class="p">:</span> <span class="s2">&quot;high&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;recommended_action&quot;</span><span class="p">:</span> <span class="s2">&quot;avoid&quot;</span>
+        <span class="p">}</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Check for latency patterns in recent trades</span>
+            <span class="n">recent_trades</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_recent_wallet_trades</span><span class="p">(</span><span class="n">wallet_address</span><span class="p">,</span> <span class="n">minutes_back</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">recent_trades</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="n">evaluation</span><span class="p">[</span><span class="s2">&quot;reason&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Insufficient trade data for latency analysis&quot;</span>
+                <span class="k">return</span> <span class="n">evaluation</span>
+
+            <span class="c1"># Analyze trade timing patterns</span>
+            <span class="n">timestamps</span> <span class="o">=</span> <span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="s2">&quot;timestamp&quot;</span><span class="p">])</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">recent_trades</span><span class="p">]</span>
+            <span class="n">intervals_ms</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">timestamps</span><span class="p">)):</span>
+                <span class="n">interval</span> <span class="o">=</span> <span class="p">(</span><span class="n">timestamps</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">timestamps</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="o">*</span> <span class="mi">1000</span>
+                <span class="n">intervals_ms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">interval</span><span class="p">)</span>
+
+            <span class="c1"># Look for very short intervals (&lt; 1000ms) indicating high-frequency trading</span>
+            <span class="n">short_intervals</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">intervals_ms</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">1000</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">short_intervals</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">avg_short_interval</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">short_intervals</span><span class="p">)</span>
+
+                <span class="c1"># Estimate latency edge (shorter intervals = larger edge)</span>
+                <span class="n">latency_edge_ms</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">1000</span> <span class="o">-</span> <span class="n">avg_short_interval</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">latency_edge_ms</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">latency_params</span><span class="p">[</span><span class="s2">&quot;min_latency_edge_ms&quot;</span><span class="p">]:</span>
+                    <span class="n">evaluation</span><span class="p">[</span><span class="s2">&quot;opportunity_detected&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="n">evaluation</span><span class="p">[</span><span class="s2">&quot;latency_edge_ms&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">latency_edge_ms</span>
+
+                    <span class="c1"># Estimate profit potential based on latency edge</span>
+                    <span class="c1"># This is highly simplified - real latency arb requires sophisticated modeling</span>
+                    <span class="n">profit_estimate_pct</span> <span class="o">=</span> <span class="p">(</span><span class="n">latency_edge_ms</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.05</span>  <span class="c1"># Rough estimate</span>
+                    <span class="n">profit_estimate_pct</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">profit_estimate_pct</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">)</span>  <span class="c1"># Cap at 0.2%</span>
+
+                    <span class="n">evaluation</span><span class="p">[</span><span class="s2">&quot;expected_profit_pct&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">profit_estimate_pct</span>
+                    <span class="n">evaluation</span><span class="p">[</span><span class="s2">&quot;holding_time_seconds&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">latency_params</span><span class="p">[</span><span class="s2">&quot;max_holding_time_latency&quot;</span><span class="p">],</span>
+                        <span class="n">latency_edge_ms</span> <span class="o">/</span> <span class="mi">100</span>  <span class="c1"># Shorter latency = shorter hold</span>
+                    <span class="p">)</span>
+
+                    <span class="c1"># Assess risk (latency arb is very high risk)</span>
+                    <span class="k">if</span> <span class="n">profit_estimate_pct</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">latency_params</span><span class="p">[</span><span class="s2">&quot;min_profit_latency_pct&quot;</span><span class="p">]:</span>
+                        <span class="n">evaluation</span><span class="p">[</span><span class="s2">&quot;risk_assessment&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;very_high&quot;</span>
+                        <span class="n">evaluation</span><span class="p">[</span><span class="s2">&quot;recommended_action&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;consider_latency_arb&quot;</span>
+                        <span class="n">evaluation</span><span class="p">[</span><span class="s2">&quot;warning&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Extreme risk - latency arbitrage requires sophisticated infrastructure&quot;</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">evaluation</span><span class="p">[</span><span class="s2">&quot;recommended_action&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;avoid_insufficient_edge&quot;</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error detecting latency arbitrage for </span><span class="si">{</span><span class="n">wallet_address</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">evaluation</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">evaluation</span></div>
+
+
+<div class="viewcode-block" id="MarketMakerTactics.simulate_inventory_management">
+<a class="viewcode-back" href="../../api/core/core.html#core.market_maker_tactics.MarketMakerTactics.simulate_inventory_management">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">simulate_inventory_management</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">wallet_address</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">current_position</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">market_conditions</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Simulate market maker inventory management decisions.</span>
+
+<span class="sd">        Market makers constantly adjust their inventory to maintain</span>
+<span class="sd">        market neutrality and avoid directional risk.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">simulation</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;inventory_adjustment_needed&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">&quot;recommended_action&quot;</span><span class="p">:</span> <span class="s2">&quot;hold&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;target_position&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;urgency_level&quot;</span><span class="p">:</span> <span class="s2">&quot;low&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;expected_cost&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;time_horizon&quot;</span><span class="p">:</span> <span class="mi">0</span>
+        <span class="p">}</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Get inventory parameters</span>
+            <span class="n">target_ratio</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inventory_params</span><span class="p">[</span><span class="s2">&quot;target_inventory_ratio&quot;</span><span class="p">]</span>
+            <span class="n">rebalance_threshold</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inventory_params</span><span class="p">[</span><span class="s2">&quot;inventory_rebalance_threshold&quot;</span><span class="p">]</span>
+
+            <span class="c1"># Calculate current inventory ratio</span>
+            <span class="n">typical_position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_wallet_typical_position</span><span class="p">(</span><span class="n">wallet_address</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">typical_position</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">simulation</span>
+
+            <span class="n">current_ratio</span> <span class="o">=</span> <span class="n">current_position</span> <span class="o">/</span> <span class="n">typical_position</span>
+
+            <span class="c1"># Check if rebalancing is needed</span>
+            <span class="n">deviation</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">current_ratio</span> <span class="o">-</span> <span class="n">target_ratio</span><span class="p">)</span>
+            <span class="n">simulation</span><span class="p">[</span><span class="s2">&quot;inventory_adjustment_needed&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">deviation</span> <span class="o">&gt;=</span> <span class="n">rebalance_threshold</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">simulation</span><span class="p">[</span><span class="s2">&quot;inventory_adjustment_needed&quot;</span><span class="p">]:</span>
+                <span class="n">simulation</span><span class="p">[</span><span class="s2">&quot;reason&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;.2f&quot;</span>
+                <span class="k">return</span> <span class="n">simulation</span>
+
+            <span class="c1"># Determine rebalancing direction and urgency</span>
+            <span class="k">if</span> <span class="n">current_ratio</span> <span class="o">&gt;</span> <span class="n">target_ratio</span><span class="p">:</span>
+                <span class="c1"># Overbought - need to sell</span>
+                <span class="n">adjustment_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">current_ratio</span> <span class="o">-</span> <span class="n">target_ratio</span><span class="p">)</span> <span class="o">*</span> <span class="n">typical_position</span>
+                <span class="n">simulation</span><span class="p">[</span><span class="s2">&quot;recommended_action&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;reduce_inventory&quot;</span>
+                <span class="n">simulation</span><span class="p">[</span><span class="s2">&quot;target_position&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">target_ratio</span> <span class="o">*</span> <span class="n">typical_position</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Oversold - need to buy</span>
+                <span class="n">adjustment_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">target_ratio</span> <span class="o">-</span> <span class="n">current_ratio</span><span class="p">)</span> <span class="o">*</span> <span class="n">typical_position</span>
+                <span class="n">simulation</span><span class="p">[</span><span class="s2">&quot;recommended_action&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;increase_inventory&quot;</span>
+                <span class="n">simulation</span><span class="p">[</span><span class="s2">&quot;target_position&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">target_ratio</span> <span class="o">*</span> <span class="n">typical_position</span>
+
+            <span class="c1"># Calculate urgency based on deviation size</span>
+            <span class="k">if</span> <span class="n">deviation</span> <span class="o">&gt;=</span> <span class="n">rebalance_threshold</span> <span class="o">*</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">simulation</span><span class="p">[</span><span class="s2">&quot;urgency_level&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;high&quot;</span>
+                <span class="n">simulation</span><span class="p">[</span><span class="s2">&quot;time_horizon&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">300</span>  <span class="c1"># 5 minutes</span>
+            <span class="k">elif</span> <span class="n">deviation</span> <span class="o">&gt;=</span> <span class="n">rebalance_threshold</span> <span class="o">*</span> <span class="mf">1.5</span><span class="p">:</span>
+                <span class="n">simulation</span><span class="p">[</span><span class="s2">&quot;urgency_level&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;medium&quot;</span>
+                <span class="n">simulation</span><span class="p">[</span><span class="s2">&quot;time_horizon&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">900</span>  <span class="c1"># 15 minutes</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">simulation</span><span class="p">[</span><span class="s2">&quot;urgency_level&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;low&quot;</span>
+                <span class="n">simulation</span><span class="p">[</span><span class="s2">&quot;time_horizon&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1800</span>  <span class="c1"># 30 minutes</span>
+
+            <span class="c1"># Estimate rebalancing cost</span>
+            <span class="n">volatility</span> <span class="o">=</span> <span class="n">market_conditions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;volatility_index&quot;</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">)</span>
+            <span class="n">gas_multiplier</span> <span class="o">=</span> <span class="n">market_conditions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;gas_price_multiplier&quot;</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+
+            <span class="c1"># Cost includes slippage, gas, and market impact</span>
+            <span class="n">slippage_cost</span> <span class="o">=</span> <span class="n">adjustment_size</span> <span class="o">*</span> <span class="n">volatility</span> <span class="o">*</span> <span class="mf">0.001</span>  <span class="c1"># 0.1% slippage estimate</span>
+            <span class="n">gas_cost</span> <span class="o">=</span> <span class="n">adjustment_size</span> <span class="o">*</span> <span class="n">gas_multiplier</span> <span class="o">*</span> <span class="mf">0.0001</span>  <span class="c1"># Gas cost estimate</span>
+            <span class="n">time_cost</span> <span class="o">=</span> <span class="n">adjustment_size</span> <span class="o">*</span> <span class="p">(</span><span class="n">simulation</span><span class="p">[</span><span class="s2">&quot;time_horizon&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">3600</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">inventory_params</span><span class="p">[</span><span class="s2">&quot;inventory_cost_pct&quot;</span><span class="p">]</span>
+
+            <span class="n">simulation</span><span class="p">[</span><span class="s2">&quot;expected_cost&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">slippage_cost</span> <span class="o">+</span> <span class="n">gas_cost</span> <span class="o">+</span> <span class="n">time_cost</span>
+
+            <span class="c1"># Risk assessment</span>
+            <span class="n">simulation</span><span class="p">[</span><span class="s2">&quot;risk_assessment&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;medium&quot;</span> <span class="k">if</span> <span class="n">deviation</span> <span class="o">&lt;</span> <span class="n">rebalance_threshold</span> <span class="o">*</span> <span class="mi">2</span> <span class="k">else</span> <span class="s2">&quot;high&quot;</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error simulating inventory management for </span><span class="si">{</span><span class="n">wallet_address</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">simulation</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">simulation</span></div>
+
+
+<div class="viewcode-block" id="MarketMakerTactics.detect_cross_market_arbitrage">
+<a class="viewcode-back" href="../../api/core/core.html#core.market_maker_tactics.MarketMakerTactics.detect_cross_market_arbitrage">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">detect_cross_market_arbitrage</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">wallet_address</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">trade_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">related_markets</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Detect cross-market arbitrage opportunities.</span>
+
+<span class="sd">        Market makers often arbitrage price discrepancies between</span>
+<span class="sd">        related markets or different market venues.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">arbitrage</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;opportunity_detected&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">&quot;price_discrepancy_pct&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;arbitrage_direction&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;expected_profit_pct&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;holding_time_seconds&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;confidence_score&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;risk_assessment&quot;</span><span class="p">:</span> <span class="s2">&quot;high&quot;</span>
+        <span class="p">}</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">related_markets</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">related_markets</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">arbitrage</span><span class="p">[</span><span class="s2">&quot;reason&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Insufficient related market data&quot;</span>
+                <span class="k">return</span> <span class="n">arbitrage</span>
+
+            <span class="c1"># Extract prices from related markets</span>
+            <span class="n">current_market</span> <span class="o">=</span> <span class="n">trade_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;market_id&quot;</span><span class="p">,</span> <span class="n">trade_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;condition_id&quot;</span><span class="p">))</span>
+            <span class="n">current_price</span> <span class="o">=</span> <span class="n">trade_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;price&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+            <span class="n">related_prices</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">market</span> <span class="ow">in</span> <span class="n">related_markets</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">market</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;market_id&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="n">current_market</span><span class="p">:</span>
+                    <span class="n">price</span> <span class="o">=</span> <span class="n">market</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;price&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">price</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">related_prices</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                            <span class="s2">&quot;market_id&quot;</span><span class="p">:</span> <span class="n">market</span><span class="p">[</span><span class="s2">&quot;market_id&quot;</span><span class="p">],</span>
+                            <span class="s2">&quot;price&quot;</span><span class="p">:</span> <span class="n">price</span><span class="p">,</span>
+                            <span class="s2">&quot;liquidity&quot;</span><span class="p">:</span> <span class="n">market</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;liquidity_score&quot;</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)</span>
+                        <span class="p">})</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">related_prices</span><span class="p">:</span>
+                <span class="n">arbitrage</span><span class="p">[</span><span class="s2">&quot;reason&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;No valid related market prices&quot;</span>
+                <span class="k">return</span> <span class="n">arbitrage</span>
+
+            <span class="c1"># Find best arbitrage opportunity</span>
+            <span class="n">best_opportunity</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">max_discrepancy</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="k">for</span> <span class="n">related</span> <span class="ow">in</span> <span class="n">related_prices</span><span class="p">:</span>
+                <span class="n">discrepancy_pct</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">current_price</span> <span class="o">-</span> <span class="n">related</span><span class="p">[</span><span class="s2">&quot;price&quot;</span><span class="p">])</span> <span class="o">/</span> <span class="n">current_price</span> <span class="o">*</span> <span class="mi">100</span>
+
+                <span class="k">if</span> <span class="n">discrepancy_pct</span> <span class="o">&gt;</span> <span class="n">max_discrepancy</span><span class="p">:</span>
+                    <span class="n">max_discrepancy</span> <span class="o">=</span> <span class="n">discrepancy_pct</span>
+                    <span class="n">direction</span> <span class="o">=</span> <span class="s2">&quot;buy_related_sell_current&quot;</span> <span class="k">if</span> <span class="n">related</span><span class="p">[</span><span class="s2">&quot;price&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">current_price</span> <span class="k">else</span> <span class="s2">&quot;buy_current_sell_related&quot;</span>
+                    <span class="n">best_opportunity</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s2">&quot;discrepancy_pct&quot;</span><span class="p">:</span> <span class="n">discrepancy_pct</span><span class="p">,</span>
+                        <span class="s2">&quot;direction&quot;</span><span class="p">:</span> <span class="n">direction</span><span class="p">,</span>
+                        <span class="s2">&quot;related_market&quot;</span><span class="p">:</span> <span class="n">related</span><span class="p">[</span><span class="s2">&quot;market_id&quot;</span><span class="p">],</span>
+                        <span class="s2">&quot;price_ratio&quot;</span><span class="p">:</span> <span class="n">related</span><span class="p">[</span><span class="s2">&quot;price&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">current_price</span><span class="p">,</span>
+                        <span class="s2">&quot;liquidity_score&quot;</span><span class="p">:</span> <span class="n">related</span><span class="p">[</span><span class="s2">&quot;liquidity&quot;</span><span class="p">]</span>
+                    <span class="p">}</span>
+
+            <span class="c1"># Check if opportunity meets thresholds</span>
+            <span class="n">min_discrepancy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">arbitrage_params</span><span class="p">[</span><span class="s2">&quot;min_price_discrepancy_pct&quot;</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">max_discrepancy</span> <span class="o">&gt;=</span> <span class="n">min_discrepancy</span><span class="p">:</span>
+                <span class="n">arbitrage</span><span class="p">[</span><span class="s2">&quot;opportunity_detected&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">arbitrage</span><span class="p">[</span><span class="s2">&quot;price_discrepancy_pct&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">max_discrepancy</span>
+                <span class="n">arbitrage</span><span class="p">[</span><span class="s2">&quot;arbitrage_direction&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">best_opportunity</span><span class="p">[</span><span class="s2">&quot;direction&quot;</span><span class="p">]</span>
+
+                <span class="c1"># Estimate profit potential (accounting for fees and slippage)</span>
+                <span class="n">gross_profit_pct</span> <span class="o">=</span> <span class="n">max_discrepancy</span> <span class="o">*</span> <span class="mf">0.8</span>  <span class="c1"># 80% of discrepancy after costs</span>
+                <span class="n">arbitrage</span><span class="p">[</span><span class="s2">&quot;expected_profit_pct&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gross_profit_pct</span>
+
+                <span class="c1"># Estimate holding time based on market liquidity</span>
+                <span class="n">liquidity_score</span> <span class="o">=</span> <span class="n">best_opportunity</span><span class="p">[</span><span class="s2">&quot;liquidity_score&quot;</span><span class="p">]</span>
+                <span class="n">holding_time</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">arbitrage_params</span><span class="p">[</span><span class="s2">&quot;max_arbitrage_holding_time&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span> <span class="o">-</span> <span class="n">liquidity_score</span><span class="p">))</span>
+                <span class="n">arbitrage</span><span class="p">[</span><span class="s2">&quot;holding_time_seconds&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">holding_time</span>
+
+                <span class="c1"># Calculate confidence score</span>
+                <span class="n">confidence</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">max_discrepancy</span> <span class="o">/</span> <span class="p">(</span><span class="n">min_discrepancy</span> <span class="o">*</span> <span class="mi">3</span><span class="p">))</span>  <span class="c1"># Scale with discrepancy size</span>
+                <span class="n">confidence</span> <span class="o">*=</span> <span class="n">liquidity_score</span>  <span class="c1"># Reduce confidence in illiquid markets</span>
+                <span class="n">arbitrage</span><span class="p">[</span><span class="s2">&quot;confidence_score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">confidence</span>
+
+                <span class="c1"># Risk assessment</span>
+                <span class="k">if</span> <span class="n">confidence</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">arbitrage_params</span><span class="p">[</span><span class="s2">&quot;arbitrage_confidence_threshold&quot;</span><span class="p">]:</span>
+                    <span class="n">arbitrage</span><span class="p">[</span><span class="s2">&quot;risk_assessment&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;medium&quot;</span>
+                    <span class="n">arbitrage</span><span class="p">[</span><span class="s2">&quot;recommended_action&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;execute_arbitrage&quot;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">arbitrage</span><span class="p">[</span><span class="s2">&quot;risk_assessment&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;high&quot;</span>
+                    <span class="n">arbitrage</span><span class="p">[</span><span class="s2">&quot;recommended_action&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;monitor_only&quot;</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error detecting cross-market arbitrage for </span><span class="si">{</span><span class="n">wallet_address</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">arbitrage</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">arbitrage</span></div>
+
+
+<div class="viewcode-block" id="MarketMakerTactics.optimize_gas_efficiency">
+<a class="viewcode-back" href="../../api/core/core.html#core.market_maker_tactics.MarketMakerTactics.optimize_gas_efficiency">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">optimize_gas_efficiency</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">wallet_address</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">pending_trades</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+        <span class="n">gas_conditions</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Optimize trade execution for gas efficiency.</span>
+
+<span class="sd">        High-frequency market maker strategies require careful gas management</span>
+<span class="sd">        to maintain profitability.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">optimization</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;optimization_applied&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">&quot;gas_efficiency_score&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;recommended_batch_size&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">pending_trades</span><span class="p">),</span>
+            <span class="s2">&quot;estimated_gas_savings_pct&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;optimal_execution_time&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;alternative_strategies&quot;</span><span class="p">:</span> <span class="p">[]</span>
+        <span class="p">}</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">pending_trades</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">optimization</span>
+
+            <span class="n">current_gas_multiplier</span> <span class="o">=</span> <span class="n">gas_conditions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;gas_price_multiplier&quot;</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+            <span class="n">gas_efficiency_threshold</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gas_params</span><span class="p">[</span><span class="s2">&quot;gas_efficiency_threshold&quot;</span><span class="p">]</span>
+
+            <span class="c1"># Calculate base gas cost</span>
+            <span class="n">avg_trade_size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="nb">abs</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;amount&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">pending_trades</span><span class="p">])</span>
+            <span class="n">base_gas_cost</span> <span class="o">=</span> <span class="n">avg_trade_size</span> <span class="o">*</span> <span class="n">current_gas_multiplier</span> <span class="o">*</span> <span class="mf">0.00005</span>  <span class="c1"># Base gas estimate</span>
+
+            <span class="c1"># Strategy 1: Trade Batching</span>
+            <span class="n">batch_window</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gas_params</span><span class="p">[</span><span class="s2">&quot;gas_batch_window_seconds&quot;</span><span class="p">]</span>
+            <span class="n">batch_efficiency</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_batch_efficiency</span><span class="p">(</span><span class="n">pending_trades</span><span class="p">,</span> <span class="n">batch_window</span><span class="p">)</span>
+            <span class="n">optimization</span><span class="p">[</span><span class="s2">&quot;batch_efficiency&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">batch_efficiency</span>
+
+            <span class="c1"># Strategy 2: Time-based execution (avoid peak gas times)</span>
+            <span class="n">time_efficiency</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_time_based_efficiency</span><span class="p">(</span><span class="n">gas_conditions</span><span class="p">)</span>
+            <span class="n">optimization</span><span class="p">[</span><span class="s2">&quot;time_efficiency&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">time_efficiency</span>
+
+            <span class="c1"># Strategy 3: Size optimization (larger trades may have better gas ratios)</span>
+            <span class="n">size_efficiency</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_size_efficiency</span><span class="p">(</span><span class="n">pending_trades</span><span class="p">)</span>
+            <span class="n">optimization</span><span class="p">[</span><span class="s2">&quot;size_efficiency&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">size_efficiency</span>
+
+            <span class="c1"># Overall gas efficiency score</span>
+            <span class="n">overall_efficiency</span> <span class="o">=</span> <span class="p">(</span><span class="n">batch_efficiency</span> <span class="o">+</span> <span class="n">time_efficiency</span> <span class="o">+</span> <span class="n">size_efficiency</span><span class="p">)</span> <span class="o">/</span> <span class="mi">3</span>
+            <span class="n">optimization</span><span class="p">[</span><span class="s2">&quot;gas_efficiency_score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">overall_efficiency</span>
+
+            <span class="k">if</span> <span class="n">overall_efficiency</span> <span class="o">&gt;=</span> <span class="n">gas_efficiency_threshold</span><span class="p">:</span>
+                <span class="n">optimization</span><span class="p">[</span><span class="s2">&quot;optimization_applied&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+                <span class="c1"># Recommend optimal batch size</span>
+                <span class="k">if</span> <span class="n">batch_efficiency</span> <span class="o">&gt;</span> <span class="n">time_efficiency</span> <span class="ow">and</span> <span class="n">batch_efficiency</span> <span class="o">&gt;</span> <span class="n">size_efficiency</span><span class="p">:</span>
+                    <span class="c1"># Batch strategy is best</span>
+                    <span class="n">optimal_batch</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pending_trades</span><span class="p">),</span> <span class="mi">5</span><span class="p">)</span>  <span class="c1"># Max 5 trades per batch</span>
+                    <span class="n">optimization</span><span class="p">[</span><span class="s2">&quot;recommended_batch_size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">optimal_batch</span>
+                    <span class="n">optimization</span><span class="p">[</span><span class="s2">&quot;primary_strategy&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;batching&quot;</span>
+                    <span class="n">optimization</span><span class="p">[</span><span class="s2">&quot;estimated_gas_savings_pct&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">batch_efficiency</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="mi">20</span>
+
+                <span class="k">elif</span> <span class="n">time_efficiency</span> <span class="o">&gt;</span> <span class="n">batch_efficiency</span> <span class="ow">and</span> <span class="n">time_efficiency</span> <span class="o">&gt;</span> <span class="n">size_efficiency</span><span class="p">:</span>
+                    <span class="c1"># Time-based strategy is best</span>
+                    <span class="n">optimal_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_optimal_execution_time</span><span class="p">(</span><span class="n">gas_conditions</span><span class="p">)</span>
+                    <span class="n">optimization</span><span class="p">[</span><span class="s2">&quot;optimal_execution_time&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">optimal_time</span>
+                    <span class="n">optimization</span><span class="p">[</span><span class="s2">&quot;primary_strategy&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;time_based&quot;</span>
+                    <span class="n">optimization</span><span class="p">[</span><span class="s2">&quot;estimated_gas_savings_pct&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">time_efficiency</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="mi">15</span>
+
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Size optimization strategy</span>
+                    <span class="n">optimization</span><span class="p">[</span><span class="s2">&quot;primary_strategy&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;size_optimization&quot;</span>
+                    <span class="n">optimization</span><span class="p">[</span><span class="s2">&quot;estimated_gas_savings_pct&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">size_efficiency</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span>
+
+                <span class="c1"># Alternative strategies</span>
+                <span class="n">optimization</span><span class="p">[</span><span class="s2">&quot;alternative_strategies&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">strategy</span> <span class="k">for</span> <span class="n">strategy</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;batching&quot;</span><span class="p">,</span> <span class="s2">&quot;time_based&quot;</span><span class="p">,</span> <span class="s2">&quot;size_optimization&quot;</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">strategy</span> <span class="o">!=</span> <span class="n">optimization</span><span class="p">[</span><span class="s2">&quot;primary_strategy&quot;</span><span class="p">]</span>
+                <span class="p">]</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error optimizing gas efficiency for </span><span class="si">{</span><span class="n">wallet_address</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">optimization</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">optimization</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_calculate_batch_efficiency</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trades</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="n">batch_window</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate gas efficiency of batching trades.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">trades</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.5</span>  <span class="c1"># Neutral score for single trades</span>
+
+        <span class="c1"># Sort trades by timestamp</span>
+        <span class="n">sorted_trades</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">trades</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;timestamp&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
+
+        <span class="c1"># Count trades within batch windows</span>
+        <span class="n">batchable_trades</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sorted_trades</span><span class="p">)):</span>
+            <span class="n">window_start</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">sorted_trades</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;timestamp&quot;</span><span class="p">])</span>
+            <span class="n">window_end</span> <span class="o">=</span> <span class="n">window_start</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">batch_window</span><span class="p">)</span>
+
+            <span class="c1"># Count trades in this window</span>
+            <span class="n">in_window</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">sorted_trades</span><span class="p">[</span><span class="n">i</span><span class="p">:]</span>
+                          <span class="k">if</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="s2">&quot;timestamp&quot;</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="n">window_end</span><span class="p">)</span>
+
+            <span class="n">batchable_trades</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">batchable_trades</span><span class="p">,</span> <span class="n">in_window</span><span class="p">)</span>
+
+        <span class="c1"># Efficiency score based on batching potential</span>
+        <span class="n">batch_efficiency</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">batchable_trades</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">trades</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">batch_efficiency</span>
+
+    <span class="k">def</span> <span class="nf">_calculate_time_based_efficiency</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gas_conditions</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate gas efficiency based on execution timing.&quot;&quot;&quot;</span>
+
+        <span class="n">current_hour</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">hour</span>
+        <span class="n">gas_multiplier</span> <span class="o">=</span> <span class="n">gas_conditions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;gas_price_multiplier&quot;</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+
+        <span class="c1"># Gas prices typically higher during business hours</span>
+        <span class="k">if</span> <span class="mi">9</span> <span class="o">&lt;=</span> <span class="n">current_hour</span> <span class="o">&lt;=</span> <span class="mi">17</span><span class="p">:</span>  <span class="c1"># Business hours</span>
+            <span class="n">time_penalty</span> <span class="o">=</span> <span class="mf">1.2</span>
+        <span class="k">elif</span> <span class="mi">6</span> <span class="o">&lt;=</span> <span class="n">current_hour</span> <span class="o">&lt;=</span> <span class="mi">21</span><span class="p">:</span>  <span class="c1"># Extended hours</span>
+            <span class="n">time_penalty</span> <span class="o">=</span> <span class="mf">1.1</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># Off-hours</span>
+            <span class="n">time_penalty</span> <span class="o">=</span> <span class="mf">0.9</span>
+
+        <span class="c1"># Calculate efficiency (lower gas = higher efficiency)</span>
+        <span class="n">time_efficiency</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">gas_multiplier</span> <span class="o">*</span> <span class="n">time_penalty</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="n">time_efficiency</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_calculate_size_efficiency</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trades</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate gas efficiency based on trade sizes.&quot;&quot;&quot;</span>
+
+        <span class="n">sizes</span> <span class="o">=</span> <span class="p">[</span><span class="nb">abs</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;amount&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">trades</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">sizes</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.5</span>
+
+        <span class="n">avg_size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">sizes</span><span class="p">)</span>
+        <span class="n">size_variation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">sizes</span><span class="p">)</span> <span class="o">/</span> <span class="n">avg_size</span> <span class="k">if</span> <span class="n">avg_size</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
+
+        <span class="c1"># Larger, more consistent trade sizes tend to have better gas efficiency</span>
+        <span class="n">size_efficiency</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">size_variation</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">size_efficiency</span>
+
+    <span class="k">def</span> <span class="nf">_find_optimal_execution_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gas_conditions</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Find optimal execution time for gas efficiency.&quot;&quot;&quot;</span>
+
+        <span class="c1"># Simple heuristic: execute 2 hours from now (assuming gas patterns)</span>
+        <span class="c1"># In practice, this would use gas price forecasting</span>
+        <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MarketMakerTactics.apply_time_based_position_management">
+<a class="viewcode-back" href="../../api/core/core.html#core.market_maker_tactics.MarketMakerTactics.apply_time_based_position_management">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">apply_time_based_position_management</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">position_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">market_conditions</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Apply time-based position management rules.</span>
+
+<span class="sd">        Market makers often have strict time limits on positions</span>
+<span class="sd">        to manage inventory and avoid overnight risk.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">management</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;action_required&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">&quot;recommended_action&quot;</span><span class="p">:</span> <span class="s2">&quot;hold&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;urgency_level&quot;</span><span class="p">:</span> <span class="s2">&quot;low&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;time_to_expiry&quot;</span><span class="p">:</span> <span class="mi">0</span>
+        <span class="p">}</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">entry_time</span> <span class="o">=</span> <span class="n">position_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;entry_time&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">entry_time</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">management</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">entry_time</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">entry_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">entry_time</span><span class="p">)</span>
+
+            <span class="n">position_age_seconds</span> <span class="o">=</span> <span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">entry_time</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+            <span class="n">position_age_hours</span> <span class="o">=</span> <span class="n">position_age_seconds</span> <span class="o">/</span> <span class="mi">3600</span>
+
+            <span class="c1"># Get position management rules based on strategy</span>
+            <span class="n">wallet_type</span> <span class="o">=</span> <span class="n">position_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;wallet_type&quot;</span><span class="p">,</span> <span class="s2">&quot;market_maker&quot;</span><span class="p">)</span>
+            <span class="n">max_holding_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_max_holding_time</span><span class="p">(</span><span class="n">wallet_type</span><span class="p">,</span> <span class="n">market_conditions</span><span class="p">)</span>
+
+            <span class="c1"># Check if position is approaching expiry</span>
+            <span class="n">time_to_expiry</span> <span class="o">=</span> <span class="n">max_holding_time</span> <span class="o">-</span> <span class="n">position_age_hours</span>
+
+            <span class="k">if</span> <span class="n">time_to_expiry</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c1"># Position has expired</span>
+                <span class="n">management</span><span class="p">[</span><span class="s2">&quot;action_required&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">management</span><span class="p">[</span><span class="s2">&quot;recommended_action&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;close_position&quot;</span>
+                <span class="n">management</span><span class="p">[</span><span class="s2">&quot;urgency_level&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;critical&quot;</span>
+                <span class="n">management</span><span class="p">[</span><span class="s2">&quot;reason&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;.1f&quot;</span>
+                <span class="n">management</span><span class="p">[</span><span class="s2">&quot;time_to_expiry&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="k">elif</span> <span class="n">time_to_expiry</span> <span class="o">&lt;=</span> <span class="mf">0.5</span><span class="p">:</span>  <span class="c1"># Less than 30 minutes</span>
+                <span class="n">management</span><span class="p">[</span><span class="s2">&quot;action_required&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">management</span><span class="p">[</span><span class="s2">&quot;recommended_action&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;reduce_position&quot;</span>
+                <span class="n">management</span><span class="p">[</span><span class="s2">&quot;urgency_level&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;high&quot;</span>
+                <span class="n">management</span><span class="p">[</span><span class="s2">&quot;reason&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;.1f&quot;</span>
+                <span class="n">management</span><span class="p">[</span><span class="s2">&quot;time_to_expiry&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">time_to_expiry</span>
+
+            <span class="k">elif</span> <span class="n">time_to_expiry</span> <span class="o">&lt;=</span> <span class="mf">2.0</span><span class="p">:</span>  <span class="c1"># Less than 2 hours</span>
+                <span class="n">management</span><span class="p">[</span><span class="s2">&quot;action_required&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">management</span><span class="p">[</span><span class="s2">&quot;recommended_action&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;monitor_closely&quot;</span>
+                <span class="n">management</span><span class="p">[</span><span class="s2">&quot;urgency_level&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;medium&quot;</span>
+                <span class="n">management</span><span class="p">[</span><span class="s2">&quot;reason&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;.1f&quot;</span>
+                <span class="n">management</span><span class="p">[</span><span class="s2">&quot;time_to_expiry&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">time_to_expiry</span>
+
+            <span class="c1"># Apply market close buffer</span>
+            <span class="n">current_hour</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">hour</span>
+            <span class="n">market_close_buffer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_params</span><span class="p">[</span><span class="s2">&quot;market_close_buffer_minutes&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">60</span>
+
+            <span class="k">if</span> <span class="n">current_hour</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_params</span><span class="p">[</span><span class="s2">&quot;optimal_trading_hours_end&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">market_close_buffer</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">position_age_hours</span> <span class="o">&gt;=</span> <span class="mf">1.0</span><span class="p">:</span>  <span class="c1"># Hold at least 1 hour</span>
+                    <span class="n">management</span><span class="p">[</span><span class="s2">&quot;action_required&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="n">management</span><span class="p">[</span><span class="s2">&quot;recommended_action&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;close_before_market_close&quot;</span>
+                    <span class="n">management</span><span class="p">[</span><span class="s2">&quot;urgency_level&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;medium&quot;</span>
+                    <span class="n">management</span><span class="p">[</span><span class="s2">&quot;reason&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Approaching market close - reduce overnight risk&quot;</span>
+
+            <span class="c1"># Weekend penalty</span>
+            <span class="n">current_day</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">weekday</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">current_day</span> <span class="o">&gt;=</span> <span class="mi">5</span><span class="p">:</span>  <span class="c1"># Saturday/Sunday</span>
+                <span class="n">penalty_multiplier</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_params</span><span class="p">[</span><span class="s2">&quot;weekend_trading_penalty&quot;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">position_age_hours</span> <span class="o">&gt;=</span> <span class="mf">1.0</span><span class="p">:</span>
+                    <span class="n">management</span><span class="p">[</span><span class="s2">&quot;action_required&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="n">management</span><span class="p">[</span><span class="s2">&quot;recommended_action&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;reduce_weekend_exposure&quot;</span>
+                    <span class="n">management</span><span class="p">[</span><span class="s2">&quot;urgency_level&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;low&quot;</span>
+                    <span class="n">management</span><span class="p">[</span><span class="s2">&quot;reason&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;.1f&quot;</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error applying time-based management: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">management</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">management</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_get_max_holding_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wallet_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">market_conditions</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get maximum holding time for wallet type under current conditions.&quot;&quot;&quot;</span>
+
+        <span class="n">base_times</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;market_maker&quot;</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">,</span>      <span class="c1"># 2 hours</span>
+            <span class="s2">&quot;arbitrage_trader&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>  <span class="c1"># 1 hour</span>
+            <span class="s2">&quot;high_frequency_trader&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>  <span class="c1"># 30 minutes</span>
+            <span class="s2">&quot;directional_trader&quot;</span><span class="p">:</span> <span class="mf">24.0</span><span class="p">,</span>    <span class="c1"># 24 hours</span>
+            <span class="s2">&quot;mixed_trader&quot;</span><span class="p">:</span> <span class="mf">6.0</span><span class="p">,</span>           <span class="c1"># 6 hours</span>
+            <span class="s2">&quot;low_activity&quot;</span><span class="p">:</span> <span class="mf">12.0</span>           <span class="c1"># 12 hours</span>
+        <span class="p">}</span>
+
+        <span class="n">base_time</span> <span class="o">=</span> <span class="n">base_times</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">wallet_type</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">)</span>
+
+        <span class="c1"># Adjust for market conditions</span>
+        <span class="n">volatility</span> <span class="o">=</span> <span class="n">market_conditions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;volatility_index&quot;</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">)</span>
+        <span class="n">liquidity</span> <span class="o">=</span> <span class="n">market_conditions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;liquidity_score&quot;</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">)</span>
+
+        <span class="c1"># Higher volatility = shorter holding times</span>
+        <span class="n">volatility_adjustment</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">volatility</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="c1"># Lower liquidity = shorter holding times</span>
+        <span class="n">liquidity_adjustment</span> <span class="o">=</span> <span class="n">liquidity</span>
+
+        <span class="n">adjusted_time</span> <span class="o">=</span> <span class="n">base_time</span> <span class="o">*</span> <span class="n">volatility_adjustment</span> <span class="o">*</span> <span class="n">liquidity_adjustment</span>
+
+        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">adjusted_time</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">)</span>  <span class="c1"># Minimum 15 minutes</span>
+
+<div class="viewcode-block" id="MarketMakerTactics.enforce_profitability_thresholds">
+<a class="viewcode-back" href="../../api/core/core.html#core.market_maker_tactics.MarketMakerTactics.enforce_profitability_thresholds">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">enforce_profitability_thresholds</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">trade_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">wallet_info</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">market_conditions</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Enforce minimum profitability thresholds for market maker trades.</span>
+
+<span class="sd">        Ensures trades meet profitability requirements before execution.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">enforcement</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;threshold_met&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">&quot;required_profit_pct&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;estimated_profit_pct&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;gas_cost_pct&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;net_profit_pct&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span>
+        <span class="p">}</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Get minimum profitability threshold</span>
+            <span class="n">wallet_type</span> <span class="o">=</span> <span class="n">wallet_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;classification&quot;</span><span class="p">,</span> <span class="s2">&quot;market_maker&quot;</span><span class="p">)</span>
+            <span class="n">min_threshold_pct</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_min_profit_threshold</span><span class="p">(</span><span class="n">wallet_type</span><span class="p">,</span> <span class="n">market_conditions</span><span class="p">)</span>
+
+            <span class="n">enforcement</span><span class="p">[</span><span class="s2">&quot;required_profit_pct&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">min_threshold_pct</span>
+
+            <span class="c1"># Estimate trade profitability</span>
+            <span class="n">estimated_profit_pct</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_estimate_trade_profitability</span><span class="p">(</span>
+                <span class="n">trade_data</span><span class="p">,</span> <span class="n">wallet_info</span><span class="p">,</span> <span class="n">market_conditions</span>
+            <span class="p">)</span>
+
+            <span class="n">enforcement</span><span class="p">[</span><span class="s2">&quot;estimated_profit_pct&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">estimated_profit_pct</span>
+
+            <span class="c1"># Estimate gas costs</span>
+            <span class="n">gas_cost_pct</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_estimate_gas_cost_pct</span><span class="p">(</span><span class="n">trade_data</span><span class="p">,</span> <span class="n">market_conditions</span><span class="p">)</span>
+            <span class="n">enforcement</span><span class="p">[</span><span class="s2">&quot;gas_cost_pct&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gas_cost_pct</span>
+
+            <span class="c1"># Calculate net profitability</span>
+            <span class="n">net_profit_pct</span> <span class="o">=</span> <span class="n">estimated_profit_pct</span> <span class="o">-</span> <span class="n">gas_cost_pct</span>
+            <span class="n">enforcement</span><span class="p">[</span><span class="s2">&quot;net_profit_pct&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">net_profit_pct</span>
+
+            <span class="c1"># Check threshold</span>
+            <span class="k">if</span> <span class="n">net_profit_pct</span> <span class="o">&gt;=</span> <span class="n">min_threshold_pct</span><span class="p">:</span>
+                <span class="n">enforcement</span><span class="p">[</span><span class="s2">&quot;threshold_met&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">enforcement</span><span class="p">[</span><span class="s2">&quot;reason&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;.3f&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">enforcement</span><span class="p">[</span><span class="s2">&quot;threshold_met&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">enforcement</span><span class="p">[</span><span class="s2">&quot;reason&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;.3f&quot;</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error enforcing profitability thresholds: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">enforcement</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">enforcement</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_get_min_profit_threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wallet_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">market_conditions</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get minimum profit threshold for wallet type.&quot;&quot;&quot;</span>
+
+        <span class="n">base_thresholds</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;market_maker&quot;</span><span class="p">:</span> <span class="mf">0.003</span><span class="p">,</span>      <span class="c1"># 0.3%</span>
+            <span class="s2">&quot;arbitrage_trader&quot;</span><span class="p">:</span> <span class="mf">0.005</span><span class="p">,</span>  <span class="c1"># 0.5%</span>
+            <span class="s2">&quot;high_frequency_trader&quot;</span><span class="p">:</span> <span class="mf">0.002</span><span class="p">,</span>  <span class="c1"># 0.2%</span>
+            <span class="s2">&quot;directional_trader&quot;</span><span class="p">:</span> <span class="mf">0.02</span><span class="p">,</span>     <span class="c1"># 2.0%</span>
+            <span class="s2">&quot;mixed_trader&quot;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span>           <span class="c1"># 1.0%</span>
+            <span class="s2">&quot;low_activity&quot;</span><span class="p">:</span> <span class="mf">0.015</span>          <span class="c1"># 1.5%</span>
+        <span class="p">}</span>
+
+        <span class="n">base_threshold</span> <span class="o">=</span> <span class="n">base_thresholds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">wallet_type</span><span class="p">,</span> <span class="mf">0.003</span><span class="p">)</span>
+
+        <span class="c1"># Adjust for market conditions</span>
+        <span class="n">volatility</span> <span class="o">=</span> <span class="n">market_conditions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;volatility_index&quot;</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">)</span>
+        <span class="n">gas_multiplier</span> <span class="o">=</span> <span class="n">market_conditions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;gas_price_multiplier&quot;</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+
+        <span class="c1"># Higher volatility = higher threshold</span>
+        <span class="n">volatility_adjustment</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="n">volatility</span>
+
+        <span class="c1"># Higher gas costs = higher threshold</span>
+        <span class="n">gas_adjustment</span> <span class="o">=</span> <span class="n">gas_multiplier</span>
+
+        <span class="n">adjusted_threshold</span> <span class="o">=</span> <span class="n">base_threshold</span> <span class="o">*</span> <span class="n">volatility_adjustment</span> <span class="o">*</span> <span class="n">gas_adjustment</span>
+
+        <span class="k">return</span> <span class="n">adjusted_threshold</span>
+
+    <span class="k">def</span> <span class="nf">_estimate_trade_profitability</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">trade_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">wallet_info</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">market_conditions</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Estimate profitability of a potential trade.&quot;&quot;&quot;</span>
+
+        <span class="c1"># This is a simplified estimation - in practice, this would use</span>
+        <span class="c1"># more sophisticated modeling based on historical performance</span>
+
+        <span class="n">wallet_type</span> <span class="o">=</span> <span class="n">wallet_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;classification&quot;</span><span class="p">,</span> <span class="s2">&quot;market_maker&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Base profitability estimates by wallet type</span>
+        <span class="n">base_estimates</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;market_maker&quot;</span><span class="p">:</span> <span class="mf">0.008</span><span class="p">,</span>      <span class="c1"># 0.8%</span>
+            <span class="s2">&quot;arbitrage_trader&quot;</span><span class="p">:</span> <span class="mf">0.012</span><span class="p">,</span>  <span class="c1"># 1.2%</span>
+            <span class="s2">&quot;high_frequency_trader&quot;</span><span class="p">:</span> <span class="mf">0.005</span><span class="p">,</span>  <span class="c1"># 0.5%</span>
+            <span class="s2">&quot;directional_trader&quot;</span><span class="p">:</span> <span class="mf">0.035</span><span class="p">,</span>    <span class="c1"># 3.5%</span>
+            <span class="s2">&quot;mixed_trader&quot;</span><span class="p">:</span> <span class="mf">0.015</span><span class="p">,</span>          <span class="c1"># 1.5%</span>
+            <span class="s2">&quot;low_activity&quot;</span><span class="p">:</span> <span class="mf">0.025</span>          <span class="c1"># 2.5%</span>
+        <span class="p">}</span>
+
+        <span class="n">base_profit</span> <span class="o">=</span> <span class="n">base_estimates</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">wallet_type</span><span class="p">,</span> <span class="mf">0.008</span><span class="p">)</span>
+
+        <span class="c1"># Adjust for market conditions</span>
+        <span class="n">volatility</span> <span class="o">=</span> <span class="n">market_conditions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;volatility_index&quot;</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">)</span>
+        <span class="n">liquidity</span> <span class="o">=</span> <span class="n">market_conditions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;liquidity_score&quot;</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">)</span>
+
+        <span class="c1"># Higher volatility typically increases profit potential</span>
+        <span class="n">volatility_adjustment</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="n">volatility</span> <span class="o">*</span> <span class="mf">0.5</span>
+
+        <span class="c1"># Higher liquidity typically decreases profit potential (more competition)</span>
+        <span class="n">liquidity_adjustment</span> <span class="o">=</span> <span class="mf">2.0</span> <span class="o">-</span> <span class="n">liquidity</span>
+
+        <span class="n">estimated_profit</span> <span class="o">=</span> <span class="n">base_profit</span> <span class="o">*</span> <span class="n">volatility_adjustment</span> <span class="o">*</span> <span class="n">liquidity_adjustment</span>
+
+        <span class="k">return</span> <span class="n">estimated_profit</span>
+
+    <span class="k">def</span> <span class="nf">_estimate_gas_cost_pct</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trade_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">market_conditions</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Estimate gas cost as percentage of trade value.&quot;&quot;&quot;</span>
+
+        <span class="n">trade_amount</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">trade_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;amount&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)))</span>
+        <span class="n">gas_multiplier</span> <span class="o">=</span> <span class="n">market_conditions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;gas_price_multiplier&quot;</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+
+        <span class="c1"># Simplified gas cost estimation</span>
+        <span class="c1"># In practice, this would use actual gas price data</span>
+        <span class="n">gas_cost_usd</span> <span class="o">=</span> <span class="n">trade_amount</span> <span class="o">*</span> <span class="n">gas_multiplier</span> <span class="o">*</span> <span class="mf">0.00005</span>  <span class="c1"># 0.005% of trade size</span>
+        <span class="n">gas_cost_pct</span> <span class="o">=</span> <span class="n">gas_cost_usd</span> <span class="o">/</span> <span class="n">trade_amount</span> <span class="k">if</span> <span class="n">trade_amount</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
+
+        <span class="k">return</span> <span class="n">gas_cost_pct</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_get_recent_wallet_trades</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wallet_address</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">minutes_back</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get recent trades for wallet (placeholder - integrate with actual trade data).&quot;&quot;&quot;</span>
+
+        <span class="c1"># This would integrate with the actual trade data storage</span>
+        <span class="c1"># For now, return empty list</span>
+        <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="k">def</span> <span class="nf">_get_wallet_typical_position</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wallet_address</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get typical position size for wallet (placeholder).&quot;&quot;&quot;</span>
+
+        <span class="c1"># This would be calculated from historical trade data</span>
+        <span class="k">return</span> <span class="mf">1000.0</span>  <span class="c1"># Default placeholder</span>
+
+<div class="viewcode-block" id="MarketMakerTactics.update_tactic_performance">
+<a class="viewcode-back" href="../../api/core/core.html#core.market_maker_tactics.MarketMakerTactics.update_tactic_performance">[docs]</a>
+    <span class="k">def</span> <span class="nf">update_tactic_performance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tactic_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">performance_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update performance tracking for tactics.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">tactic_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tactic_performance</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tactic_performance</span><span class="p">[</span><span class="n">tactic_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;total_executions&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;successful_executions&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;total_profit&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;avg_profit&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;win_rate&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;last_update&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+            <span class="p">}</span>
+
+        <span class="n">perf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tactic_performance</span><span class="p">[</span><span class="n">tactic_name</span><span class="p">]</span>
+        <span class="n">perf</span><span class="p">[</span><span class="s2">&quot;total_executions&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="n">performance_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;successful&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+            <span class="n">perf</span><span class="p">[</span><span class="s2">&quot;successful_executions&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">profit</span> <span class="o">=</span> <span class="n">performance_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;profit&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="n">perf</span><span class="p">[</span><span class="s2">&quot;total_profit&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">profit</span>
+
+        <span class="c1"># Recalculate averages</span>
+        <span class="n">perf</span><span class="p">[</span><span class="s2">&quot;avg_profit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">perf</span><span class="p">[</span><span class="s2">&quot;total_profit&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">perf</span><span class="p">[</span><span class="s2">&quot;total_executions&quot;</span><span class="p">]</span>
+        <span class="n">perf</span><span class="p">[</span><span class="s2">&quot;win_rate&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">perf</span><span class="p">[</span><span class="s2">&quot;successful_executions&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">perf</span><span class="p">[</span><span class="s2">&quot;total_executions&quot;</span><span class="p">]</span>
+        <span class="n">perf</span><span class="p">[</span><span class="s2">&quot;last_update&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="MarketMakerTactics.get_tactic_performance_summary">
+<a class="viewcode-back" href="../../api/core/core.html#core.market_maker_tactics.MarketMakerTactics.get_tactic_performance_summary">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_tactic_performance_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get performance summary for all tactics.&quot;&quot;&quot;</span>
+
+        <span class="n">summary</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;tactic_count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tactic_performance</span><span class="p">),</span>
+            <span class="s2">&quot;best_performing_tactic&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;worst_performing_tactic&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;overall_win_rate&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;total_profit_generated&quot;</span><span class="p">:</span> <span class="mf">0.0</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">tactic_performance</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">summary</span>
+
+        <span class="n">total_executions</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">perf</span><span class="p">[</span><span class="s2">&quot;total_executions&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">perf</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tactic_performance</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="n">total_profit</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">perf</span><span class="p">[</span><span class="s2">&quot;total_profit&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">perf</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tactic_performance</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="n">total_executions</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;overall_win_rate&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
+                <span class="n">perf</span><span class="p">[</span><span class="s2">&quot;successful_executions&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">perf</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tactic_performance</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+            <span class="p">)</span> <span class="o">/</span> <span class="n">total_executions</span>
+
+        <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;total_profit_generated&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">total_profit</span>
+
+        <span class="c1"># Find best and worst performing tactics</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tactic_performance</span><span class="p">:</span>
+            <span class="n">best_tactic</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tactic_performance</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span>
+                            <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">tactic_performance</span><span class="p">[</span><span class="n">x</span><span class="p">][</span><span class="s2">&quot;avg_profit&quot;</span><span class="p">])</span>
+            <span class="n">worst_tactic</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tactic_performance</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span>
+                             <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">tactic_performance</span><span class="p">[</span><span class="n">x</span><span class="p">][</span><span class="s2">&quot;avg_profit&quot;</span><span class="p">])</span>
+
+            <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;best_performing_tactic&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">best_tactic</span>
+            <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;worst_performing_tactic&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">worst_tactic</span>
+
+        <span class="k">return</span> <span class="n">summary</span></div>
+</div>
+
+</pre></div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, Contributors
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script src="../../_static/documentation_options.js?v=4ebf8126"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/custom.js"></script>
+    </body>
+</html>

@@ -1,0 +1,879 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="./">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="Troubleshooting" href="troubleshooting.html"><link rel="prev" title="Configuration" href="configuration.html">
+
+    <!-- Generated with Sphinx 7.4.7 and Furo 2025.12.19 -->
+        <title>Deployment - Polymarket Copy Bot API Documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=acfd86a5" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="_static/custom.css?v=15d1efc9" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  --color-brand-primary: #2980b9;
+  --color-brand-content: #1f618d;
+  --color-api-background: #2c3e50;
+  --color-api-name: #3498db;
+  --color-api-pre-name: #2980b9;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-brand-primary: #3498db;
+  --color-brand-content: #2980b9;
+  --color-api-background: #1a1a1a;
+  --color-api-name: #3498db;
+  --color-api-pre-name: #2980b9;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-brand-primary: #3498db;
+  --color-brand-content: #2980b9;
+  --color-api-background: #1a1a1a;
+  --color-api-name: #3498db;
+  --color-api-pre-name: #2980b9;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">Polymarket Copy Bot API Documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
+  
+  <span class="sidebar-brand-text">Polymarket Copy Bot API Documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference:</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="api/modules.html">core</a><input aria-label="Toggle navigation of core" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/core.html">core package</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="api/core/modules.html">core</a><input aria-label="Toggle navigation of core" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/core/core.html">core package</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="api/config/modules.html">config</a><input aria-label="Toggle navigation of config" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/config/config.html">config package</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="api/utils/modules.html">utils</a><input aria-label="Toggle navigation of utils" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/utils/utils.html">utils package</a></li>
+</ul>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="_sources/deployment.rst.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="deployment">
+<h1>Deployment<a class="headerlink" href="#deployment" title="Link to this heading">¶</a></h1>
+<p>This guide covers production deployment, monitoring, and maintenance of the Polymarket Copy Bot.</p>
+<section id="production-deployment-checklist">
+<h2>Production Deployment Checklist<a class="headerlink" href="#production-deployment-checklist" title="Link to this heading">¶</a></h2>
+<p>Before deploying to production:</p>
+<ol class="arabic simple">
+<li><p>✅ <strong>Security Review:</strong>
+- Private keys secured and not in version control
+- API keys rotated and restricted
+- File permissions set correctly (600 for .env)
+- No sensitive data in logs</p></li>
+<li><p>✅ <strong>Configuration Validation:</strong>
+- All required environment variables set
+- Wallet addresses validated and checksummed
+- Risk parameters set conservatively
+- Testnet testing completed successfully</p></li>
+<li><p>✅ <strong>System Requirements:</strong>
+- Ubuntu 24.04 LTS installed
+- Python 3.12 with virtual environment
+- 4GB RAM minimum, 8GB recommended
+- Stable internet connection
+- 24/7 uptime guaranteed</p></li>
+<li><p>✅ <strong>Monitoring Setup:</strong>
+- Telegram alerts configured
+- Log rotation configured
+- Health check endpoints working
+- Backup strategy in place</p></li>
+</ol>
+</section>
+<section id="systemd-service-setup">
+<h2>Systemd Service Setup<a class="headerlink" href="#systemd-service-setup" title="Link to this heading">¶</a></h2>
+<p>The bot includes systemd service files for production deployment:</p>
+<ol class="arabic">
+<li><p><strong>Install Service Files:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Copy service files</span>
+sudo<span class="w"> </span>cp<span class="w"> </span>systemd/polymarket-bot.service<span class="w"> </span>/etc/systemd/system/
+sudo<span class="w"> </span>cp<span class="w"> </span>systemd/polymarket-bot.timer<span class="w"> </span>/etc/systemd/system/
+
+<span class="c1"># Reload systemd</span>
+sudo<span class="w"> </span>systemctl<span class="w"> </span>daemon-reload
+</pre></div>
+</div>
+</li>
+<li><p><strong>Configure Service User:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create dedicated user</span>
+sudo<span class="w"> </span>useradd<span class="w"> </span>-r<span class="w"> </span>-s<span class="w"> </span>/bin/false<span class="w"> </span>polymarket-bot
+
+<span class="c1"># Set ownership of bot directory</span>
+sudo<span class="w"> </span>chown<span class="w"> </span>-R<span class="w"> </span>polymarket-bot:polymarket-bot<span class="w"> </span>/path/to/polymarket-copy-bot
+
+<span class="c1"># Allow service user to read configuration</span>
+sudo<span class="w"> </span>chmod<span class="w"> </span><span class="m">640</span><span class="w"> </span>/path/to/polymarket-copy-bot/.env
+</pre></div>
+</div>
+</li>
+<li><p><strong>Start Services:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Enable and start main service</span>
+sudo<span class="w"> </span>systemctl<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>polymarket-bot
+sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>polymarket-bot
+
+<span class="c1"># Enable and start daily restart timer</span>
+sudo<span class="w"> </span>systemctl<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>polymarket-bot.timer
+sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>polymarket-bot.timer
+</pre></div>
+</div>
+</li>
+<li><p><strong>Monitor Service:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check service status</span>
+sudo<span class="w"> </span>systemctl<span class="w"> </span>status<span class="w"> </span>polymarket-bot
+
+<span class="c1"># View logs</span>
+journalctl<span class="w"> </span>-u<span class="w"> </span>polymarket-bot<span class="w"> </span>-f
+
+<span class="c1"># View timer status</span>
+sudo<span class="w"> </span>systemctl<span class="w"> </span>list-timers<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>polymarket
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="service-management">
+<h2>Service Management<a class="headerlink" href="#service-management" title="Link to this heading">¶</a></h2>
+<p><strong>Common Service Commands:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Start service</span>
+sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>polymarket-bot
+
+<span class="c1"># Stop service</span>
+sudo<span class="w"> </span>systemctl<span class="w"> </span>stop<span class="w"> </span>polymarket-bot
+
+<span class="c1"># Restart service</span>
+sudo<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>polymarket-bot
+
+<span class="c1"># Check status</span>
+sudo<span class="w"> </span>systemctl<span class="w"> </span>status<span class="w"> </span>polymarket-bot
+
+<span class="c1"># View logs</span>
+journalctl<span class="w"> </span>-u<span class="w"> </span>polymarket-bot<span class="w"> </span>-n<span class="w"> </span><span class="m">50</span>
+
+<span class="c1"># Follow logs in real-time</span>
+journalctl<span class="w"> </span>-u<span class="w"> </span>polymarket-bot<span class="w"> </span>-f
+</pre></div>
+</div>
+<p><strong>Automatic Restart Configuration:</strong></p>
+<p>The bot includes a systemd timer for daily restarts to prevent memory leaks:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="c1"># /etc/systemd/system/polymarket-bot.timer</span>
+<span class="k">[Unit]</span>
+<span class="na">Description</span><span class="o">=</span><span class="s">Daily restart timer for Polymarket bot</span>
+<span class="na">Requires</span><span class="o">=</span><span class="s">polymarket-bot.service</span>
+
+<span class="k">[Timer]</span>
+<span class="na">OnCalendar</span><span class="o">=</span><span class="s">daily</span>
+<span class="na">Persistent</span><span class="o">=</span><span class="s">true</span>
+
+<span class="k">[Install]</span>
+<span class="na">WantedBy</span><span class="o">=</span><span class="s">timers.target</span>
+</pre></div>
+</div>
+</section>
+<section id="monitoring-and-alerting">
+<h2>Monitoring and Alerting<a class="headerlink" href="#monitoring-and-alerting" title="Link to this heading">¶</a></h2>
+<p><strong>Telegram Alerts:</strong></p>
+<p>Configure Telegram bot for real-time notifications:</p>
+<ol class="arabic">
+<li><p><strong>Create Telegram Bot:</strong></p>
+<ul class="simple">
+<li><p>Message &#64;BotFather on Telegram</p></li>
+<li><p>Create new bot with <code class="docutils literal notranslate"><span class="pre">/newbot</span></code></p></li>
+<li><p>Save the bot token</p></li>
+</ul>
+</li>
+<li><p><strong>Get Chat ID:</strong></p>
+<ul class="simple">
+<li><p>Message your bot: <code class="docutils literal notranslate"><span class="pre">/start</span></code></p></li>
+<li><p>Visit: <code class="docutils literal notranslate"><span class="pre">https://api.telegram.org/bot&lt;YourBOTToken&gt;/getUpdates</span></code></p></li>
+<li><p>Extract chat_id from the response</p></li>
+</ul>
+</li>
+<li><p><strong>Configure Environment:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">TELEGRAM_BOT_TOKEN</span><span class="o">=</span>your_bot_token_here
+<span class="nv">TELEGRAM_CHAT_ID</span><span class="o">=</span>your_chat_id_here
+</pre></div>
+</div>
+</li>
+</ol>
+<p><strong>Alert Types:</strong></p>
+<ul class="simple">
+<li><p>✅ <strong>Trade Executed:</strong> Successful trade notifications</p></li>
+<li><p>⚠️ <strong>Circuit Breaker:</strong> Risk limit reached</p></li>
+<li><p>❌ <strong>Error Alerts:</strong> Critical errors requiring attention</p></li>
+<li><p>🔄 <strong>Daily Reports:</strong> Position summaries and P&amp;L</p></li>
+</ul>
+<p><strong>Log Monitoring:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Monitor for errors</span>
+journalctl<span class="w"> </span>-u<span class="w"> </span>polymarket-bot<span class="w"> </span>-f<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span>error
+
+<span class="c1"># Monitor for trades</span>
+journalctl<span class="w"> </span>-u<span class="w"> </span>polymarket-bot<span class="w"> </span>-f<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;Trade executed&quot;</span>
+
+<span class="c1"># Search recent logs for specific pattern</span>
+journalctl<span class="w"> </span>-u<span class="w"> </span>polymarket-bot<span class="w"> </span>--since<span class="w"> </span><span class="s2">&quot;1 hour ago&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;balance&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="health-checks">
+<h2>Health Checks<a class="headerlink" href="#health-checks" title="Link to this heading">¶</a></h2>
+<p><strong>Built-in Health Checks:</strong></p>
+<p>The bot includes comprehensive health monitoring:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run health check</span>
+python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;from main import health_check; health_check()&quot;</span>
+</pre></div>
+</div>
+<p><strong>Health Check Components:</strong></p>
+<ol class="arabic simple">
+<li><p><strong>API Connectivity:</strong>
+- Polygon RPC connection
+- PolygonScan API access
+- CLOB API availability</p></li>
+<li><p><strong>Wallet Status:</strong>
+- Balance retrieval
+- Transaction monitoring
+- Address validation</p></li>
+<li><p><strong>Risk Management:</strong>
+- Circuit breaker status
+- Position limits
+- Daily loss tracking</p></li>
+<li><p><strong>System Resources:</strong>
+- Memory usage monitoring
+- Disk space checks
+- Network connectivity</p></li>
+</ol>
+<p><strong>Automated Health Monitoring:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
+<span class="c1"># /usr/local/bin/health_check.sh</span>
+
+<span class="c1"># Run health check</span>
+<span class="k">if</span><span class="w"> </span>!<span class="w"> </span>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;from main import health_check; health_check()&quot;</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>date<span class="k">)</span><span class="s2">: Health check failed&quot;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>/var/log/polymarket/health.log
+<span class="w">    </span><span class="c1"># Send alert via Telegram or email</span>
+<span class="w">    </span>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;https://api.telegram.org/bot</span><span class="nv">$TELEGRAM_BOT_TOKEN</span><span class="s2">/sendMessage&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">         </span>-d<span class="w"> </span><span class="nv">chat_id</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$TELEGRAM_CHAT_ID</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">         </span>-d<span class="w"> </span><span class="nv">text</span><span class="o">=</span><span class="s2">&quot;🚨 Polymarket Bot Health Check Failed&quot;</span>
+<span class="w">    </span><span class="nb">exit</span><span class="w"> </span><span class="m">1</span>
+<span class="k">fi</span>
+</pre></div>
+</div>
+</section>
+<section id="backup-strategy">
+<h2>Backup Strategy<a class="headerlink" href="#backup-strategy" title="Link to this heading">¶</a></h2>
+<p><strong>Critical Data to Backup:</strong></p>
+<ol class="arabic simple">
+<li><p><strong>Configuration Files:</strong>
+- <code class="docutils literal notranslate"><span class="pre">.env</span></code> (secure storage only)
+- <code class="docutils literal notranslate"><span class="pre">config/wallets.json</span></code>
+- <code class="docutils literal notranslate"><span class="pre">config/settings.py</span></code></p></li>
+<li><p><strong>Database Files:</strong>
+- SQLite databases (if used)
+- Transaction caches
+- Performance logs</p></li>
+<li><p><strong>Logs:</strong>
+- Application logs
+- Systemd logs
+- Error logs</p></li>
+</ol>
+<p><strong>Automated Backup Script:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
+<span class="c1"># /usr/local/bin/backup_polymarket.sh</span>
+
+<span class="nv">BACKUP_DIR</span><span class="o">=</span><span class="s2">&quot;/var/backups/polymarket&quot;</span>
+<span class="nv">TIMESTAMP</span><span class="o">=</span><span class="k">$(</span>date<span class="w"> </span>+%Y%m%d_%H%M%S<span class="k">)</span>
+
+<span class="c1"># Create backup directory</span>
+mkdir<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$BACKUP_DIR</span><span class="s2">&quot;</span>
+
+<span class="c1"># Backup configuration (exclude sensitive data)</span>
+tar<span class="w"> </span>-czf<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$BACKUP_DIR</span><span class="s2">/config_</span><span class="nv">$TIMESTAMP</span><span class="s2">.tar.gz&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-C<span class="w"> </span>/path/to/polymarket-copy-bot<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>config/<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--exclude<span class="o">=</span><span class="s2">&quot;*.pyc&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--exclude<span class="o">=</span><span class="s2">&quot;__pycache__&quot;</span>
+
+<span class="c1"># Backup logs</span>
+tar<span class="w"> </span>-czf<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$BACKUP_DIR</span><span class="s2">/logs_</span><span class="nv">$TIMESTAMP</span><span class="s2">.tar.gz&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>/var/log/polymarket/
+
+<span class="c1"># Backup database files</span>
+tar<span class="w"> </span>-czf<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$BACKUP_DIR</span><span class="s2">/data_</span><span class="nv">$TIMESTAMP</span><span class="s2">.tar.gz&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>/path/to/polymarket-copy-bot/data/
+
+<span class="c1"># Clean old backups (keep last 7 days)</span>
+find<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$BACKUP_DIR</span><span class="s2">&quot;</span><span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;*.tar.gz&quot;</span><span class="w"> </span>-mtime<span class="w"> </span>+7<span class="w"> </span>-delete
+
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Backup completed: </span><span class="nv">$TIMESTAMP</span><span class="s2">&quot;</span>
+</pre></div>
+</div>
+<p><strong>Backup Schedule:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Add to crontab for daily backups at 2 AM</span>
+<span class="m">0</span><span class="w"> </span><span class="m">2</span><span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>/usr/local/bin/backup_polymarket.sh
+</pre></div>
+</div>
+</section>
+<section id="performance-optimization">
+<h2>Performance Optimization<a class="headerlink" href="#performance-optimization" title="Link to this heading">¶</a></h2>
+<p><strong>Memory Management:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Monitor memory usage</span>
+ps<span class="w"> </span>aux<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>polymarket-bot
+
+<span class="c1"># Check memory limits in systemd</span>
+sudo<span class="w"> </span>systemctl<span class="w"> </span>show<span class="w"> </span>polymarket-bot<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>Memory
+
+<span class="c1"># Adjust memory limits if needed</span>
+<span class="c1"># /etc/systemd/system/polymarket-bot.service</span>
+<span class="o">[</span>Service<span class="o">]</span>
+<span class="nv">MemoryLimit</span><span class="o">=</span>2G
+<span class="nv">MemoryHigh</span><span class="o">=</span><span class="m">1</span>.5G
+</pre></div>
+</div>
+<p><strong>CPU Optimization:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Monitor CPU usage</span>
+top<span class="w"> </span>-p<span class="w"> </span><span class="k">$(</span>pgrep<span class="w"> </span>-f<span class="w"> </span>polymarket-bot<span class="k">)</span>
+
+<span class="c1"># Adjust CPU affinity if needed</span>
+<span class="c1"># /etc/systemd/system/polymarket-bot.service</span>
+<span class="o">[</span>Service<span class="o">]</span>
+<span class="nv">CPUSchedulingPolicy</span><span class="o">=</span>idle
+<span class="nv">Nice</span><span class="o">=</span><span class="m">19</span>
+</pre></div>
+</div>
+<p><strong>Network Optimization:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Monitor network usage</span>
+sudo<span class="w"> </span>nload
+
+<span class="c1"># Adjust timeouts for slower connections</span>
+<span class="nv">REQUEST_TIMEOUT</span><span class="o">=</span><span class="m">60</span>
+<span class="nv">MAX_RETRIES</span><span class="o">=</span><span class="m">5</span>
+</pre></div>
+</div>
+</section>
+<section id="update-strategy">
+<h2>Update Strategy<a class="headerlink" href="#update-strategy" title="Link to this heading">¶</a></h2>
+<p><strong>Safe Update Process:</strong></p>
+<ol class="arabic">
+<li><p><strong>Backup Current State:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Stop service</span>
+sudo<span class="w"> </span>systemctl<span class="w"> </span>stop<span class="w"> </span>polymarket-bot
+
+<span class="c1"># Backup configuration and data</span>
+./scripts/backup.sh
+</pre></div>
+</div>
+</li>
+<li><p><strong>Update Code:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Pull latest changes</span>
+git<span class="w"> </span>pull<span class="w"> </span>origin<span class="w"> </span>main
+
+<span class="c1"># Update dependencies</span>
+<span class="nb">source</span><span class="w"> </span>venv/bin/activate
+pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+</pre></div>
+</div>
+</li>
+<li><p><strong>Test Configuration:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Validate configuration</span>
+python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;from config.settings import settings; settings.validate_critical_settings()&quot;</span>
+
+<span class="c1"># Test basic functionality</span>
+python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;from core.clob_client import PolymarketClient; client = PolymarketClient()&quot;</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>Gradual Rollout:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Start with conservative settings</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">MAX_POSITION_SIZE</span><span class="o">=</span><span class="m">0</span>.01
+
+<span class="c1"># Start service</span>
+sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>polymarket-bot
+
+<span class="c1"># Monitor for 1 hour</span>
+journalctl<span class="w"> </span>-u<span class="w"> </span>polymarket-bot<span class="w"> </span>-f
+
+<span class="c1"># Gradually increase limits if stable</span>
+<span class="c1"># Update .env and restart</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p><strong>Rollback Plan:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Quick rollback to previous version</span>
+sudo<span class="w"> </span>systemctl<span class="w"> </span>stop<span class="w"> </span>polymarket-bot
+git<span class="w"> </span>checkout<span class="w"> </span>&lt;previous_commit&gt;
+<span class="nb">source</span><span class="w"> </span>venv/bin/activate
+pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>polymarket-bot
+</pre></div>
+</div>
+</section>
+<section id="security-hardening">
+<h2>Security Hardening<a class="headerlink" href="#security-hardening" title="Link to this heading">¶</a></h2>
+<p><strong>System Security:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Disable root login</span>
+sudo<span class="w"> </span>sed<span class="w"> </span>-i<span class="w"> </span><span class="s1">&#39;s/#PermitRootLogin yes/PermitRootLogin no/&#39;</span><span class="w"> </span>/etc/ssh/sshd_config
+
+<span class="c1"># Use fail2ban for SSH protection</span>
+sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>fail2ban
+
+<span class="c1"># Configure firewall</span>
+sudo<span class="w"> </span>ufw<span class="w"> </span><span class="nb">enable</span>
+sudo<span class="w"> </span>ufw<span class="w"> </span>allow<span class="w"> </span>ssh
+sudo<span class="w"> </span>ufw<span class="w"> </span>allow<span class="w"> </span><span class="m">80</span><span class="w">  </span><span class="c1"># If web dashboard is used</span>
+</pre></div>
+</div>
+<p><strong>Application Security:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run as non-privileged user</span>
+sudo<span class="w"> </span>useradd<span class="w"> </span>-r<span class="w"> </span>-s<span class="w"> </span>/bin/false<span class="w"> </span>polymarket-bot
+sudo<span class="w"> </span>chown<span class="w"> </span>-R<span class="w"> </span>polymarket-bot:polymarket-bot<span class="w"> </span>/path/to/bot
+
+<span class="c1"># Secure configuration files</span>
+sudo<span class="w"> </span>chmod<span class="w"> </span><span class="m">600</span><span class="w"> </span>/path/to/bot/.env
+sudo<span class="w"> </span>chmod<span class="w"> </span><span class="m">644</span><span class="w"> </span>/path/to/bot/config/wallets.json
+
+<span class="c1"># Use secure logging</span>
+<span class="nv">LOG_LEVEL</span><span class="o">=</span>WARNING<span class="w">  </span><span class="c1"># Reduce sensitive data in logs</span>
+</pre></div>
+</div>
+<p><strong>Key Management:</strong></p>
+<ul class="simple">
+<li><p>Store private keys in encrypted files or HSM</p></li>
+<li><p>Rotate API keys regularly</p></li>
+<li><p>Use environment-specific keys</p></li>
+<li><p>Implement key access logging</p></li>
+</ul>
+</section>
+<section id="troubleshooting-production-issues">
+<h2>Troubleshooting Production Issues<a class="headerlink" href="#troubleshooting-production-issues" title="Link to this heading">¶</a></h2>
+<p><strong>Service Won’t Start:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check service status</span>
+sudo<span class="w"> </span>systemctl<span class="w"> </span>status<span class="w"> </span>polymarket-bot
+
+<span class="c1"># Check for configuration errors</span>
+sudo<span class="w"> </span>-u<span class="w"> </span>polymarket-bot<span class="w"> </span>bash<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;cd /path/to/bot &amp;&amp; source venv/bin/activate &amp;&amp; python -c &#39;from config.settings import settings; print(settings)&#39;&quot;</span>
+
+<span class="c1"># Check file permissions</span>
+ls<span class="w"> </span>-la<span class="w"> </span>/path/to/bot/.env
+</pre></div>
+</div>
+<p><strong>High Memory Usage:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check memory usage</span>
+ps<span class="w"> </span>aux<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>polymarket-bot
+
+<span class="c1"># Restart service (daily restart should handle this)</span>
+sudo<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>polymarket-bot
+
+<span class="c1"># Monitor memory growth</span>
+watch<span class="w"> </span>-n<span class="w"> </span><span class="m">60</span><span class="w"> </span><span class="s2">&quot;ps aux | grep polymarket-bot&quot;</span>
+</pre></div>
+</div>
+<p><strong>API Rate Limiting:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check logs for rate limit errors</span>
+journalctl<span class="w"> </span>-u<span class="w"> </span>polymarket-bot<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span><span class="s2">&quot;rate limit&quot;</span>
+
+<span class="c1"># Increase monitoring interval</span>
+<span class="nv">MONITOR_INTERVAL</span><span class="o">=</span><span class="m">30</span>
+
+<span class="c1"># Reduce monitored wallets</span>
+<span class="nv">MAX_WALLETS_TO_MONITOR</span><span class="o">=</span><span class="m">10</span>
+</pre></div>
+</div>
+<p><strong>Network Issues:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Test connectivity</span>
+curl<span class="w"> </span>-I<span class="w"> </span>https://polygon-rpc.com
+curl<span class="w"> </span>-I<span class="w"> </span>https://api.polygonscan.com
+
+<span class="c1"># Check DNS resolution</span>
+nslookup<span class="w"> </span>polygon-rpc.com
+
+<span class="c1"># Test CLOB API</span>
+curl<span class="w"> </span>-I<span class="w"> </span>https://clob.polymarket.com
+</pre></div>
+</div>
+</section>
+<section id="scaling-considerations">
+<h2>Scaling Considerations<a class="headerlink" href="#scaling-considerations" title="Link to this heading">¶</a></h2>
+<p><strong>Horizontal Scaling:</strong></p>
+<p>For high-volume monitoring, consider multiple instances:</p>
+<ol class="arabic">
+<li><p><strong>Separate Instances:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Instance 1: High-priority wallets</span>
+cp<span class="w"> </span>.env<span class="w"> </span>.env.instance1
+<span class="c1"># Edit .env.instance1 with specific wallet subset</span>
+
+<span class="c1"># Instance 2: Medium-priority wallets</span>
+cp<span class="w"> </span>.env<span class="w"> </span>.env.instance2
+<span class="c1"># Edit .env.instance2 with different wallet subset</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>Load Balancing:</strong></p>
+<p>Distribute monitoring load across instances with different configurations.</p>
+</li>
+</ol>
+<p><strong>Database Scaling:</strong></p>
+<p>For persistent data storage, consider PostgreSQL:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Install PostgreSQL</span>
+sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>postgresql<span class="w"> </span>postgresql-contrib
+
+<span class="c1"># Create database</span>
+sudo<span class="w"> </span>-u<span class="w"> </span>postgres<span class="w"> </span>createdb<span class="w"> </span>polymarket_bot
+
+<span class="c1"># Configure connection in settings</span>
+<span class="nv">DATABASE_URL</span><span class="o">=</span>postgresql://user:password@localhost/polymarket_bot
+</pre></div>
+</div>
+<p><strong>Monitoring Scaling:</strong></p>
+<p>Implement centralized monitoring for multiple instances:</p>
+<ul class="simple">
+<li><p>ELK stack (Elasticsearch, Logstash, Kibana)</p></li>
+<li><p>Prometheus + Grafana</p></li>
+<li><p>Centralized log aggregation</p></li>
+<li><p>Alert correlation</p></li>
+</ul>
+</section>
+<section id="production-checklist">
+<h2>Production Checklist<a class="headerlink" href="#production-checklist" title="Link to this heading">¶</a></h2>
+<p><strong>Pre-Launch:</strong></p>
+<ul class="simple">
+<li><p>[ ] Security audit completed</p></li>
+<li><p>[ ] Testnet testing successful</p></li>
+<li><p>[ ] Backup strategy implemented</p></li>
+<li><p>[ ] Monitoring and alerting configured</p></li>
+<li><p>[ ] Rollback plan documented</p></li>
+<li><p>[ ] Contact information for support</p></li>
+</ul>
+<p><strong>Launch Day:</strong></p>
+<ul class="simple">
+<li><p>[ ] System resources verified</p></li>
+<li><p>[ ] Network connectivity confirmed</p></li>
+<li><p>[ ] API keys validated</p></li>
+<li><p>[ ] Service started successfully</p></li>
+<li><p>[ ] Initial trades monitored</p></li>
+<li><p>[ ] Alert system tested</p></li>
+</ul>
+<p><strong>Post-Launch:</strong></p>
+<ul class="simple">
+<li><p>[ ] 24/7 monitoring established</p></li>
+<li><p>[ ] Regular backup verification</p></li>
+<li><p>[ ] Performance metrics tracked</p></li>
+<li><p>[ ] Update schedule established</p></li>
+<li><p>[ ] Incident response plan ready</p></li>
+</ul>
+<p>For additional troubleshooting, see the <a class="reference internal" href="troubleshooting.html"><span class="doc">Troubleshooting</span></a> guide.</p>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="troubleshooting.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Troubleshooting</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="configuration.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Configuration</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, Contributors
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Deployment</a><ul>
+<li><a class="reference internal" href="#production-deployment-checklist">Production Deployment Checklist</a></li>
+<li><a class="reference internal" href="#systemd-service-setup">Systemd Service Setup</a></li>
+<li><a class="reference internal" href="#service-management">Service Management</a></li>
+<li><a class="reference internal" href="#monitoring-and-alerting">Monitoring and Alerting</a></li>
+<li><a class="reference internal" href="#health-checks">Health Checks</a></li>
+<li><a class="reference internal" href="#backup-strategy">Backup Strategy</a></li>
+<li><a class="reference internal" href="#performance-optimization">Performance Optimization</a></li>
+<li><a class="reference internal" href="#update-strategy">Update Strategy</a></li>
+<li><a class="reference internal" href="#security-hardening">Security Hardening</a></li>
+<li><a class="reference internal" href="#troubleshooting-production-issues">Troubleshooting Production Issues</a></li>
+<li><a class="reference internal" href="#scaling-considerations">Scaling Considerations</a></li>
+<li><a class="reference internal" href="#production-checklist">Production Checklist</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="_static/documentation_options.js?v=4ebf8126"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/scripts/furo.js?v=46bd48cc"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/custom.js"></script>
+    </body>
+</html>

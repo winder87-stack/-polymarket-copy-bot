@@ -277,6 +277,21 @@ class TestTradeExecutorMainExecution:
         assert result['status'] == 'skipped'
         assert 'Circuit breaker' in result['reason']
 
+    async def test_execute_copy_trade_circuit_breaker_error_handling(self, mock_trade_executor, sample_trade):
+        """Test copy trade execution when circuit breaker check fails."""
+        mock_trade_executor.circuit_breaker_active = True
+        mock_trade_executor.circuit_breaker_reason = "Test circuit breaker"
+
+        # Mock the remaining time method to raise an exception
+        mock_trade_executor._get_circuit_breaker_remaining_time = Mock(side_effect=Exception("Time calculation error"))
+
+        # Should continue with trade execution despite circuit breaker check error
+        result = await mock_trade_executor.execute_copy_trade(sample_trade)
+
+        # Should not be skipped - trade should proceed despite error in circuit breaker check
+        assert result['status'] != 'skipped'
+        assert 'Circuit breaker' not in result.get('reason', '')
+
     async def test_execute_copy_trade_invalid_trade(self, mock_trade_executor, sample_trade):
         """Test copy trade execution with invalid trade data."""
         del sample_trade['tx_hash']  # Make trade invalid

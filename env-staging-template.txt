@@ -1,106 +1,89 @@
+# Environment Configuration for STAGING Environment
+# Network: Polygon Mumbai Testnet
+# WARNING: Testnet only - use testnet wallets and funds
+# Generated on $(date)
+
 # ===========================================
-# Polymarket Copy Bot - STAGING ENVIRONMENT
-# ===========================================
-#
-# This file contains environment variables for the staging environment.
-# Copy this file to .env.staging and fill in your actual values.
-#
 # 🚨 STAGING ENVIRONMENT - TESTNET ONLY 🚨
-# All trades will be on Polygon Mumbai testnet with small amounts.
+# ===========================================
+
+# REQUIRED: Wallet Configuration (TESTNET ONLY)
+# Use a testnet wallet - NEVER mainnet keys here
+STAGING_PRIVATE_KEY=your_testnet_private_key_here
+
+# REQUIRED: Network Configuration
+POLYGON_RPC_URL=https://rpc-mumbai.maticvigil.com
+CHAIN_ID=80001
+BLOCK_EXPLORER=https://mumbai.polygonscan.com
+
+# REQUIRED: Polymarket Configuration (Testnet)
+CLOB_HOST=https://clob.polymarket.com
+# Testnet API credentials (different from mainnet)
+CLOB_API_KEY=your_testnet_api_key
+CLOB_API_SECRET=your_testnet_api_secret
+
+# REQUIRED: Monitoring
+STAGING_TELEGRAM_BOT_TOKEN=your_staging_telegram_bot_token
+STAGING_TELEGRAM_CHAT_ID=your_staging_telegram_chat_id
+
+# Staging Risk Settings (Conservative)
+MAX_POSITION_SIZE=0.1
+MAX_DAILY_LOSS=0.05
+ENABLE_REAL_TRADING=true
+DRY_RUN=false
+
+# Logging and Monitoring
+LOG_LEVEL=DEBUG
+ENABLE_PROMETHEUS_METRICS=true
+METRICS_PORT=9091
+
+# Database (staging)
+DATABASE_URL=sqlite:///data/staging.db
+
+# Security Settings (relaxed for testing)
+ENCRYPT_SENSITIVE_DATA=false
+BACKUP_ENCRYPTION_KEY=test_backup_key
+
+# Environment Information
+POLYMARKET_ENV=staging
+NETWORK=polygon_mumbai
+IS_TESTNET=true
+DEPLOYMENT=staging
+
+# Performance Settings (limited for testing)
+MAX_WORKERS=2
+BATCH_SIZE=5
+RATE_LIMIT_CALLS_PER_MINUTE=10
+
+# Alert Thresholds (more sensitive for testing)
+ALERT_LOW_BALANCE=0.01
+ALERT_HIGH_POSITION_SIZE=0.05
+ALERT_CONSECUTIVE_LOSSES=2
+
+# Backup Settings
+BACKUP_INTERVAL_HOURS=12
+BACKUP_RETENTION_DAYS=7
+
+# Test Settings
+ENABLE_VERBOSE_LOGGING=true
+RECORD_ALL_TRADES=true
+MOCK_EXTERNAL_APIS=false
+
+# ===========================================
+# 🧪 STAGING VALIDATION CHECKLIST
+# ===========================================
 #
-# ===========================================
-
-# ===========================================
-# STAGING WALLET CONFIGURATION
-# ===========================================
-# Private key for staging wallet (NEVER use mainnet keys here)
-# Get testnet MATIC from: https://faucet.polygon.technology/
-STAGING_PRIVATE_KEY=0x0000000000000000000000000000000000000000000000000000000000000000
-
-# Your staging wallet address (auto-calculated from private key if empty)
-# STAGING_WALLET_ADDRESS=
-
-# ===========================================
-# STAGING NETWORK CONFIGURATION
-# ===========================================
-# Polygon Mumbai testnet settings
-STAGING_CHAIN_ID=80001
-STAGING_POLYGON_RPC_URL=https://rpc-mumbai.maticvigil.com
-STAGING_POLYGONSCAN_API_KEY=YourPolygonscanApiKeyHere
-
-# Polymarket CLOB (same as mainnet for testing)
-STAGING_CLOB_HOST=https://clob.polymarket.com
-
-# ===========================================
-# STAGING RISK MANAGEMENT (CONSERVATIVE)
-# ===========================================
-# Maximum position size per trade ($5 instead of $50)
-STAGING_MAX_POSITION_SIZE=5.0
-
-# Circuit breaker threshold ($10 instead of $100)
-STAGING_MAX_DAILY_LOSS=10.0
-
-# Minimum trade amount to copy ($0.50 instead of $1.00)
-STAGING_MIN_TRADE_AMOUNT=0.50
-
-# Maximum concurrent positions (3 instead of 10)
-STAGING_MAX_CONCURRENT_POSITIONS=3
-
-# Stop loss percentage (10% instead of 15% - more conservative)
-STAGING_STOP_LOSS_PERCENTAGE=0.10
-
-# Take profit percentage (15% instead of 25% - more conservative)
-STAGING_TAKE_PROFIT_PERCENTAGE=0.15
-
-# Maximum slippage tolerance (5% instead of 2% - more tolerant)
-STAGING_MAX_SLIPPAGE=0.05
-
-# ===========================================
-# STAGING MONITORING CONFIGURATION
-# ===========================================
-# Monitor interval (30s instead of 15s - less aggressive)
-STAGING_MONITOR_INTERVAL=30
-
-# Minimum confidence score (0.8 instead of 0.7 - more selective)
-STAGING_MIN_CONFIDENCE_SCORE=0.8
-
-# ===========================================
-# STAGING TRADING CONFIGURATION
-# ===========================================
-# Gas limits (lower for testnet)
-STAGING_DEFAULT_GAS_LIMIT=200000
-STAGING_MAX_GAS_PRICE=50
-
-# ===========================================
-# STAGING ALERTING CONFIGURATION
-# ===========================================
-# Telegram bot for staging alerts (separate from production)
-STAGING_TELEGRAM_BOT_TOKEN=YourStagingTelegramBotTokenHere
-STAGING_TELEGRAM_CHAT_ID=YourStagingTelegramChatIdHere
-
-# ===========================================
-# STAGING LOGGING CONFIGURATION
-# ===========================================
-# More verbose logging for staging debugging
-STAGING_LOG_LEVEL=DEBUG
-STAGING_LOG_FILE=logs/polymarket_bot_staging.log
-
-# ===========================================
-# STAGING-SPECIFIC SETTINGS
-# ===========================================
-# Enable paper trading mode (simulated trades)
-STAGING_PAPER_TRADING=false
-
-# Maximum trades per day in staging (5 instead of unlimited)
-STAGING_MAX_TRADES_PER_DAY=5
-
-# ===========================================
-# SECURITY REMINDERS
-# ===========================================
-# - NEVER use mainnet private keys in staging
-# - Use testnet MATIC only
-# - Staging alerts go to separate Telegram channel
-# - All logs are prefixed with [STAGING]
-# - Position sizes are 10x smaller than production
+# [ ] Testnet wallet created and funded:
+#     https://faucet.polygon.technology/
 #
-# ===========================================
+# [ ] STAGING_PRIVATE_KEY set with testnet key only
+#
+# [ ] STAGING_TELEGRAM_* configured for alerts
+#
+# [ ] Risk limits set conservatively (0.1 MATIC max position)
+#
+# [ ] Log level set to DEBUG for detailed monitoring
+#
+# [ ] Dry run mode tested first (set DRY_RUN=true)
+#
+# 💡 After staging validation, promote settings to production

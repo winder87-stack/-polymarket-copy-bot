@@ -1,0 +1,1133 @@
+{
+  "ranking_timestamp": "2025-12-26T00:14:15.611549",
+  "category_rankings": {
+    "mixed_trader": {
+      "wallet_count": 10,
+      "ranked_wallets": [
+        {
+          "wallet_address": "0x8b71010f8d18ccce16a37434778117ee2d6b8044",
+          "category": "mixed_trader",
+          "overall_quality_score": 92.69,
+          "confidence_score": 83.2,
+          "quality_tier": "Elite",
+          "individual_scores": {
+            "trading_activity": 106.66,
+            "balance_efficiency": 100.0,
+            "market_diversity": 100.0,
+            "consistency_score": 77.5,
+            "behavioral_stability": 85.91,
+            "market_maker_potential": 59.49
+          },
+          "weights_used": {
+            "trading_activity": 0.2,
+            "balance_efficiency": 0.25,
+            "market_diversity": 0.15,
+            "consistency_score": 0.2,
+            "behavioral_stability": 0.15,
+            "market_maker_potential": 0.05
+          },
+          "trade_count": 307,
+          "analysis_timestamp": "2025-12-26T00:14:15.610403",
+          "category_rank": 1,
+          "category_total": 10
+        },
+        {
+          "wallet_address": "0x8456179e1985614339ef55c09255cbed6604e61a",
+          "category": "mixed_trader",
+          "overall_quality_score": 92.04,
+          "confidence_score": 83.2,
+          "quality_tier": "Elite",
+          "individual_scores": {
+            "trading_activity": 106.47,
+            "balance_efficiency": 100.0,
+            "market_diversity": 100.0,
+            "consistency_score": 77.5,
+            "behavioral_stability": 83.82,
+            "market_maker_potential": 53.52
+          },
+          "weights_used": {
+            "trading_activity": 0.2,
+            "balance_efficiency": 0.25,
+            "market_diversity": 0.15,
+            "consistency_score": 0.2,
+            "behavioral_stability": 0.15,
+            "market_maker_potential": 0.05
+          },
+          "trade_count": 258,
+          "analysis_timestamp": "2025-12-26T00:14:15.610447",
+          "category_rank": 2,
+          "category_total": 10
+        },
+        {
+          "wallet_address": "0x853c37a959a5791b849e3f3225c7f5963746bd03",
+          "category": "mixed_trader",
+          "overall_quality_score": 91.7,
+          "confidence_score": 83.2,
+          "quality_tier": "Elite",
+          "individual_scores": {
+            "trading_activity": 100.0,
+            "balance_efficiency": 100.0,
+            "market_diversity": 100.0,
+            "consistency_score": 77.5,
+            "behavioral_stability": 86.29,
+            "market_maker_potential": 65.13
+          },
+          "weights_used": {
+            "trading_activity": 0.2,
+            "balance_efficiency": 0.25,
+            "market_diversity": 0.15,
+            "consistency_score": 0.2,
+            "behavioral_stability": 0.15,
+            "market_maker_potential": 0.05
+          },
+          "trade_count": 356,
+          "analysis_timestamp": "2025-12-26T00:14:15.610492",
+          "category_rank": 3,
+          "category_total": 10
+        },
+        {
+          "wallet_address": "0xb7844f423abd31bdd70a4664c958762d291b61d0",
+          "category": "mixed_trader",
+          "overall_quality_score": 90.46,
+          "confidence_score": 83.2,
+          "quality_tier": "Elite",
+          "individual_scores": {
+            "trading_activity": 100.96,
+            "balance_efficiency": 100.0,
+            "market_diversity": 100.0,
+            "consistency_score": 77.5,
+            "behavioral_stability": 82.31,
+            "market_maker_potential": 48.39
+          },
+          "weights_used": {
+            "trading_activity": 0.2,
+            "balance_efficiency": 0.25,
+            "market_diversity": 0.15,
+            "consistency_score": 0.2,
+            "behavioral_stability": 0.15,
+            "market_maker_potential": 0.05
+          },
+          "trade_count": 237,
+          "analysis_timestamp": "2025-12-26T00:14:15.610281",
+          "category_rank": 4,
+          "category_total": 10
+        },
+        {
+          "wallet_address": "0xb3a1aad3d35ab7e87052b2addd5a11b3c7b63529",
+          "category": "mixed_trader",
+          "overall_quality_score": 90.34,
+          "confidence_score": 83.2,
+          "quality_tier": "Elite",
+          "individual_scores": {
+            "trading_activity": 100.0,
+            "balance_efficiency": 100.0,
+            "market_diversity": 100.0,
+            "consistency_score": 77.5,
+            "behavioral_stability": 81.63,
+            "market_maker_potential": 51.82
+          },
+          "weights_used": {
+            "trading_activity": 0.2,
+            "balance_efficiency": 0.25,
+            "market_diversity": 0.15,
+            "consistency_score": 0.2,
+            "behavioral_stability": 0.15,
+            "market_maker_potential": 0.05
+          },
+          "trade_count": 384,
+          "analysis_timestamp": "2025-12-26T00:14:15.610569",
+          "category_rank": 5,
+          "category_total": 10
+        },
+        {
+          "wallet_address": "0x8ade1d07fd3fa1b1821e54a142f2fb3b6c01e692",
+          "category": "mixed_trader",
+          "overall_quality_score": 88.45,
+          "confidence_score": 83.2,
+          "quality_tier": "Elite",
+          "individual_scores": {
+            "trading_activity": 87.03,
+            "balance_efficiency": 100.0,
+            "market_diversity": 100.0,
+            "consistency_score": 77.5,
+            "behavioral_stability": 85.32,
+            "market_maker_potential": 55.02
+          },
+          "weights_used": {
+            "trading_activity": 0.2,
+            "balance_efficiency": 0.25,
+            "market_diversity": 0.15,
+            "consistency_score": 0.2,
+            "behavioral_stability": 0.15,
+            "market_maker_potential": 0.05
+          },
+          "trade_count": 223,
+          "analysis_timestamp": "2025-12-26T00:14:15.610362",
+          "category_rank": 6,
+          "category_total": 10
+        },
+        {
+          "wallet_address": "0x9615a81a49fa2f1f234ae138eac87e3828a260dd",
+          "category": "mixed_trader",
+          "overall_quality_score": 87.75,
+          "confidence_score": 77.2,
+          "quality_tier": "Premium",
+          "individual_scores": {
+            "trading_activity": 83.04,
+            "balance_efficiency": 100.0,
+            "market_diversity": 100.0,
+            "consistency_score": 77.5,
+            "behavioral_stability": 85.75,
+            "market_maker_potential": 55.66
+          },
+          "weights_used": {
+            "trading_activity": 0.2,
+            "balance_efficiency": 0.25,
+            "market_diversity": 0.15,
+            "consistency_score": 0.2,
+            "behavioral_stability": 0.15,
+            "market_maker_potential": 0.05
+          },
+          "trade_count": 181,
+          "analysis_timestamp": "2025-12-26T00:14:15.610531",
+          "category_rank": 7,
+          "category_total": 10
+        },
+        {
+          "wallet_address": "0x1d1ade627d0bb0205758580b20d808573e720df6",
+          "category": "mixed_trader",
+          "overall_quality_score": 87.73,
+          "confidence_score": 77.2,
+          "quality_tier": "Premium",
+          "individual_scores": {
+            "trading_activity": 86.64,
+            "balance_efficiency": 100.0,
+            "market_diversity": 100.0,
+            "consistency_score": 77.5,
+            "behavioral_stability": 83.12,
+            "market_maker_potential": 48.67
+          },
+          "weights_used": {
+            "trading_activity": 0.2,
+            "balance_efficiency": 0.25,
+            "market_diversity": 0.15,
+            "consistency_score": 0.2,
+            "behavioral_stability": 0.15,
+            "market_maker_potential": 0.05
+          },
+          "trade_count": 188,
+          "analysis_timestamp": "2025-12-26T00:14:15.610238",
+          "category_rank": 8,
+          "category_total": 10
+        },
+        {
+          "wallet_address": "0x8b5a7da2fdf239b51b9c68a2a1a35bb156d200f2",
+          "category": "mixed_trader",
+          "overall_quality_score": 87.56,
+          "confidence_score": 83.2,
+          "quality_tier": "Elite",
+          "individual_scores": {
+            "trading_activity": 87.79,
+            "balance_efficiency": 100.0,
+            "market_diversity": 100.0,
+            "consistency_score": 77.5,
+            "behavioral_stability": 81.72,
+            "market_maker_potential": 44.84
+          },
+          "weights_used": {
+            "trading_activity": 0.2,
+            "balance_efficiency": 0.25,
+            "market_diversity": 0.15,
+            "consistency_score": 0.2,
+            "behavioral_stability": 0.15,
+            "market_maker_potential": 0.05
+          },
+          "trade_count": 209,
+          "analysis_timestamp": "2025-12-26T00:14:15.610174",
+          "category_rank": 9,
+          "category_total": 10
+        },
+        {
+          "wallet_address": "0xc35049bc7b6bd28a49a40b261466ca91aad63669",
+          "category": "mixed_trader",
+          "overall_quality_score": 87.25,
+          "confidence_score": 83.2,
+          "quality_tier": "Elite",
+          "individual_scores": {
+            "trading_activity": 83.23,
+            "balance_efficiency": 100.0,
+            "market_diversity": 100.0,
+            "consistency_score": 77.5,
+            "behavioral_stability": 83.89,
+            "market_maker_potential": 50.38
+          },
+          "weights_used": {
+            "trading_activity": 0.2,
+            "balance_efficiency": 0.25,
+            "market_diversity": 0.15,
+            "consistency_score": 0.2,
+            "behavioral_stability": 0.15,
+            "market_maker_potential": 0.05
+          },
+          "trade_count": 216,
+          "analysis_timestamp": "2025-12-26T00:14:15.610318",
+          "category_rank": 10,
+          "category_total": 10
+        }
+      ],
+      "top_performer": {
+        "wallet_address": "0x8b71010f8d18ccce16a37434778117ee2d6b8044",
+        "category": "mixed_trader",
+        "overall_quality_score": 92.69,
+        "confidence_score": 83.2,
+        "quality_tier": "Elite",
+        "individual_scores": {
+          "trading_activity": 106.66,
+          "balance_efficiency": 100.0,
+          "market_diversity": 100.0,
+          "consistency_score": 77.5,
+          "behavioral_stability": 85.91,
+          "market_maker_potential": 59.49
+        },
+        "weights_used": {
+          "trading_activity": 0.2,
+          "balance_efficiency": 0.25,
+          "market_diversity": 0.15,
+          "consistency_score": 0.2,
+          "behavioral_stability": 0.15,
+          "market_maker_potential": 0.05
+        },
+        "trade_count": 307,
+        "analysis_timestamp": "2025-12-26T00:14:15.610403",
+        "category_rank": 1,
+        "category_total": 10
+      },
+      "average_score": 89.59700000000001,
+      "quality_distribution": {
+        "Elite": 8,
+        "Premium": 2
+      }
+    },
+    "low_activity": {
+      "wallet_count": 7,
+      "ranked_wallets": [
+        {
+          "wallet_address": "0xa49becb692927d455924583b5e3e5788246f4c40",
+          "category": "low_activity",
+          "overall_quality_score": 80.75,
+          "confidence_score": 71.2,
+          "quality_tier": "Premium",
+          "individual_scores": {
+            "trading_activity": 110.95,
+            "balance_efficiency": 84.21,
+            "market_diversity": 100.0,
+            "consistency_score": 77.5,
+            "behavioral_stability": 81.4,
+            "market_maker_potential": 38.28
+          },
+          "weights_used": {
+            "trading_activity": 0.05,
+            "balance_efficiency": 0.2,
+            "market_diversity": 0.15,
+            "consistency_score": 0.3,
+            "behavioral_stability": 0.2,
+            "market_maker_potential": 0.1
+          },
+          "trade_count": 76,
+          "analysis_timestamp": "2025-12-26T00:14:15.610834",
+          "category_rank": 1,
+          "category_total": 7
+        },
+        {
+          "wallet_address": "0x18d12d50db693ea3258edaa721c8ffa6eb7bdbcb",
+          "category": "low_activity",
+          "overall_quality_score": 79.48,
+          "confidence_score": 71.2,
+          "quality_tier": "Premium",
+          "individual_scores": {
+            "trading_activity": 115.75,
+            "balance_efficiency": 80.0,
+            "market_diversity": 100.0,
+            "consistency_score": 77.5,
+            "behavioral_stability": 80.0,
+            "market_maker_potential": 34.4
+          },
+          "weights_used": {
+            "trading_activity": 0.05,
+            "balance_efficiency": 0.2,
+            "market_diversity": 0.15,
+            "consistency_score": 0.3,
+            "behavioral_stability": 0.2,
+            "market_maker_potential": 0.1
+          },
+          "trade_count": 90,
+          "analysis_timestamp": "2025-12-26T00:14:15.610712",
+          "category_rank": 2,
+          "category_total": 7
+        },
+        {
+          "wallet_address": "0x71a70f24538d885d1b45f9cea158a2cdf2e56fcf",
+          "category": "low_activity",
+          "overall_quality_score": 76.32,
+          "confidence_score": 71.2,
+          "quality_tier": "High",
+          "individual_scores": {
+            "trading_activity": 77.47,
+            "balance_efficiency": 76.29,
+            "market_diversity": 100.0,
+            "consistency_score": 77.5,
+            "behavioral_stability": 78.76,
+            "market_maker_potential": 31.88
+          },
+          "weights_used": {
+            "trading_activity": 0.05,
+            "balance_efficiency": 0.2,
+            "market_diversity": 0.15,
+            "consistency_score": 0.3,
+            "behavioral_stability": 0.2,
+            "market_maker_potential": 0.1
+          },
+          "trade_count": 97,
+          "analysis_timestamp": "2025-12-26T00:14:15.610872",
+          "category_rank": 3,
+          "category_total": 7
+        },
+        {
+          "wallet_address": "0x2005d16a84ceefa912d4e380cd32e7ff827875ea",
+          "category": "low_activity",
+          "overall_quality_score": 76.19,
+          "confidence_score": 71.2,
+          "quality_tier": "High",
+          "individual_scores": {
+            "trading_activity": 106.26,
+            "balance_efficiency": 72.29,
+            "market_diversity": 100.0,
+            "consistency_score": 77.5,
+            "behavioral_stability": 77.43,
+            "market_maker_potential": 26.79
+          },
+          "weights_used": {
+            "trading_activity": 0.05,
+            "balance_efficiency": 0.2,
+            "market_diversity": 0.15,
+            "consistency_score": 0.3,
+            "behavioral_stability": 0.2,
+            "market_maker_potential": 0.1
+          },
+          "trade_count": 83,
+          "analysis_timestamp": "2025-12-26T00:14:15.610756",
+          "category_rank": 4,
+          "category_total": 7
+        },
+        {
+          "wallet_address": "0x204f72f35326db932158cba6adff0b9a1da95e14",
+          "category": "low_activity",
+          "overall_quality_score": 74.16,
+          "confidence_score": 83.2,
+          "quality_tier": "Premium",
+          "individual_scores": {
+            "trading_activity": 100.0,
+            "balance_efficiency": 63.93,
+            "market_diversity": 100.0,
+            "consistency_score": 77.5,
+            "behavioral_stability": 74.64,
+            "market_maker_potential": 31.98
+          },
+          "weights_used": {
+            "trading_activity": 0.05,
+            "balance_efficiency": 0.2,
+            "market_diversity": 0.15,
+            "consistency_score": 0.3,
+            "behavioral_stability": 0.2,
+            "market_maker_potential": 0.1
+          },
+          "trade_count": 244,
+          "analysis_timestamp": "2025-12-26T00:14:15.610793",
+          "category_rank": 5,
+          "category_total": 7
+        },
+        {
+          "wallet_address": "0x29bc82f761749e67fa00d62896bc6855097b683c",
+          "category": "low_activity",
+          "overall_quality_score": 74.06,
+          "confidence_score": 71.2,
+          "quality_tier": "High",
+          "individual_scores": {
+            "trading_activity": 102.99,
+            "balance_efficiency": 65.79,
+            "market_diversity": 100.0,
+            "consistency_score": 77.5,
+            "behavioral_stability": 75.26,
+            "market_maker_potential": 24.51
+          },
+          "weights_used": {
+            "trading_activity": 0.05,
+            "balance_efficiency": 0.2,
+            "market_diversity": 0.15,
+            "consistency_score": 0.3,
+            "behavioral_stability": 0.2,
+            "market_maker_potential": 0.1
+          },
+          "trade_count": 76,
+          "analysis_timestamp": "2025-12-26T00:14:15.610909",
+          "category_rank": 6,
+          "category_total": 7
+        },
+        {
+          "wallet_address": "0xd2b51d9accca5ec0a853eb0d94eeb0dce9a82889",
+          "category": "low_activity",
+          "overall_quality_score": 73.33,
+          "confidence_score": 83.2,
+          "quality_tier": "Premium",
+          "individual_scores": {
+            "trading_activity": 100.0,
+            "balance_efficiency": 60.99,
+            "market_diversity": 100.0,
+            "consistency_score": 77.5,
+            "behavioral_stability": 73.66,
+            "market_maker_potential": 31.52
+          },
+          "weights_used": {
+            "trading_activity": 0.05,
+            "balance_efficiency": 0.2,
+            "market_diversity": 0.15,
+            "consistency_score": 0.3,
+            "behavioral_stability": 0.2,
+            "market_maker_potential": 0.1
+          },
+          "trade_count": 223,
+          "analysis_timestamp": "2025-12-26T00:14:15.610945",
+          "category_rank": 7,
+          "category_total": 7
+        }
+      ],
+      "top_performer": {
+        "wallet_address": "0xa49becb692927d455924583b5e3e5788246f4c40",
+        "category": "low_activity",
+        "overall_quality_score": 80.75,
+        "confidence_score": 71.2,
+        "quality_tier": "Premium",
+        "individual_scores": {
+          "trading_activity": 110.95,
+          "balance_efficiency": 84.21,
+          "market_diversity": 100.0,
+          "consistency_score": 77.5,
+          "behavioral_stability": 81.4,
+          "market_maker_potential": 38.28
+        },
+        "weights_used": {
+          "trading_activity": 0.05,
+          "balance_efficiency": 0.2,
+          "market_diversity": 0.15,
+          "consistency_score": 0.3,
+          "behavioral_stability": 0.2,
+          "market_maker_potential": 0.1
+        },
+        "trade_count": 76,
+        "analysis_timestamp": "2025-12-26T00:14:15.610834",
+        "category_rank": 1,
+        "category_total": 7
+      },
+      "average_score": 76.32714285714285,
+      "quality_distribution": {
+        "Premium": 4,
+        "High": 3
+      }
+    },
+    "directional_trader": {
+      "wallet_count": 4,
+      "ranked_wallets": [
+        {
+          "wallet_address": "0x818f214c7f3e479cce1d964d53fe3db7297558cb",
+          "category": "directional_trader",
+          "overall_quality_score": 74.17,
+          "confidence_score": 71.2,
+          "quality_tier": "High",
+          "individual_scores": {
+            "trading_activity": 102.64,
+            "balance_efficiency": 37.68,
+            "market_diversity": 100.0,
+            "consistency_score": 77.5,
+            "behavioral_stability": 65.89,
+            "market_maker_potential": 24.5
+          },
+          "weights_used": {
+            "trading_activity": 0.15,
+            "balance_efficiency": 0.1,
+            "market_diversity": 0.2,
+            "consistency_score": 0.25,
+            "behavioral_stability": 0.2,
+            "market_maker_potential": 0.1
+          },
+          "trade_count": 69,
+          "analysis_timestamp": "2025-12-26T00:14:15.611161",
+          "category_rank": 1,
+          "category_total": 4
+        },
+        {
+          "wallet_address": "0xd44e29936409019f93993de8bd603ef6cb1bb15e",
+          "category": "directional_trader",
+          "overall_quality_score": 71.71,
+          "confidence_score": 71.2,
+          "quality_tier": "High",
+          "individual_scores": {
+            "trading_activity": 70.96,
+            "balance_efficiency": 51.11,
+            "market_diversity": 100.0,
+            "consistency_score": 77.5,
+            "behavioral_stability": 70.37,
+            "market_maker_potential": 25.11
+          },
+          "weights_used": {
+            "trading_activity": 0.15,
+            "balance_efficiency": 0.1,
+            "market_diversity": 0.2,
+            "consistency_score": 0.25,
+            "behavioral_stability": 0.2,
+            "market_maker_potential": 0.1
+          },
+          "trade_count": 90,
+          "analysis_timestamp": "2025-12-26T00:14:15.611065",
+          "category_rank": 2,
+          "category_total": 4
+        },
+        {
+          "wallet_address": "0xf444220e8d32f456c39b6b727e7bb5bc41d8c970",
+          "category": "directional_trader",
+          "overall_quality_score": 71.3,
+          "confidence_score": 71.2,
+          "quality_tier": "High",
+          "individual_scores": {
+            "trading_activity": 72.99,
+            "balance_efficiency": 46.67,
+            "market_diversity": 100.0,
+            "consistency_score": 77.5,
+            "behavioral_stability": 68.89,
+            "market_maker_potential": 25.36
+          },
+          "weights_used": {
+            "trading_activity": 0.15,
+            "balance_efficiency": 0.1,
+            "market_diversity": 0.2,
+            "consistency_score": 0.25,
+            "behavioral_stability": 0.2,
+            "market_maker_potential": 0.1
+          },
+          "trade_count": 90,
+          "analysis_timestamp": "2025-12-26T00:14:15.611121",
+          "category_rank": 3,
+          "category_total": 4
+        },
+        {
+          "wallet_address": "0x0d1b2f6717174042266e5431c70c06cd9bb17156",
+          "category": "directional_trader",
+          "overall_quality_score": 71.25,
+          "confidence_score": 71.2,
+          "quality_tier": "High",
+          "individual_scores": {
+            "trading_activity": 73.54,
+            "balance_efficiency": 45.78,
+            "market_diversity": 100.0,
+            "consistency_score": 77.5,
+            "behavioral_stability": 68.59,
+            "market_maker_potential": 25.42
+          },
+          "weights_used": {
+            "trading_activity": 0.15,
+            "balance_efficiency": 0.1,
+            "market_diversity": 0.2,
+            "consistency_score": 0.25,
+            "behavioral_stability": 0.2,
+            "market_maker_potential": 0.1
+          },
+          "trade_count": 83,
+          "analysis_timestamp": "2025-12-26T00:14:15.611204",
+          "category_rank": 4,
+          "category_total": 4
+        }
+      ],
+      "top_performer": {
+        "wallet_address": "0x818f214c7f3e479cce1d964d53fe3db7297558cb",
+        "category": "directional_trader",
+        "overall_quality_score": 74.17,
+        "confidence_score": 71.2,
+        "quality_tier": "High",
+        "individual_scores": {
+          "trading_activity": 102.64,
+          "balance_efficiency": 37.68,
+          "market_diversity": 100.0,
+          "consistency_score": 77.5,
+          "behavioral_stability": 65.89,
+          "market_maker_potential": 24.5
+        },
+        "weights_used": {
+          "trading_activity": 0.15,
+          "balance_efficiency": 0.1,
+          "market_diversity": 0.2,
+          "consistency_score": 0.25,
+          "behavioral_stability": 0.2,
+          "market_maker_potential": 0.1
+        },
+        "trade_count": 69,
+        "analysis_timestamp": "2025-12-26T00:14:15.611161",
+        "category_rank": 1,
+        "category_total": 4
+      },
+      "average_score": 72.1075,
+      "quality_distribution": {
+        "High": 4
+      }
+    },
+    "arbitrage_trader": {
+      "wallet_count": 2,
+      "ranked_wallets": [
+        {
+          "wallet_address": "0x4e25605fd905e9972efc0f4d8814530c655cd7a7",
+          "category": "arbitrage_trader",
+          "overall_quality_score": 89.7,
+          "confidence_score": 89.2,
+          "quality_tier": "Elite",
+          "individual_scores": {
+            "trading_activity": 86.6,
+            "balance_efficiency": 100.0,
+            "market_diversity": 100.0,
+            "consistency_score": 77.5,
+            "behavioral_stability": 84.7,
+            "market_maker_potential": 68.16
+          },
+          "weights_used": {
+            "trading_activity": 0.2,
+            "balance_efficiency": 0.2,
+            "market_diversity": 0.25,
+            "consistency_score": 0.2,
+            "behavioral_stability": 0.1,
+            "market_maker_potential": 0.05
+          },
+          "trade_count": 559,
+          "analysis_timestamp": "2025-12-26T00:14:15.611315",
+          "category_rank": 1,
+          "category_total": 2
+        },
+        {
+          "wallet_address": "0xe3726a1b9c6ba2f06585d1c9e01d00afaedaeb38",
+          "category": "arbitrage_trader",
+          "overall_quality_score": 87.68,
+          "confidence_score": 83.2,
+          "quality_tier": "Elite",
+          "individual_scores": {
+            "trading_activity": 75.75,
+            "balance_efficiency": 100.0,
+            "market_diversity": 100.0,
+            "consistency_score": 77.5,
+            "behavioral_stability": 86.13,
+            "market_maker_potential": 68.37
+          },
+          "weights_used": {
+            "trading_activity": 0.2,
+            "balance_efficiency": 0.2,
+            "market_diversity": 0.25,
+            "consistency_score": 0.2,
+            "behavioral_stability": 0.1,
+            "market_maker_potential": 0.05
+          },
+          "trade_count": 496,
+          "analysis_timestamp": "2025-12-26T00:14:15.611355",
+          "category_rank": 2,
+          "category_total": 2
+        }
+      ],
+      "top_performer": {
+        "wallet_address": "0x4e25605fd905e9972efc0f4d8814530c655cd7a7",
+        "category": "arbitrage_trader",
+        "overall_quality_score": 89.7,
+        "confidence_score": 89.2,
+        "quality_tier": "Elite",
+        "individual_scores": {
+          "trading_activity": 86.6,
+          "balance_efficiency": 100.0,
+          "market_diversity": 100.0,
+          "consistency_score": 77.5,
+          "behavioral_stability": 84.7,
+          "market_maker_potential": 68.16
+        },
+        "weights_used": {
+          "trading_activity": 0.2,
+          "balance_efficiency": 0.2,
+          "market_diversity": 0.25,
+          "consistency_score": 0.2,
+          "behavioral_stability": 0.1,
+          "market_maker_potential": 0.05
+        },
+        "trade_count": 559,
+        "analysis_timestamp": "2025-12-26T00:14:15.611315",
+        "category_rank": 1,
+        "category_total": 2
+      },
+      "average_score": 88.69,
+      "quality_distribution": {
+        "Elite": 2
+      }
+    },
+    "market_maker": {
+      "wallet_count": 1,
+      "ranked_wallets": [
+        {
+          "wallet_address": "0xf699a6477fa8e385987f8ae6a3657b2e106107e1",
+          "category": "market_maker",
+          "overall_quality_score": 92.73,
+          "confidence_score": 95.2,
+          "quality_tier": "Elite",
+          "individual_scores": {
+            "trading_activity": 92.35,
+            "balance_efficiency": 100.0,
+            "market_diversity": 100.0,
+            "consistency_score": 77.5,
+            "behavioral_stability": 76.16,
+            "market_maker_potential": 84.26
+          },
+          "weights_used": {
+            "trading_activity": 0.25,
+            "balance_efficiency": 0.3,
+            "market_diversity": 0.2,
+            "consistency_score": 0.15,
+            "behavioral_stability": 0.05,
+            "market_maker_potential": 0.05
+          },
+          "trade_count": 1371,
+          "analysis_timestamp": "2025-12-26T00:14:15.611457",
+          "category_rank": 1,
+          "category_total": 1
+        }
+      ],
+      "top_performer": {
+        "wallet_address": "0xf699a6477fa8e385987f8ae6a3657b2e106107e1",
+        "category": "market_maker",
+        "overall_quality_score": 92.73,
+        "confidence_score": 95.2,
+        "quality_tier": "Elite",
+        "individual_scores": {
+          "trading_activity": 92.35,
+          "balance_efficiency": 100.0,
+          "market_diversity": 100.0,
+          "consistency_score": 77.5,
+          "behavioral_stability": 76.16,
+          "market_maker_potential": 84.26
+        },
+        "weights_used": {
+          "trading_activity": 0.25,
+          "balance_efficiency": 0.3,
+          "market_diversity": 0.2,
+          "consistency_score": 0.15,
+          "behavioral_stability": 0.05,
+          "market_maker_potential": 0.05
+        },
+        "trade_count": 1371,
+        "analysis_timestamp": "2025-12-26T00:14:15.611457",
+        "category_rank": 1,
+        "category_total": 1
+      },
+      "average_score": 92.73,
+      "quality_distribution": {
+        "Elite": 1
+      }
+    }
+  },
+  "summary_statistics": {
+    "total_categories": 5,
+    "elite_performers": [
+      {
+        "wallet_address": "0xf699a6477fa8e385987f8ae6a3657b2e106107e1",
+        "category": "market_maker",
+        "overall_quality_score": 92.73,
+        "confidence_score": 95.2,
+        "quality_tier": "Elite",
+        "individual_scores": {
+          "trading_activity": 92.35,
+          "balance_efficiency": 100.0,
+          "market_diversity": 100.0,
+          "consistency_score": 77.5,
+          "behavioral_stability": 76.16,
+          "market_maker_potential": 84.26
+        },
+        "weights_used": {
+          "trading_activity": 0.25,
+          "balance_efficiency": 0.3,
+          "market_diversity": 0.2,
+          "consistency_score": 0.15,
+          "behavioral_stability": 0.05,
+          "market_maker_potential": 0.05
+        },
+        "trade_count": 1371,
+        "analysis_timestamp": "2025-12-26T00:14:15.611457",
+        "category_rank": 1,
+        "category_total": 1
+      },
+      {
+        "wallet_address": "0x8b71010f8d18ccce16a37434778117ee2d6b8044",
+        "category": "mixed_trader",
+        "overall_quality_score": 92.69,
+        "confidence_score": 83.2,
+        "quality_tier": "Elite",
+        "individual_scores": {
+          "trading_activity": 106.66,
+          "balance_efficiency": 100.0,
+          "market_diversity": 100.0,
+          "consistency_score": 77.5,
+          "behavioral_stability": 85.91,
+          "market_maker_potential": 59.49
+        },
+        "weights_used": {
+          "trading_activity": 0.2,
+          "balance_efficiency": 0.25,
+          "market_diversity": 0.15,
+          "consistency_score": 0.2,
+          "behavioral_stability": 0.15,
+          "market_maker_potential": 0.05
+        },
+        "trade_count": 307,
+        "analysis_timestamp": "2025-12-26T00:14:15.610403",
+        "category_rank": 1,
+        "category_total": 10
+      },
+      {
+        "wallet_address": "0x8456179e1985614339ef55c09255cbed6604e61a",
+        "category": "mixed_trader",
+        "overall_quality_score": 92.04,
+        "confidence_score": 83.2,
+        "quality_tier": "Elite",
+        "individual_scores": {
+          "trading_activity": 106.47,
+          "balance_efficiency": 100.0,
+          "market_diversity": 100.0,
+          "consistency_score": 77.5,
+          "behavioral_stability": 83.82,
+          "market_maker_potential": 53.52
+        },
+        "weights_used": {
+          "trading_activity": 0.2,
+          "balance_efficiency": 0.25,
+          "market_diversity": 0.15,
+          "consistency_score": 0.2,
+          "behavioral_stability": 0.15,
+          "market_maker_potential": 0.05
+        },
+        "trade_count": 258,
+        "analysis_timestamp": "2025-12-26T00:14:15.610447",
+        "category_rank": 2,
+        "category_total": 10
+      },
+      {
+        "wallet_address": "0x853c37a959a5791b849e3f3225c7f5963746bd03",
+        "category": "mixed_trader",
+        "overall_quality_score": 91.7,
+        "confidence_score": 83.2,
+        "quality_tier": "Elite",
+        "individual_scores": {
+          "trading_activity": 100.0,
+          "balance_efficiency": 100.0,
+          "market_diversity": 100.0,
+          "consistency_score": 77.5,
+          "behavioral_stability": 86.29,
+          "market_maker_potential": 65.13
+        },
+        "weights_used": {
+          "trading_activity": 0.2,
+          "balance_efficiency": 0.25,
+          "market_diversity": 0.15,
+          "consistency_score": 0.2,
+          "behavioral_stability": 0.15,
+          "market_maker_potential": 0.05
+        },
+        "trade_count": 356,
+        "analysis_timestamp": "2025-12-26T00:14:15.610492",
+        "category_rank": 3,
+        "category_total": 10
+      },
+      {
+        "wallet_address": "0x4e25605fd905e9972efc0f4d8814530c655cd7a7",
+        "category": "arbitrage_trader",
+        "overall_quality_score": 89.7,
+        "confidence_score": 89.2,
+        "quality_tier": "Elite",
+        "individual_scores": {
+          "trading_activity": 86.6,
+          "balance_efficiency": 100.0,
+          "market_diversity": 100.0,
+          "consistency_score": 77.5,
+          "behavioral_stability": 84.7,
+          "market_maker_potential": 68.16
+        },
+        "weights_used": {
+          "trading_activity": 0.2,
+          "balance_efficiency": 0.2,
+          "market_diversity": 0.25,
+          "consistency_score": 0.2,
+          "behavioral_stability": 0.1,
+          "market_maker_potential": 0.05
+        },
+        "trade_count": 559,
+        "analysis_timestamp": "2025-12-26T00:14:15.611315",
+        "category_rank": 1,
+        "category_total": 2
+      }
+    ],
+    "category_leaders": {
+      "mixed_trader": {
+        "wallet_address": "0x8b71010f8d18ccce16a37434778117ee2d6b8044",
+        "category": "mixed_trader",
+        "overall_quality_score": 92.69,
+        "confidence_score": 83.2,
+        "quality_tier": "Elite",
+        "individual_scores": {
+          "trading_activity": 106.66,
+          "balance_efficiency": 100.0,
+          "market_diversity": 100.0,
+          "consistency_score": 77.5,
+          "behavioral_stability": 85.91,
+          "market_maker_potential": 59.49
+        },
+        "weights_used": {
+          "trading_activity": 0.2,
+          "balance_efficiency": 0.25,
+          "market_diversity": 0.15,
+          "consistency_score": 0.2,
+          "behavioral_stability": 0.15,
+          "market_maker_potential": 0.05
+        },
+        "trade_count": 307,
+        "analysis_timestamp": "2025-12-26T00:14:15.610403",
+        "category_rank": 1,
+        "category_total": 10
+      },
+      "low_activity": {
+        "wallet_address": "0xa49becb692927d455924583b5e3e5788246f4c40",
+        "category": "low_activity",
+        "overall_quality_score": 80.75,
+        "confidence_score": 71.2,
+        "quality_tier": "Premium",
+        "individual_scores": {
+          "trading_activity": 110.95,
+          "balance_efficiency": 84.21,
+          "market_diversity": 100.0,
+          "consistency_score": 77.5,
+          "behavioral_stability": 81.4,
+          "market_maker_potential": 38.28
+        },
+        "weights_used": {
+          "trading_activity": 0.05,
+          "balance_efficiency": 0.2,
+          "market_diversity": 0.15,
+          "consistency_score": 0.3,
+          "behavioral_stability": 0.2,
+          "market_maker_potential": 0.1
+        },
+        "trade_count": 76,
+        "analysis_timestamp": "2025-12-26T00:14:15.610834",
+        "category_rank": 1,
+        "category_total": 7
+      },
+      "directional_trader": {
+        "wallet_address": "0x818f214c7f3e479cce1d964d53fe3db7297558cb",
+        "category": "directional_trader",
+        "overall_quality_score": 74.17,
+        "confidence_score": 71.2,
+        "quality_tier": "High",
+        "individual_scores": {
+          "trading_activity": 102.64,
+          "balance_efficiency": 37.68,
+          "market_diversity": 100.0,
+          "consistency_score": 77.5,
+          "behavioral_stability": 65.89,
+          "market_maker_potential": 24.5
+        },
+        "weights_used": {
+          "trading_activity": 0.15,
+          "balance_efficiency": 0.1,
+          "market_diversity": 0.2,
+          "consistency_score": 0.25,
+          "behavioral_stability": 0.2,
+          "market_maker_potential": 0.1
+        },
+        "trade_count": 69,
+        "analysis_timestamp": "2025-12-26T00:14:15.611161",
+        "category_rank": 1,
+        "category_total": 4
+      },
+      "arbitrage_trader": {
+        "wallet_address": "0x4e25605fd905e9972efc0f4d8814530c655cd7a7",
+        "category": "arbitrage_trader",
+        "overall_quality_score": 89.7,
+        "confidence_score": 89.2,
+        "quality_tier": "Elite",
+        "individual_scores": {
+          "trading_activity": 86.6,
+          "balance_efficiency": 100.0,
+          "market_diversity": 100.0,
+          "consistency_score": 77.5,
+          "behavioral_stability": 84.7,
+          "market_maker_potential": 68.16
+        },
+        "weights_used": {
+          "trading_activity": 0.2,
+          "balance_efficiency": 0.2,
+          "market_diversity": 0.25,
+          "consistency_score": 0.2,
+          "behavioral_stability": 0.1,
+          "market_maker_potential": 0.05
+        },
+        "trade_count": 559,
+        "analysis_timestamp": "2025-12-26T00:14:15.611315",
+        "category_rank": 1,
+        "category_total": 2
+      },
+      "market_maker": {
+        "wallet_address": "0xf699a6477fa8e385987f8ae6a3657b2e106107e1",
+        "category": "market_maker",
+        "overall_quality_score": 92.73,
+        "confidence_score": 95.2,
+        "quality_tier": "Elite",
+        "individual_scores": {
+          "trading_activity": 92.35,
+          "balance_efficiency": 100.0,
+          "market_diversity": 100.0,
+          "consistency_score": 77.5,
+          "behavioral_stability": 76.16,
+          "market_maker_potential": 84.26
+        },
+        "weights_used": {
+          "trading_activity": 0.25,
+          "balance_efficiency": 0.3,
+          "market_diversity": 0.2,
+          "consistency_score": 0.15,
+          "behavioral_stability": 0.05,
+          "market_maker_potential": 0.05
+        },
+        "trade_count": 1371,
+        "analysis_timestamp": "2025-12-26T00:14:15.611457",
+        "category_rank": 1,
+        "category_total": 1
+      }
+    },
+    "quality_tier_distribution": {
+      "Elite": 11,
+      "Premium": 6,
+      "High": 7
+    },
+    "average_scores_by_category": {
+      "mixed_trader": 89.6,
+      "low_activity": 76.33,
+      "directional_trader": 72.11,
+      "arbitrage_trader": 88.69,
+      "market_maker": 92.73
+    },
+    "recommendations": [
+      "\ud83c\udfaf PRIORITY: 5 Elite-quality wallets identified for immediate copy trading",
+      "\ud83c\udfc6 Top Mixed Trader: 0x8b71010f8d... (Score: 92.7)",
+      "\ud83c\udfc6 Top Low Activity: 0xa49becb692... (Score: 80.8)",
+      "\ud83c\udfc6 Top Arbitrage Trader: 0x4e25605fd9... (Score: 89.7)",
+      "\ud83c\udfc6 Top Market Maker: 0xf699a6477f... (Score: 92.7)",
+      "\ud83d\udcca DIVERSIFICATION: Strong performers available across 3 categories for balanced portfolio"
+    ]
+  },
+  "total_wallets_ranked": 24
+}

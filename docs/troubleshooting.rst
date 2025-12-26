@@ -1,0 +1,814 @@
+Troubleshooting
+===============
+
+This guide provides solutions for common issues encountered when running the Polymarket Copy Bot.
+
+Quick Diagnosis
+---------------
+
+**Check Service Status:**
+
+.. code-block:: bash
+
+   # Overall service status
+   sudo systemctl status polymarket-bot
+
+   # Check if service is running
+   ps aux | grep polymarket-bot
+
+   # View recent logs
+   journalctl -u polymarket-bot -n 50 --no-pager
+
+**Basic Health Check:**
+
+.. code-block:: bash
+
+   # Run built-in health check
+   python -c "from main import health_check; print(health_check())"
+
+   # Test configuration
+   python -c "from config.settings import settings; settings.validate_critical_settings()"
+
+   # Test API connectivity
+   curl -I https://polygon-rpc.com
+   curl -I https://api.polygonscan.com
+
+Installation Issues
+-------------------
+
+**"Module not found" errors:**
+
+.. code-block:: text
+
+   ImportError: No module named 'web3'
+
+**Solutions:**
+
+1. **Activate virtual environment:**
+
+   .. code-block:: bash
+
+      source venv/bin/activate
+
+2. **Install dependencies:**
+
+   .. code-block:: bash
+
+      pip install -r requirements.txt
+
+3. **Check Python path:**
+
+   .. code-block:: bash
+
+      which python
+      python --version
+
+4. **Reinstall virtual environment:**
+
+   .. code-block:: bash
+
+      rm -rf venv
+      python3 -m venv venv
+      source venv/bin/activate
+      pip install -r requirements.txt
+
+**Permission denied errors:**
+
+.. code-block:: text
+
+   PermissionError: [Errno 13] Permission denied: '.env'
+
+**Solutions:**
+
+1. **Check file permissions:**
+
+   .. code-block:: bash
+
+      ls -la .env
+
+2. **Fix permissions:**
+
+   .. code-block:: bash
+
+      chmod 600 .env
+      chmod 644 config/wallets.json
+
+3. **Check ownership:**
+
+   .. code-block:: bash
+
+      sudo chown -R $USER:$USER .
+
+4. **For systemd service:**
+
+   .. code-block:: bash
+
+      sudo chown polymarket-bot:polymarket-bot .env
+      sudo chmod 600 .env
+
+Configuration Issues
+--------------------
+
+**Invalid private key:**
+
+.. code-block:: text
+
+   ValueError: Invalid private key format
+
+**Solutions:**
+
+1. **Check key format:**
+
+   - Must start with ``0x``
+   - Must be 66 characters long (32 bytes + 0x)
+   - Should only contain hexadecimal characters
+
+2. **Verify key:**
+
+   .. code-block:: bash
+
+      # Check length
+      echo $PRIVATE_KEY | wc -c
+
+      # Check format
+      echo $PRIVATE_KEY | grep -E '^0x[a-fA-F0-9]{64}$'
+
+3. **Generate new key if needed:**
+
+   .. code-block:: bash
+
+      python -c "from eth_account import Account; print(Account.create().key.hex())"
+
+**Missing API keys:**
+
+.. code-block:: text
+
+   ERROR: POLYGONSCAN_API_KEY not found
+
+**Solutions:**
+
+1. **Check .env file:**
+
+   .. code-block:: bash
+
+      cat .env | grep POLYGONSCAN_API_KEY
+
+2. **Get API key:**
+
+   - Visit https://polygonscan.com/apis
+   - Create free account
+   - Generate API key
+
+3. **Add to .env:**
+
+   .. code-block:: bash
+
+      echo "POLYGONSCAN_API_KEY=YourApiKeyHere" >> .env
+
+**Invalid wallet addresses:**
+
+.. code-block:: text
+
+   ERROR: Invalid checksum for address: 0x...
+
+**Solutions:**
+
+1. **Check address format:**
+
+   .. code-block:: bash
+
+      python -c "from eth_account import Account; Account().address"
+
+2. **Use checksummed addresses:**
+
+   .. code-block:: bash
+
+      python -c "from web3 import Web3; print(Web3().toChecksumAddress('0x...'))"
+
+3. **Validate in wallets.json:**
+
+   .. code-block:: bash
+
+      python -c "from config.settings import settings; print('Wallets valid:', len(settings.wallets.enabled_wallets))"
+
+Network and API Issues
+-----------------------
+
+**Connection timeouts:**
+
+.. code-block:: text
+
+   ConnectionError: Timeout connecting to RPC
+
+**Solutions:**
+
+1. **Test connectivity:**
+
+   .. code-block:: bash
+
+      ping polygon-rpc.com
+      curl -I https://polygon-rpc.com
+
+2. **Check DNS:**
+
+   .. code-block:: bash
+
+      nslookup polygon-rpc.com
+
+3. **Try alternative RPC:**
+
+   .. code-block:: bash
+
+      # Edit .env
+      POLYGON_RPC_URL=https://polygon.llamarpc.com
+
+4. **Increase timeouts:**
+
+   .. code-block:: bash
+
+      REQUEST_TIMEOUT=60
+
+**API rate limiting:**
+
+.. code-block:: text
+
+   ERROR: API rate limit exceeded
+
+**Solutions:**
+
+1. **Check rate limits:**
+
+   - PolygonScan: 5 calls/second, 100,000/day free tier
+   - CLOB API: Varies by endpoint
+
+2. **Increase monitoring interval:**
+
+   .. code-block:: bash
+
+      MONITOR_INTERVAL=30
+
+3. **Reduce monitored wallets:**
+
+   .. code-block:: bash
+
+      MAX_WALLETS_TO_MONITOR=10
+
+4. **Use premium API key:**
+
+   - Upgrade to paid PolygonScan plan
+   - Contact Polymarket for higher limits
+
+**CLOB API errors:**
+
+.. code-block:: text
+
+   ERROR: CLOB API authentication failed
+
+**Solutions:**
+
+1. **Check API endpoint:**
+
+   .. code-block:: bash
+
+      curl -I $CLOB_HOST
+
+2. **Verify credentials:**
+
+   .. code-block:: bash
+
+      python -c "from core.clob_client import PolymarketClient; client = PolymarketClient(); print('Auth successful')"
+
+3. **Check testnet vs mainnet:**
+
+   .. code-block:: bash
+
+      # Testnet
+      CLOB_HOST=https://clob-testnet.polymarket.com
+
+      # Mainnet
+      CLOB_HOST=https://clob.polymarket.com
+
+Trading Issues
+--------------
+
+**Trades not executing:**
+
+.. code-block:: text
+
+   WARNING: No trades executed in last hour
+
+**Solutions:**
+
+1. **Check wallet activity:**
+
+   .. code-block:: bash
+
+      # Check if target wallets are active
+      python -c "from core.wallet_monitor import WalletMonitor; monitor = WalletMonitor(); print('Wallets monitored:', len(monitor.wallets))"
+
+2. **Verify balance:**
+
+   .. code-block:: bash
+
+      python -c "from core.clob_client import PolymarketClient; client = PolymarketClient(); print('Balance:', client.get_balance())"
+
+3. **Check risk limits:**
+
+   .. code-block:: bash
+
+      # Review current positions
+      python -c "from core.trade_executor import TradeExecutor; executor = TradeExecutor(); print('Open positions:', len(executor.open_positions))"
+
+4. **Enable debug logging:**
+
+   .. code-block:: bash
+
+      LOG_LEVEL=DEBUG
+      sudo systemctl restart polymarket-bot
+
+**Circuit breaker activated:**
+
+.. code-block:: text
+
+   ERROR: Circuit breaker activated - Daily loss limit reached
+
+**Solutions:**
+
+1. **Check daily loss:**
+
+   .. code-block:: bash
+
+      python -c "from core.trade_executor import TradeExecutor; executor = TradeExecutor(); print('Daily loss:', executor.daily_loss)"
+
+2. **Review recent trades:**
+
+   .. code-block:: bash
+
+      journalctl -u polymarket-bot | grep "Trade executed" | tail -10
+
+3. **Reset manually if needed:**
+
+   .. code-block:: bash
+
+      # Only do this if you understand the risks
+      python -c "from core.trade_executor import TradeExecutor; executor = TradeExecutor(); executor.reset_circuit_breaker()"
+
+4. **Adjust risk limits:**
+
+   .. code-block:: bash
+
+      MAX_DAILY_LOSS=200.0  # Increase limit
+
+**Slippage too high:**
+
+.. code-block:: text
+
+   WARNING: Slippage 5.2% exceeds tolerance 2.0%
+
+**Solutions:**
+
+1. **Increase slippage tolerance:**
+
+   .. code-block:: bash
+
+      SLIPPAGE_TOLERANCE=0.05  # 5%
+
+2. **Wait for better market conditions:**
+
+   - High volatility causes high slippage
+   - Consider adjusting during peak hours
+
+3. **Reduce position size:**
+
+   .. code-block:: bash
+
+      MAX_POSITION_SIZE=0.02  # Reduce to 2%
+
+**Gas price too high:**
+
+.. code-block:: text
+
+   ERROR: Gas price 150 gwei exceeds maximum 100 gwei
+
+**Solutions:**
+
+1. **Increase gas limit:**
+
+   .. code-block:: bash
+
+      MAX_GAS_PRICE=200
+
+2. **Use gas price multiplier:**
+
+   .. code-block:: bash
+
+      GAS_PRICE_MULTIPLIER=1.5  # 50% above market
+
+3. **Wait for lower gas prices:**
+
+   - Gas prices vary by time of day
+   - Weekends typically have lower prices
+
+Performance Issues
+------------------
+
+**High memory usage:**
+
+.. code-block:: text
+
+   WARNING: Memory usage above 80%
+
+**Solutions:**
+
+1. **Monitor memory:**
+
+   .. code-block:: bash
+
+      ps aux | grep polymarket-bot | awk '{print $6/1024 " MB"}'
+
+2. **Restart service:**
+
+   .. code-block:: bash
+
+      sudo systemctl restart polymarket-bot
+
+3. **Reduce cache sizes:**
+
+   .. code-block:: bash
+
+      TRANSACTION_CACHE_SIZE=5000
+      MAX_WALLETS_TO_MONITOR=15
+
+4. **Increase server memory:**
+
+   - Upgrade to server with more RAM
+   - Consider 4GB minimum, 8GB recommended
+
+**High CPU usage:**
+
+.. code-block:: text
+
+   WARNING: CPU usage above 70%
+
+**Solutions:**
+
+1. **Check what's consuming CPU:**
+
+   .. code-block:: bash
+
+      top -p $(pgrep -f polymarket-bot)
+
+2. **Reduce monitoring frequency:**
+
+   .. code-block:: bash
+
+      MONITOR_INTERVAL=30
+
+3. **Limit concurrent operations:**
+
+   .. code-block:: bash
+
+      MAX_WALLETS_TO_MONITOR=10
+
+4. **Profile performance:**
+
+   .. code-block:: bash
+
+      python -m cProfile -s time main.py
+
+**Slow transaction detection:**
+
+.. code-block:: text
+
+   WARNING: Transaction detection delay: 45 seconds
+
+**Solutions:**
+
+1. **Reduce monitoring interval:**
+
+   .. code-block:: bash
+
+      MONITOR_INTERVAL=10
+
+2. **Check API response times:**
+
+   .. code-block:: bash
+
+      curl -w "@curl-format.txt" -o /dev/null -s "https://api.polygonscan.com/api?..."
+
+3. **Use faster RPC endpoint:**
+
+   .. code-block:: bash
+
+      POLYGON_RPC_URL=https://polygon.llamarpc.com
+
+4. **Consider WebSocket upgrade:**
+
+   - WebSocket support planned for v1.2.0
+   - Real-time transaction detection
+
+Logging Issues
+--------------
+
+**Logs not appearing:**
+
+.. code-block:: text
+
+   No logs visible in journalctl
+
+**Solutions:**
+
+1. **Check service status:**
+
+   .. code-block:: bash
+
+      sudo systemctl status polymarket-bot
+
+2. **Check log permissions:**
+
+   .. code-block:: bash
+
+      ls -la /var/log/polymarket/
+
+3. **Check systemd configuration:**
+
+   .. code-block:: bash
+
+      sudo systemctl cat polymarket-bot
+
+4. **Restart logging:**
+
+   .. code-block:: bash
+
+      sudo systemctl restart systemd-journald
+      sudo systemctl restart polymarket-bot
+
+**Log rotation issues:**
+
+.. code-block:: text
+
+   ERROR: Log file too large
+
+**Solutions:**
+
+1. **Check log size:**
+
+   .. code-block:: bash
+
+      ls -lh logs/polymarket_bot.log
+
+2. **Configure log rotation:**
+
+   .. code-block:: bash
+
+      LOG_MAX_SIZE=50  # 50MB
+      LOG_BACKUP_COUNT=3
+
+3. **Manual rotation:**
+
+   .. code-block:: bash
+
+      sudo systemctl reload polymarket-bot
+
+**Missing log levels:**
+
+.. code-block:: text
+
+   DEBUG messages not appearing
+
+**Solutions:**
+
+1. **Check log level:**
+
+   .. code-block:: bash
+
+      echo $LOG_LEVEL
+
+2. **Set debug level:**
+
+   .. code-block:: bash
+
+      LOG_LEVEL=DEBUG
+      sudo systemctl restart polymarket-bot
+
+3. **Check logger configuration:**
+
+   .. code-block:: bash
+
+      python -c "import logging; print(logging.getLogger().level)"
+
+Database Issues
+---------------
+
+**Database corruption:**
+
+.. code-block:: text
+
+   ERROR: Database disk image is malformed
+
+**Solutions:**
+
+1. **Backup current data:**
+
+   .. code-block:: bash
+
+      cp data/polymarket.db data/polymarket.db.backup
+
+2. **Repair database:**
+
+   .. code-block:: bash
+
+      sqlite3 data/polymarket.db ".recover" > recovered.sql
+      rm data/polymarket.db
+      sqlite3 data/polymarket.db < recovered.sql
+
+3. **Reinitialize if repair fails:**
+
+   .. code-block:: bash
+
+      rm data/polymarket.db
+      python -c "from utils.database import init_db; init_db()"
+
+**Database locked:**
+
+.. code-block:: text
+
+   ERROR: Database is locked
+
+**Solutions:**
+
+1. **Check for running processes:**
+
+   .. code-block:: bash
+
+      lsof data/polymarket.db
+
+2. **Kill conflicting processes:**
+
+   .. code-block:: bash
+
+      pkill -f polymarket-bot
+
+3. **Use WAL mode:**
+
+   .. code-block:: bash
+
+      sqlite3 data/polymarket.db "PRAGMA journal_mode=WAL;"
+
+Security Issues
+---------------
+
+**Private key exposure:**
+
+.. code-block:: text
+
+   WARNING: Private key may be exposed in logs
+
+**Solutions:**
+
+1. **Check logs for sensitive data:**
+
+   .. code-block:: bash
+
+      journalctl -u polymarket-bot | grep -i private
+
+2. **Use secure logging:**
+
+   - Ensure ``secure_log`` is used for sensitive data
+   - Check that private keys are masked in output
+
+3. **Rotate keys immediately:**
+
+   .. code-block:: bash
+
+      # Generate new key
+      python -c "from eth_account import Account; print(Account.create().key.hex())"
+
+      # Update configuration
+      # Transfer funds from old address
+      # Update .env file
+
+**API key compromised:**
+
+.. code-block:: text
+
+   ERROR: API key rejected
+
+**Solutions:**
+
+1. **Generate new API key:**
+
+   - PolygonScan: Create new key
+   - Telegram: Create new bot if needed
+
+2. **Update configuration:**
+
+   .. code-block:: bash
+
+      # Update .env
+      POLYGONSCAN_API_KEY=NewKeyHere
+
+3. **Revoke old keys:**
+
+   - Delete old keys from provider dashboards
+   - Monitor for unauthorized usage
+
+Emergency Procedures
+--------------------
+
+**Complete Service Failure:**
+
+.. code-block:: bash
+
+   # Stop all trading immediately
+   sudo systemctl stop polymarket-bot
+
+   # Assess situation
+   journalctl -u polymarket-bot -n 100
+
+   # Check positions manually on Polymarket
+   # Close any open positions if needed
+
+   # Fix issue
+   # Restart with conservative settings
+   MAX_POSITION_SIZE=0.01
+   sudo systemctl start polymarket-bot
+
+**Data Loss Recovery:**
+
+.. code-block:: bash
+
+   # Restore from backup
+   tar -xzf /var/backups/polymarket/config_latest.tar.gz -C /tmp/
+   cp /tmp/config/wallets.json config/
+
+   # Verify configuration
+   python -c "from config.settings import settings; settings.validate_critical_settings()"
+
+   # Restart service
+   sudo systemctl restart polymarket-bot
+
+**Security Breach Response:**
+
+1. **Isolate system:**
+
+   .. code-block:: bash
+
+      sudo systemctl stop polymarket-bot
+      sudo ufw deny all
+
+2. **Change all credentials:**
+
+   - Generate new private key
+   - Create new API keys
+   - Update all secrets
+
+3. **Audit logs:**
+
+   .. code-block:: bash
+
+      journalctl -u polymarket-bot --since "1 week ago" > security_audit.log
+
+4. **Transfer funds to new address if compromised**
+
+Getting Help
+------------
+
+**Community Support:**
+
+- **GitHub Issues:** https://github.com/winder87-stack/polymarket-copy-bot/issues
+- **Documentation:** https://winder87-stack.github.io/polymarket-copy-bot/
+- **Telegram Group:** (if available)
+
+**Debugging Tools:**
+
+.. code-block:: bash
+
+   # Enable verbose logging
+   LOG_LEVEL=DEBUG
+   sudo systemctl restart polymarket-bot
+
+   # Collect diagnostic information
+   python scripts/diagnostics.py > diagnostics.txt
+
+   # Test individual components
+   python -c "from core.clob_client import PolymarketClient; client = PolymarketClient(); print(client.get_balance())"
+
+**When to Seek Help:**
+
+- Critical security issues
+- Persistent API failures
+- Data corruption
+- Performance issues affecting trading
+- Unexpected financial losses
+
+**Information to Provide:**
+
+When reporting issues, include:
+
+- Bot version/commit hash
+- Operating system and Python version
+- Full error messages and stack traces
+- Recent log entries (last 100 lines)
+- Configuration (with sensitive data redacted)
+- Steps to reproduce the issue

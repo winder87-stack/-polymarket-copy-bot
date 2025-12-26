@@ -40,6 +40,8 @@ import time
 from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
 
+import aiohttp
+
 # Configure logging first
 from utils.logging_utils import setup_logging
 
@@ -135,7 +137,6 @@ class PolymarketCopyBot:
         Raises:
             Exception: If critical components fail to initialize
         """
-        """Initialize all components"""
         try:
             logger.info("🚀 Initializing Polymarket Copy Bot components...")
 
@@ -159,114 +160,140 @@ class PolymarketCopyBot:
             logger.info("✅ All components initialized successfully")
             return True
 
+        except (ConnectionError, TimeoutError, aiohttp.ClientError) as e:
+            logger.critical(
+                f"❌ Network error during initialization: {str(e)[:100]}", exc_info=True
+            )
+            await send_error_alert(f"Initialization network error: {str(e)[:100]}")
+            return False
+        except (ValueError, TypeError, KeyError) as e:
+            logger.critical(
+                f"❌ Configuration error during initialization: {str(e)[:100]}", exc_info=True
+            )
+            await send_error_alert(f"Initialization config error: {str(e)[:100]}")
+            return False
         except Exception as e:
-            logger.critical(f"❌ Initialization failed: {e}", exc_info=True)
-            await send_error_alert(f"Initialization failed: {e}")
+            logger.critical(f"❌ Unexpected error during initialization: {str(e)}", exc_info=True)
+            await send_error_alert(f"Initialization unexpected error: {str(e)[:100]}")
             return False
 
     async def health_check(self) -> bool:
         """
         Perform comprehensive health check of all bot components.
 
-        Checks the operational status of:
-        - CLOB client connectivity
-        - Wallet monitor functionality
-        - Trade executor state
-        - API connectivity and rate limits
-
-        Health checks are cached for 5 minutes to avoid excessive API calls.
-
         Returns:
             bool: True if all components are healthy, False if any component fails
         """
-        """Perform comprehensive health check"""
+        if not await self._should_perform_health_check():
+            return True
+
+        logger.info("🏥 Performing health check...")
+
+        try:
+            health_checks = self._build_health_check_tasks()
+            results = await self._execute_health_checks(health_checks)
+            return await self._analyze_health_check_results(health_checks, results)
+        except Exception as e:
+            logger.error(f"Error performing health check: {e}", exc_info=True)
+            return False
+
+    async def _should_perform_health_check(self) -> bool:
+        """Check if health check should be performed based on cache"""
         if not self.last_health_check or (datetime.now() - self.last_health_check) > timedelta(
             minutes=5
         ):
-            logger.info("🏥 Performing health check...")
+            return True
+        return False
 
-            # Performance optimization: Build health check tasks dynamically
-            health_checks = []
+    def _build_health_check_tasks(self) -> List[Tuple[str, Any]]:
+        """Build the list of health check tasks"""
+        health_checks = []
 
-            if self.clob_client:
-                health_checks.append(("CLOB Client", self.clob_client.health_check()))
-            if self.wallet_monitor:
-                health_checks.append(("Wallet Monitor", self.wallet_monitor.health_check()))
-            if self.trade_executor:
-                health_checks.append(("Trade Executor", self.trade_executor.health_check()))
+        if self.clob_client:
+            health_checks.append(("CLOB Client", self.clob_client.health_check()))
+        if self.wallet_monitor:
+            health_checks.append(("Wallet Monitor", self.wallet_monitor.health_check()))
+        if self.trade_executor:
+            health_checks.append(("Trade Executor", self.trade_executor.health_check()))
 
-            # Execute health checks with concurrency control
-            if len(health_checks) <= self.max_concurrent_health_checks:
-                # Run all concurrently for small numbers
-                tasks = [check for _, check in health_checks]
-                results = await asyncio.gather(*tasks, return_exceptions=True)
-            else:
-                # Run in batches for larger numbers (future-proofing)
-                results = []
-                for i in range(0, len(health_checks), self.max_concurrent_health_checks):
-                    batch = health_checks[i : i + self.max_concurrent_health_checks]
-                    batch_tasks = [check for _, check in batch]
-                    batch_results = await asyncio.gather(*batch_tasks, return_exceptions=True)
-                    results.extend(batch_results)
+        return health_checks
 
-            # Analyze results
-            all_healthy = True
-            failed_components = []
+    async def _execute_health_checks(self, health_checks: List[Tuple[str, Any]]) -> List[Any]:
+        """Execute health checks with concurrency control"""
+        if len(health_checks) <= self.max_concurrent_health_checks:
+            # Run all concurrently for small numbers
+            tasks = [check for _, check in health_checks]
+            return await asyncio.gather(*tasks, return_exceptions=True)
+        else:
+            # Run in batches for larger numbers (future-proofing)
+            results = []
+            for i in range(0, len(health_checks), self.max_concurrent_health_checks):
+                batch = health_checks[i : i + self.max_concurrent_health_checks]
+                batch_tasks = [check for _, check in batch]
+                batch_results = await asyncio.gather(*batch_tasks, return_exceptions=True)
+                results.extend(batch_results)
+            return results
 
-            for (component_name, _), result in zip(health_checks, results):
-                if isinstance(result, Exception):
-                    all_healthy = False
-                    failed_components.append(f"{component_name} (exception)")
-                    logger.warning(f"⚠️ {component_name} health check exception: {result}")
-                elif result is not True:
-                    all_healthy = False
-                    failed_components.append(component_name)
-                    logger.warning(f"⚠️ {component_name} health check failed")
+    async def _analyze_health_check_results(
+        self, health_checks: List[Tuple[str, Any]], results: List[Any]
+    ) -> bool:
+        """Analyze health check results and determine overall health"""
+        all_healthy = True
+        failed_components = []
 
-            if all_healthy:
-                logger.info("✅ All health checks passed")
-                self.last_health_check = datetime.now()
-                return True
-            else:
-                logger.error("❌ Health check failed")
-                error_details = []
-                for i, result in enumerate(results):
-                    if isinstance(result, Exception):
-                        error_details.append(f"Component {i}: {str(result)}")
-                    elif result is not True:
-                        error_details.append(f"Component {i}: Failed health check")
+        for (component_name, _), result in zip(health_checks, results):
+            if isinstance(result, Exception):
+                all_healthy = False
+                failed_components.append(f"{component_name} (exception)")
+                logger.warning(f"⚠️ {component_name} health check exception: {result}")
+            elif result is not True:
+                all_healthy = False
+                failed_components.append(component_name)
+                logger.warning(f"⚠️ {component_name} health check failed")
 
-                # Send alert on health check failure
-                await send_error_alert(
-                    "Health check failed",
-                    {
-                        "results": error_details,
-                        "timestamp": datetime.now().isoformat(),
-                        "session_id": self.session_id,
-                    },
-                )
+        if all_healthy:
+            logger.info("✅ All health checks passed")
+            self.last_health_check = datetime.now()
+            return True
+        else:
+            return await self._handle_health_check_failure(results, failed_components)
 
-                return False
+    async def _handle_health_check_failure(
+        self, results: List[Any], failed_components: List[str]
+    ) -> bool:
+        """Handle and alert on health check failures"""
+        logger.error("❌ Health check failed")
 
-        return True
+        error_details = []
+        for i, result in enumerate(results):
+            if isinstance(result, Exception):
+                error_details.append(f"Component {i}: {str(result)}")
+            elif result is not True:
+                error_details.append(f"Component {i}: Failed health check")
+
+        # Send alert on health check failure
+        await send_error_alert(
+            "Health check failed",
+            {
+                "results": error_details,
+                "timestamp": datetime.now().isoformat(),
+                "session_id": self.session_id,
+            },
+        )
+
+        return False
 
     async def monitor_loop(self) -> None:
         """
-        Main monitoring loop - core bot operation.
+        Main monitoring loop - core bot operation orchestrator.
 
-        This method implements the main trading loop that:
-        1. Monitors target wallets for new trades
-        2. Executes copy trades with risk management
-        3. Manages open positions (stop-loss, take-profit)
-        4. Performs periodic maintenance tasks
-        5. Generates performance reports
-
-        The loop runs at intervals defined by settings.monitoring.monitor_interval
-        and includes comprehensive error handling and recovery mechanisms.
-
-        The loop continues until self.running is set to False.
+        This method coordinates the main trading loop components:
+        1. Health checks before processing
+        2. Wallet monitoring and trade execution
+        3. Position management
+        4. Maintenance and cleanup tasks
+        5. Performance monitoring and reporting
         """
-        """Main monitoring loop"""
         logger.info(
             f"🔍 Starting monitoring loop. Checking every {self.settings.monitoring.monitor_interval} seconds"
         )
@@ -275,90 +302,18 @@ class PolymarketCopyBot:
             cycle_start = time.time()
 
             try:
-                # Health check periodically
-                if not await self.health_check():
-                    logger.warning("⚠️ Health check failed. Skipping this monitoring cycle.")
+                # Pre-cycle health check
+                if not await self._perform_health_check():
                     await asyncio.sleep(5)
                     continue
 
-                # Monitor wallets for new trades with performance optimization
-                wallet_start = time.time()
-                detected_trades = await self.wallet_monitor.monitor_wallets()
-                wallet_time = time.time() - wallet_start
+                # Main cycle operations
+                await self._monitor_wallets_and_execute_trades()
+                await self._manage_positions()
+                await self._perform_maintenance_tasks()
 
-                if detected_trades:
-                    trade_count = len(detected_trades)
-                    logger.info(
-                        f"🎯 Detected {trade_count} new trades to copy (wallet scan: {wallet_time:.3f}s)"
-                    )
-
-                    # Performance optimization: Limit concurrent trades to prevent overload
-                    max_concurrent_trades = min(
-                        10, len(detected_trades)
-                    )  # Max 10 concurrent trades
-
-                    if trade_count <= max_concurrent_trades:
-                        # Execute all trades concurrently for small batches
-                        tasks = [
-                            self.trade_executor.execute_copy_trade(trade)
-                            for trade in detected_trades
-                        ]
-                        results = await asyncio.gather(*tasks, return_exceptions=True)
-                    else:
-                        # Execute in batches for large numbers of trades
-                        results = []
-                        for i in range(0, trade_count, max_concurrent_trades):
-                            batch = detected_trades[i : i + max_concurrent_trades]
-                            batch_tasks = [
-                                self.trade_executor.execute_copy_trade(trade) for trade in batch
-                            ]
-                            batch_results = await asyncio.gather(
-                                *batch_tasks, return_exceptions=True
-                            )
-                            results.extend(batch_results)
-
-                            # Small delay between batches to prevent API overload
-                            if i + max_concurrent_trades < trade_count:
-                                await asyncio.sleep(0.1)
-
-                    # Performance-optimized result logging
-                    success_count = sum(
-                        1 for r in results if isinstance(r, dict) and r.get("status") == "success"
-                    )
-                    error_count = sum(1 for r in results if isinstance(r, Exception))
-
-                    if success_count > 0:
-                        logger.info(f"✅ Successfully copied {success_count}/{trade_count} trades")
-                    if error_count > 0:
-                        logger.warning(f"⚠️ {error_count} trades failed during execution")
-
-                    # Performance monitoring
-                    trade_execution_time = time.time() - wallet_start - wallet_time
-                    if trade_count > 0:
-                        avg_time_per_trade = trade_execution_time / trade_count
-                        logger.debug(
-                            f"⏱️ Trade execution: {trade_execution_time:.3f}s total, {avg_time_per_trade:.3f}s per trade"
-                        )
-
-                # Manage positions (stop loss/take profit)
-                await self.trade_executor.manage_positions()
-
-                # Clean up old processed transactions
-                await self.wallet_monitor.clean_processed_transactions()
-
-                # Performance monitoring and reporting
+                # Calculate sleep time to maintain consistent interval
                 cycle_time = time.time() - cycle_start
-                await self._update_performance_stats(
-                    cycle_time,
-                    len(detected_trades) if detected_trades else 0,
-                    success_count if "success_count" in locals() else 0,
-                )
-
-                # Periodic performance report
-                if time.time() - self.last_performance_report > self.performance_report_interval:
-                    await self._periodic_performance_report()
-
-                # Calculate sleep time to maintain consistent interval (performance optimization)
                 sleep_time = max(0, self.settings.monitoring.monitor_interval - cycle_time)
 
                 if sleep_time > 0:
@@ -368,47 +323,141 @@ class PolymarketCopyBot:
                 logger.info("🛑 Monitoring loop cancelled")
                 break
             except Exception as e:
-                logger.error(f"❌ Error in monitoring loop: {e}", exc_info=True)
-                await send_error_alert(
-                    f"Monitoring loop error: {e}",
-                    {"cycle_time": time.time() - cycle_start, "session_id": self.session_id},
-                )
+                await self._handle_monitoring_cycle_error(e, cycle_start)
 
-                # Wait before retrying
-                await asyncio.sleep(5)
+    async def _perform_health_check(self) -> bool:
+        """Perform health check before proceeding with monitoring cycle"""
+        if not await self.health_check():
+            logger.warning("⚠️ Health check failed. Skipping this monitoring cycle.")
+            return False
+        return True
 
-    async def _periodic_performance_report(self):
-        """Generate periodic performance reports"""
-        now = time.time()
-        if not hasattr(self, "last_report_time"):
-            self.last_report_time = now
+    async def _monitor_wallets_and_execute_trades(self) -> None:
+        """Monitor wallets for new trades and execute copy trades"""
+        wallet_start = time.time()
+        detected_trades = await self.wallet_monitor.monitor_wallets()
+        wallet_time = time.time() - wallet_start
 
-        # Report every hour
-        if now - self.last_report_time > 3600:
-            try:
-                if self.trade_executor:
-                    metrics = self.trade_executor.get_performance_metrics()
-                    await send_performance_report(metrics)
-                    logger.info("📈 Performance report sent")
+        if not detected_trades:
+            return
 
-                # Reset daily loss at midnight UTC
-                current_time = datetime.utcnow()
-                last_reset = getattr(
-                    self,
-                    "last_daily_reset",
-                    datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0),
-                )
+        trade_count = len(detected_trades)
+        logger.info(
+            f"🎯 Detected {trade_count} new trades to copy (wallet scan: {wallet_time:.3f}s)"
+        )
 
-                if current_time.date() > last_reset.date():
-                    if self.trade_executor:
-                        self.trade_executor.daily_loss = 0.0
-                        logger.info("🔄 Daily loss reset at midnight UTC")
-                    self.last_daily_reset = current_time
+        # Execute trades with performance optimizations
+        success_count = await self._execute_detected_trades(
+            detected_trades, wallet_start, wallet_time, trade_count
+        )
 
-                self.last_report_time = now
+        # Update performance stats
+        cycle_time = time.time() - wallet_start
+        await self._update_performance_stats(cycle_time, trade_count, success_count)
 
-            except Exception as e:
-                logger.error(f"Error generating performance report: {e}", exc_info=True)
+    async def _execute_detected_trades(
+        self,
+        detected_trades: List[Dict[str, Any]],
+        wallet_start: float,
+        wallet_time: float,
+        trade_count: int,
+    ) -> int:
+        """Execute detected trades with batching and performance monitoring"""
+        max_concurrent_trades = min(10, len(detected_trades))  # Max 10 concurrent trades
+
+        if trade_count <= max_concurrent_trades:
+            # Execute all trades concurrently for small batches
+            results = await self._execute_trade_batch(detected_trades)
+        else:
+            # Execute in batches for large numbers of trades
+            results = await self._execute_trade_batches(detected_trades, max_concurrent_trades)
+
+        # Analyze results
+        success_count, error_count = self._analyze_trade_results(results, trade_count)
+
+        # Performance monitoring
+        trade_execution_time = time.time() - wallet_start - wallet_time
+        if trade_count > 0:
+            avg_time_per_trade = trade_execution_time / trade_count
+            logger.debug(
+                f"⏱️ Trade execution: {trade_execution_time:.3f}s total, {avg_time_per_trade:.3f}s per trade"
+            )
+
+        return success_count
+
+    async def _execute_trade_batch(self, trades: List[Dict[str, Any]]) -> List[Any]:
+        """Execute a batch of trades concurrently"""
+        tasks = [self.trade_executor.execute_copy_trade(trade) for trade in trades]
+        return await asyncio.gather(*tasks, return_exceptions=True)
+
+    async def _execute_trade_batches(
+        self, trades: List[Dict[str, Any]], batch_size: int
+    ) -> List[Any]:
+        """Execute trades in batches to prevent overload"""
+        results = []
+        for i in range(0, len(trades), batch_size):
+            batch = trades[i : i + batch_size]
+            batch_results = await self._execute_trade_batch(batch)
+            results.extend(batch_results)
+
+            # Small delay between batches to prevent API overload
+            if i + batch_size < len(trades):
+                await asyncio.sleep(0.1)
+
+        return results
+
+    def _analyze_trade_results(self, results: List[Any], trade_count: int) -> Tuple[int, int]:
+        """Analyze trade execution results and log summary"""
+        success_count = sum(
+            1 for r in results if isinstance(r, dict) and r.get("status") == "success"
+        )
+        error_count = sum(1 for r in results if isinstance(r, Exception))
+
+        if success_count > 0:
+            logger.info(f"✅ Successfully copied {success_count}/{trade_count} trades")
+        if error_count > 0:
+            logger.warning(f"⚠️ {error_count} trades failed during execution")
+
+        return success_count, error_count
+
+    async def _manage_positions(self) -> None:
+        """Manage open positions (stop loss/take profit)"""
+        await self.trade_executor.manage_positions()
+
+    async def _perform_maintenance_tasks(self) -> None:
+        """Perform maintenance tasks like cleanup and reporting"""
+        # Clean up old processed transactions
+        await self.wallet_monitor.clean_processed_transactions()
+
+        # Periodic performance report
+        if time.time() - self.last_performance_report > self.performance_report_interval:
+            await self._periodic_performance_report()
+
+    async def _handle_monitoring_cycle_error(self, error: Exception, cycle_start: float) -> None:
+        """Handle errors that occur during monitoring cycles"""
+        cycle_time = time.time() - cycle_start
+
+        if isinstance(error, (ConnectionError, TimeoutError, aiohttp.ClientError)):
+            logger.error(f"❌ Network error in monitoring loop: {str(error)[:100]}", exc_info=True)
+            await send_error_alert(
+                f"Monitoring loop network error: {str(error)[:100]}",
+                {"cycle_time": cycle_time, "session_id": self.session_id},
+            )
+        elif isinstance(error, (ValueError, TypeError, KeyError)):
+            logger.error(f"❌ Data error in monitoring loop: {str(error)[:100]}", exc_info=True)
+            await send_error_alert(
+                f"Monitoring loop data error: {str(error)[:100]}",
+                {"cycle_time": cycle_time, "session_id": self.session_id},
+            )
+        else:
+            logger.critical(f"❌ Unexpected error in monitoring loop: {str(error)}", exc_info=True)
+            await send_error_alert(
+                f"Monitoring loop unexpected error: {str(error)[:100]}",
+                {"cycle_time": cycle_time, "session_id": self.session_id},
+            )
+
+        # Wait before retrying
+        await asyncio.sleep(5)
 
     async def start(self):
         """Start the bot"""
@@ -514,7 +563,14 @@ class PolymarketCopyBot:
             self.performance_stats["memory_usage_mb"] = 0.0
 
     async def _periodic_performance_report(self):
-        """Generate and send periodic performance report"""
+        """
+        Generate and send periodic performance report.
+
+        This method was consolidated from a duplicate definition to maintain
+        a single source of truth for performance reporting logic. The previous
+        duplicate definition (lines 463-504) was removed as this version is
+        more comprehensive and includes detailed performance metrics.
+        """
         try:
             self.last_performance_report = time.time()
 
@@ -567,8 +623,14 @@ class PolymarketCopyBot:
 
             logger.info(f"📊 Performance report sent - Health: {performance_health}")
 
+        except (ConnectionError, TimeoutError, aiohttp.ClientError) as e:
+            logger.error(f"Network error generating performance report: {str(e)[:100]}")
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            logger.error(f"Data error generating performance report: {str(e)[:100]}")
         except Exception as e:
-            logger.error(f"Error generating performance report: {e}")
+            logger.critical(
+                f"Unexpected error generating performance report: {str(e)}", exc_info=True
+            )
 
 
 async def main():
@@ -586,6 +648,12 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         logger.info("🛑 Bot terminated by user")
+    except (ConnectionError, TimeoutError, aiohttp.ClientError) as e:
+        logger.critical(f"❌ Network fatal error: {str(e)}", exc_info=True)
+        sys.exit(1)
+    except (ValueError, TypeError, KeyError, ImportError) as e:
+        logger.critical(f"❌ Configuration fatal error: {str(e)}", exc_info=True)
+        sys.exit(1)
     except Exception as e:
-        logger.critical(f"❌ Fatal error: {e}", exc_info=True)
+        logger.critical(f"❌ Unexpected fatal error: {str(e)}", exc_info=True)
         sys.exit(1)

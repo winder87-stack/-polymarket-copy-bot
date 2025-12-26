@@ -4,6 +4,8 @@ import time
 from datetime import datetime
 from typing import Any, Dict, Optional
 
+import aiohttp
+
 from config.settings import settings
 
 # Import staging settings if available
@@ -52,8 +54,16 @@ class TelegramAlertManager:
                     "❌ Telegram library not installed. Install with: pip install python-telegram-bot"
                 )
                 self.enabled = False
+            except (ConnectionError, TimeoutError, aiohttp.ClientError) as e:
+                logger.error(f"❌ Network error initializing Telegram bot: {str(e)[:100]}")
+                self.enabled = False
+            except (ValueError, KeyError, ImportError) as e:
+                logger.error(f"❌ Configuration error initializing Telegram bot: {str(e)[:100]}")
+                self.enabled = False
             except Exception as e:
-                logger.error(f"❌ Error initializing Telegram bot: {e}")
+                logger.critical(
+                    f"❌ Unexpected error initializing Telegram bot: {str(e)}", exc_info=True
+                )
                 self.enabled = False
         else:
             logger.info("ℹ️ Telegram alerts disabled or not configured")
@@ -81,9 +91,20 @@ class TelegramAlertManager:
             env_indicator = "[STAGING] " if self.staging_mode else ""
             logger.info(f"✅ {env_indicator}Telegram alert sent successfully")
             return True
+        except (ConnectionError, TimeoutError, aiohttp.ClientError) as e:
+            env_indicator = "[STAGING] " if self.staging_mode else ""
+            logger.error(f"❌ {env_indicator}Network error sending Telegram alert: {str(e)[:100]}")
+            return False
+        except (ValueError, TypeError, KeyError) as e:
+            env_indicator = "[STAGING] " if self.staging_mode else ""
+            logger.error(f"❌ {env_indicator}Data error sending Telegram alert: {str(e)[:100]}")
+            return False
         except Exception as e:
             env_indicator = "[STAGING] " if self.staging_mode else ""
-            logger.error(f"❌ {env_indicator}Failed to send Telegram alert: {e}")
+            logger.critical(
+                f"❌ {env_indicator}Unexpected error sending Telegram alert: {str(e)}",
+                exc_info=True,
+            )
             return False
 
     async def send_error_alert(self, error: str, context: Optional[Dict[str, Any]] = None):
@@ -150,15 +171,21 @@ async def send_telegram_alert(
     return await alert_manager.send_alert(message, parse_mode, force)
 
 
-async def send_error_alert(error: str, context: Optional[Dict[str, Any]] = None):
+async def send_error_alert(error: str, context: Optional[Dict[str, Any]] = None) -> None:
+    """Send error alert with secure logging"""
+    from utils.logging_security import SecureLogger
+
+    # Log the error securely before sending alert
+    SecureLogger.log("error", f"Error alert triggered: {error[:100]}", context or {})
+
     await alert_manager.send_error_alert(error, context)
 
 
-async def send_trade_alert(trade_details: Dict[str, Any]):
+async def send_trade_alert(trade_details: Dict[str, Any]) -> None:
     await alert_manager.send_trade_alert(trade_details)
 
 
-async def send_performance_report(metrics: Dict[str, Any]):
+async def send_performance_report(metrics: Dict[str, Any]) -> None:
     await alert_manager.send_performance_report(metrics)
 
 
@@ -174,7 +201,7 @@ async def send_staging_alert(
         return False
 
 
-async def send_staging_error_alert(error: str, context: Optional[Dict[str, Any]] = None):
+async def send_staging_error_alert(error: str, context: Optional[Dict[str, Any]] = None) -> None:
     """Send staging-specific error alert"""
     if staging_alert_manager:
         await staging_alert_manager.send_error_alert(error, context)
@@ -182,7 +209,7 @@ async def send_staging_error_alert(error: str, context: Optional[Dict[str, Any]]
         logger.warning("Staging alert manager not available")
 
 
-async def send_staging_trade_alert(trade_details: Dict[str, Any]):
+async def send_staging_trade_alert(trade_details: Dict[str, Any]) -> None:
     """Send staging-specific trade alert"""
     if staging_alert_manager:
         await staging_alert_manager.send_trade_alert(trade_details)
@@ -190,7 +217,7 @@ async def send_staging_trade_alert(trade_details: Dict[str, Any]):
         logger.warning("Staging alert manager not available")
 
 
-async def test_alerts():
+async def test_alerts() -> None:
     """Test alert functionality"""
     logger.info("🧪 Testing alert functionality...")
 

@@ -1,13 +1,16 @@
-import logging
-import json
-import re
-from typing import Dict, Any, Optional
 import hashlib
+import json
+import logging
 import os
+import re
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
-def secure_log(logger: logging.Logger, action: str, data: Dict[str, Any], level: str = 'info'):
+
+def secure_log(
+    logger: logging.Logger, action: str, data: Dict[str, Any], level: str = "info"
+) -> None:
     """Log sensitive data securely by masking sensitive information"""
     try:
         # Create a copy of the data to avoid modifying the original
@@ -19,11 +22,11 @@ def secure_log(logger: logging.Logger, action: str, data: Dict[str, Any], level:
         log_message = f"{action}: {json.dumps(safe_data, indent=2)}"
 
         # Log at appropriate level
-        if level.lower() == 'error':
+        if level.lower() == "error":
             logger.error(log_message)
-        elif level.lower() == 'warning':
+        elif level.lower() == "warning":
             logger.warning(log_message)
-        elif level.lower() == 'debug':
+        elif level.lower() == "debug":
             logger.debug(log_message)
         else:
             logger.info(log_message)
@@ -33,13 +36,24 @@ def secure_log(logger: logging.Logger, action: str, data: Dict[str, Any], level:
         logger.error(f"Secure logging failed: {e}")
         logger.info(f"{action}: {str(data)}")
 
+
 def _mask_sensitive_value(key: str, value: Any) -> Any:
     """Mask sensitive values based on key or value patterns"""
     if value is None:
         return None
 
     key_lower = str(key).lower()
-    sensitive_keywords = ['key', 'secret', 'password', 'token', 'auth', 'credential', 'wallet', 'private', 'signature']
+    sensitive_keywords = [
+        "key",
+        "secret",
+        "password",
+        "token",
+        "auth",
+        "credential",
+        "wallet",
+        "private",
+        "signature",
+    ]
 
     # Check if key contains sensitive keywords
     if any(keyword in key_lower for keyword in sensitive_keywords):
@@ -50,16 +64,18 @@ def _mask_sensitive_value(key: str, value: Any) -> Any:
         value_lower = value.lower()
 
         # Private key detection
-        if value.startswith('0x') and (len(value) == 64 or len(value) == 66):
+        if value.startswith("0x") and (len(value) == 64 or len(value) == 66):
             return f"{value[:6]}...[REDACTED]"
 
         # Wallet address detection (partially mask)
-        if re.match(r'^0x[a-fA-F0-9]{40}$', value):
+        if re.match(r"^0x[a-fA-F0-9]{40}$", value):
             return f"{value[:6]}...{value[-4:]}"
 
         # API key detection
-        if any(keyword in value_lower for keyword in ['sk_live', 'pk_live', 'api_key', 'secret_key']):
-            return '[REDACTED]'
+        if any(
+            keyword in value_lower for keyword in ["sk_live", "pk_live", "api_key", "secret_key"]
+        ):
+            return "[REDACTED]"
 
     elif isinstance(value, dict):
         # Recursively mask dictionary values
@@ -71,11 +87,13 @@ def _mask_sensitive_value(key: str, value: Any) -> Any:
 
     return value
 
+
 def _mask_value(value: Any) -> str:
     """Mask a value completely"""
     if isinstance(value, str) and len(value) > 4:
         return f"{str(value)[:4]}...[REDACTED]"
-    return '[REDACTED]'
+    return "[REDACTED]"
+
 
 def validate_private_key(key: str) -> bool:
     """Validate private key format"""
@@ -83,7 +101,7 @@ def validate_private_key(key: str) -> bool:
         return False
 
     # Remove 0x prefix if present
-    key_clean = key[2:] if key.startswith('0x') else key
+    key_clean = key[2:] if key.startswith("0x") else key
 
     # Check length (64 hex characters)
     if len(key_clean) != 64:
@@ -96,9 +114,11 @@ def validate_private_key(key: str) -> bool:
     except ValueError:
         return False
 
+
 def mask_sensitive_data(data: Any) -> Any:
     """Recursively mask sensitive data in any structure"""
     return _mask_sensitive_value("root", data)
+
 
 def get_environment_hash() -> str:
     """Generate a hash of the environment for debugging (without sensitive data)"""
@@ -106,17 +126,23 @@ def get_environment_hash() -> str:
     for key in os.environ.keys():
         # Skip sensitive environment variables
         key_lower = key.lower()
-        if any(sensitive in key_lower for sensitive in ['key', 'secret', 'password', 'token', 'auth', 'wallet', 'private']):
+        if any(
+            sensitive in key_lower
+            for sensitive in ["key", "secret", "password", "token", "auth", "wallet", "private"]
+        ):
             continue
         env_vars[key] = os.environ[key]
 
     env_str = json.dumps(env_vars, sort_keys=True)
     return hashlib.md5(env_str.encode()).hexdigest()[:8]
 
+
 def generate_session_id() -> str:
     """Generate a unique session ID for tracking"""
     import uuid
+
     return str(uuid.uuid4())[:8]
+
 
 def secure_compare(a: str, b: str) -> bool:
     """Secure string comparison to prevent timing attacks"""
@@ -128,20 +154,18 @@ def secure_compare(a: str, b: str) -> bool:
         result |= ord(x) ^ ord(y)
     return result == 0
 
+
 if __name__ == "__main__":
     # Test the secure logging
     test_data = {
-        'private_key': '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-        'wallet_address': '0xabcdef1234567890abcdef1234567890abcdef12',
-        'api_key': 'sk_live_1234567890abcdef1234567890abcdef',
-        'amount': 100.0,
-        'token_id': '0x1234567890abcdef1234567890abcdef12345678',
-        'password': 'mysecretpassword',
-        'nested': {
-            'secret_key': 'nested_secret_value',
-            'data': [1, 2, 3, 'sensitive_data']
-        }
+        "private_key": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+        "wallet_address": "0xabcdef1234567890abcdef1234567890abcdef12",
+        "api_key": "sk_live_1234567890abcdef1234567890abcdef",
+        "amount": 100.0,
+        "token_id": "0x1234567890abcdef1234567890abcdef12345678",
+        "password": "mysecretpassword",
+        "nested": {"secret_key": "nested_secret_value", "data": [1, 2, 3, "sensitive_data"]},
     }
 
     logging.basicConfig(level=logging.INFO)
-    secure_log(logger, 'test_action', test_data)
+    secure_log(logger, "test_action", test_data)

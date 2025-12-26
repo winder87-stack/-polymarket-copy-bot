@@ -6,7 +6,9 @@ from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional
 
 from dotenv import load_dotenv
-from pydantic import BaseModel, Field, root_validator, validator
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+from utils.validation import InputValidator, ValidationError
 
 # Configure logging first
 logging.basicConfig(
@@ -48,7 +50,7 @@ class NetworkConfig(BaseModel):
 
 
 class TradingConfig(BaseModel):
-    private_key: str = Field(..., description="Wallet private key")
+    private_key: str = Field(description="Wallet private key")
     wallet_address: Optional[str] = Field(
         None, description="Wallet address (auto-calculated if empty)"
     )
@@ -91,12 +93,12 @@ class LoggingConfig(BaseModel):
 
 
 class Settings(BaseModel):
-    risk: RiskManagementConfig = Field(default_factory=RiskManagementConfig)
-    network: NetworkConfig = Field(default_factory=NetworkConfig)
-    trading: TradingConfig = Field(default_factory=TradingConfig)
-    monitoring: MonitoringConfig = Field(default_factory=MonitoringConfig)
-    alerts: AlertingConfig = Field(default_factory=AlertingConfig)
-    logging: LoggingConfig = Field(default_factory=LoggingConfig)
+    risk: RiskManagementConfig = Field(default_factory=lambda: RiskManagementConfig())
+    network: NetworkConfig = Field(default_factory=lambda: NetworkConfig())
+    trading: TradingConfig = Field(default_factory=lambda: TradingConfig())
+    monitoring: MonitoringConfig = Field(default_factory=lambda: MonitoringConfig())
+    alerts: AlertingConfig = Field(default_factory=lambda: AlertingConfig())
+    logging: LoggingConfig = Field(default_factory=lambda: LoggingConfig())
 
     # Environment variables mapping
     env_mappings: ClassVar[Dict[str, str]] = {
@@ -123,26 +125,57 @@ class Settings(BaseModel):
         "monitoring.min_confidence_score": "MIN_CONFIDENCE_SCORE",
     }
 
-    @validator("trading", pre=True)
-    def validate_trading_config(cls, v):
-        if not v.get("private_key"):
-            private_key = os.getenv("PRIVATE_KEY")
-            if not private_key:
-                raise ValueError("PRIVATE_KEY must be set in environment variables")
-            v["private_key"] = private_key
+    @field_validator("trading", mode="before")
+    @classmethod
+    def validate_trading_config(cls, v: Any) -> Dict[str, Any]:
+        """
+        Validate trading configuration before model initialization.
 
-        wallet_address = os.getenv("WALLET_ADDRESS")
-        if wallet_address:
-            v["wallet_address"] = wallet_address
+        Args:
+            v: Raw trading configuration data
 
-        return v
+        Returns:
+            Dict[str, Any]: Validated trading configuration
 
-    @validator("monitoring", pre=True)
-    def load_wallets(cls, v):
+        Raises:
+            ValidationError: If configuration is invalid
+        """
+        try:
+            if not v.get("private_key"):
+                private_key = os.getenv("PRIVATE_KEY")
+                if not private_key:
+                    raise ValidationError("PRIVATE_KEY must be set in environment variables")
+                v["private_key"] = private_key
+
+            # Validate private key using comprehensive validation
+            v["private_key"] = InputValidator.validate_private_key(v["private_key"])
+
+            wallet_address = os.getenv("WALLET_ADDRESS")
+            if wallet_address:
+                v["wallet_address"] = InputValidator.validate_wallet_address(wallet_address)
+
+            return v
+        except ValidationError:
+            raise
+        except Exception as e:
+            raise ValidationError(f"Configuration validation failed: {e}")
+
+    @field_validator("monitoring", mode="before")
+    @classmethod
+    def load_wallets(cls, v: Any) -> Dict[str, Any]:
+        """
+        Load target wallets from configuration file.
+
+        Args:
+            v: Raw monitoring configuration
+
+        Returns:
+            Dict[str, Any]: Updated monitoring configuration with loaded wallets
+        """
         wallets_file = v.get("wallets_file", "config/wallets.json")
         if os.path.exists(wallets_file):
             try:
-                with open(wallets_file, "r") as f:
+                with open(wallets_file, "r", encoding="utf-8") as f:
                     wallets_config = json.load(f)
                     v["target_wallets"] = wallets_config.get("target_wallets", [])
                     v["min_confidence_score"] = wallets_config.get("min_confidence_score", 0.7)
@@ -152,73 +185,83 @@ class Settings(BaseModel):
                 v["target_wallets"] = []
         return v
 
-    @root_validator(pre=True)
-    def load_from_env(cls, values):
-        """Load configuration from environment variables"""
+    @model_validator(mode="before")
+    @classmethod
+    def load_from_env(cls, data: Any) -> Dict[str, Any]:
+        """
+        Load configuration from environment variables as fallback.
+
+        Args:
+            data: Raw model data before validation
+
+        Returns:
+            Dict[str, Any]: Updated data with environment variable values
+        """
+        if not isinstance(data, dict):
+            data = {}
+
+        # Load from environment
         for model_path, env_var in cls.env_mappings.items():
             env_value = os.getenv(env_var)
             if env_value is not None:
-                keys = model_path.split(".")
-                current = values
+                cls._set_nested_value(data, model_path, env_value)
 
-                for key in keys[:-1]:
-                    if key not in current:
-                        current[key] = {}
-                    current = current[key]
+        return data
 
-                # Convert to appropriate type
-                final_key = keys[-1]
-                if final_key in [
-                    "chain_id",
-                    "gas_limit",
-                    "max_gas_price",
-                    "monitor_interval",
-                    "max_concurrent_positions",
-                ]:
-                    try:
-                        current[final_key] = int(env_value)
-                    except ValueError:
-                        pass
-                elif final_key in [
-                    "max_slippage",
-                    "max_position_size",
-                    "max_daily_loss",
-                    "min_trade_amount",
-                    "stop_loss_percentage",
-                    "take_profit_percentage",
-                    "gas_price_multiplier",
-                    "min_confidence_score",
-                ]:
-                    try:
-                        current[final_key] = float(env_value)
-                    except ValueError:
-                        pass
-                elif final_key in ["alert_on_trade", "alert_on_error", "alert_on_circuit_breaker"]:
-                    current[final_key] = env_value.lower() in ["true", "1", "yes", "on"]
-                else:
-                    current[final_key] = env_value
+    @staticmethod
+    def _set_nested_value(data: Dict[str, Any], path: str, value: Any) -> None:
+        """Helper to set nested dictionary values from dot notation path"""
+        keys = path.split(".")
+        current = data
 
-        return values
+        for key in keys[:-1]:
+            if key not in current:
+                current[key] = {}
+            current = current[key]
 
-    def validate_critical_settings(self):
-        """Validate critical settings before starting"""
-        if not self.trading.private_key.startswith("0x"):
-            raise ValueError("Private key must start with '0x'")
+        final_key = keys[-1]
+        # Convert to appropriate type based on key name
+        if final_key in ["chain_id", "gas_limit", "max_gas_price", "monitor_interval"]:
+            try:
+                current[final_key] = int(value)
+            except ValueError:
+                pass
+        elif final_key in [
+            "max_slippage",
+            "max_position_size",
+            "max_daily_loss",
+            "min_trade_amount",
+        ]:
+            try:
+                current[final_key] = float(value)
+            except ValueError:
+                pass
+        else:
+            current[final_key] = value
 
-        if len(self.trading.private_key) != 66:  # 0x + 64 hex chars
-            raise ValueError("Invalid private key length")
+    def validate_critical_settings(self) -> None:
+        """Validate critical settings before starting using comprehensive validation"""
+        try:
+            # Use comprehensive validation for all settings
+            settings_dict = self.model_dump()
 
-        if len(self.monitoring.target_wallets) == 0:
-            logger.warning("No target wallets configured. Bot will run but not copy any trades.")
+            # Validate the entire settings using InputValidator
+            InputValidator.validate_config_settings(settings_dict)
 
-        if self.risk.max_daily_loss <= 0:
-            raise ValueError("MAX_DAILY_LOSS must be greater than 0")
+            # Additional validation for target wallets
+            if len(self.monitoring.target_wallets) == 0:
+                logger.warning(
+                    "No target wallets configured. Bot will run but not copy any trades."
+                )
+            else:
+                # Validate wallet addresses in target_wallets
+                for wallet in self.monitoring.target_wallets:
+                    InputValidator.validate_wallet_address(wallet)
 
-        if self.risk.max_position_size <= 0:
-            raise ValueError("MAX_POSITION_SIZE must be greater than 0")
-
-        if not self.network.polygon_rpc_url.startswith("http"):
-            raise ValueError("POLYGON_RPC_URL must be a valid HTTP/HTTPS URL")
+        except ValidationError as e:
+            raise ValueError(f"Critical settings validation failed: {e}")
+        except Exception as e:
+            raise ValueError(f"Unexpected error during settings validation: {e}")
 
         # Test RPC connection
         try:
@@ -232,7 +275,19 @@ class Settings(BaseModel):
         except Exception as e:
             logger.warning(f"⚠️ Error testing RPC connection: {e}")
 
-        logger.info("✅ All critical settings validated successfully")
+        from utils.logging_security import SecureLogger
+
+        SecureLogger.log(
+            "info",
+            "✅ All critical settings validated successfully",
+            {
+                "validation_complete": True,
+                "risk_settings": {
+                    "max_daily_loss": self.risk.max_daily_loss,
+                    "max_position_size": self.risk.max_position_size,
+                },
+            },
+        )
         logger.info(
             f"Risk parameters: Max position=${self.risk.max_position_size:.2f}, Max daily loss=${self.risk.max_daily_loss:.2f}"
         )

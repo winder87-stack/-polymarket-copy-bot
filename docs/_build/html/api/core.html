@@ -1,0 +1,1222 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="core" href="core/modules.html"><link rel="prev" title="core" href="modules.html">
+
+    <!-- Generated with Sphinx 7.4.7 and Furo 2025.12.19 -->
+        <title>core package - Polymarket Copy Bot API Documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=acfd86a5" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=15d1efc9" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  --color-brand-primary: #2980b9;
+  --color-brand-content: #1f618d;
+  --color-api-background: #2c3e50;
+  --color-api-name: #3498db;
+  --color-api-pre-name: #2980b9;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-brand-primary: #3498db;
+  --color-brand-content: #2980b9;
+  --color-api-background: #1a1a1a;
+  --color-api-name: #3498db;
+  --color-api-pre-name: #2980b9;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-brand-primary: #3498db;
+  --color-brand-content: #2980b9;
+  --color-api-background: #1a1a1a;
+  --color-api-name: #3498db;
+  --color-api-pre-name: #2980b9;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">Polymarket Copy Bot API Documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  <span class="sidebar-brand-text">Polymarket Copy Bot API Documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../configuration.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../deployment.html">Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../troubleshooting.html">Troubleshooting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference:</span></p>
+<ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="modules.html">core</a><input aria-label="Toggle navigation of core" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">core package</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="core/modules.html">core</a><input aria-label="Toggle navigation of core" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="core/core.html">core package</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="config/modules.html">config</a><input aria-label="Toggle navigation of config" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="config/config.html">config package</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="utils/modules.html">utils</a><input aria-label="Toggle navigation of utils" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="utils/utils.html">utils package</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../configuration.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../deployment.html">Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../troubleshooting.html">Troubleshooting</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../_sources/api/core.rst.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="core-package">
+<h1>core package<a class="headerlink" href="#core-package" title="Link to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
+</section>
+<section id="core-adaptive-strategy-engine-module">
+<h2>core.adaptive_strategy_engine module<a class="headerlink" href="#core-adaptive-strategy-engine-module" title="Link to this heading">¶</a></h2>
+</section>
+<section id="core-backtesting-engine-module">
+<h2>core.backtesting_engine module<a class="headerlink" href="#core-backtesting-engine-module" title="Link to this heading">¶</a></h2>
+</section>
+<section id="core-behavioral-analyzer-module">
+<h2>core.behavioral_analyzer module<a class="headerlink" href="#core-behavioral-analyzer-module" title="Link to this heading">¶</a></h2>
+</section>
+<section id="core-clob-client-module">
+<h2>core.clob_client module<a class="headerlink" href="#core-clob-client-module" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-core.historical_data_manager">
+<span id="core-historical-data-manager-module"></span><h2>core.historical_data_manager module<a class="headerlink" href="#module-core.historical_data_manager" title="Link to this heading">¶</a></h2>
+<section id="historical-data-manager-for-backtesting">
+<h3>Historical Data Manager for Backtesting<a class="headerlink" href="#historical-data-manager-for-backtesting" title="Link to this heading">¶</a></h3>
+<p>Comprehensive data collection, validation, and preparation system for
+backtesting copy trading strategies across market maker and directional trader wallets.</p>
+<p>Features:
+- Multi-source data collection (Polygonscan, market data feeds)
+- Data quality validation and gap handling
+- Synthetic data generation for edge cases
+- Market regime classification
+- Performance benchmarking data preparation</p>
+</section>
+<dl class="py class">
+<dt class="sig sig-object py" id="core.historical_data_manager.HistoricalDataManager">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">core.historical_data_manager.</span></span><span class="sig-name descname"><span class="pre">HistoricalDataManager</span></span><a class="reference internal" href="../_modules/core/historical_data_manager.html#HistoricalDataManager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.historical_data_manager.HistoricalDataManager" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Comprehensive historical data management system for backtesting.</p>
+<p>Handles collection, validation, and preparation of all data required
+for thorough backtesting of copy trading strategies.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="core.historical_data_manager.HistoricalDataManager.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/historical_data_manager.html#HistoricalDataManager.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.historical_data_manager.HistoricalDataManager.__init__" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.historical_data_manager.HistoricalDataManager.collect_comprehensive_dataset">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">collect_comprehensive_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wallet_addresses</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_types</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/historical_data_manager.html#HistoricalDataManager.collect_comprehensive_dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.historical_data_manager.HistoricalDataManager.collect_comprehensive_dataset" title="Link to this definition">¶</a></dt>
+<dd><p>Collect comprehensive historical dataset for backtesting.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>wallet_addresses</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – List of wallet addresses to collect data for</p></li>
+<li><p><strong>start_date</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">datetime</span></code></a></span>) – Start date for data collection</p></li>
+<li><p><strong>end_date</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">datetime</span></code></a></span>) – End date for data collection</p></li>
+<li><p><strong>data_types</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – Types of data to collect (trade_history, market_data, gas_prices)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Comprehensive dataset with validation reports</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.historical_data_manager.HistoricalDataManager.save_dataset">
+<span class="sig-name descname"><span class="pre">save_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/historical_data_manager.html#HistoricalDataManager.save_dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.historical_data_manager.HistoricalDataManager.save_dataset" title="Link to this definition">¶</a></dt>
+<dd><p>Save collected dataset to disk.</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.historical_data_manager.HistoricalDataManager.load_dataset">
+<span class="sig-name descname"><span class="pre">load_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/historical_data_manager.html#HistoricalDataManager.load_dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.historical_data_manager.HistoricalDataManager.load_dataset" title="Link to this definition">¶</a></dt>
+<dd><p>Load dataset from disk.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.historical_data_manager.HistoricalDataManager.get_data_collection_status">
+<span class="sig-name descname"><span class="pre">get_data_collection_status</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/historical_data_manager.html#HistoricalDataManager.get_data_collection_status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.historical_data_manager.HistoricalDataManager.get_data_collection_status" title="Link to this definition">¶</a></dt>
+<dd><p>Get status of data collection system.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="core-hybrid-portfolio-constructor-module">
+<h2>core.hybrid_portfolio_constructor module<a class="headerlink" href="#core-hybrid-portfolio-constructor-module" title="Link to this heading">¶</a></h2>
+</section>
+<section id="core-market-maker-alerts-module">
+<h2>core.market_maker_alerts module<a class="headerlink" href="#core-market-maker-alerts-module" title="Link to this heading">¶</a></h2>
+</section>
+<section id="core-market-maker-backtester-module">
+<h2>core.market_maker_backtester module<a class="headerlink" href="#core-market-maker-backtester-module" title="Link to this heading">¶</a></h2>
+</section>
+<section id="core-market-maker-detector-module">
+<h2>core.market_maker_detector module<a class="headerlink" href="#core-market-maker-detector-module" title="Link to this heading">¶</a></h2>
+</section>
+<section id="core-market-maker-risk-manager-module">
+<h2>core.market_maker_risk_manager module<a class="headerlink" href="#core-market-maker-risk-manager-module" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-core.market_maker_tactics">
+<span id="core-market-maker-tactics-module"></span><h2>core.market_maker_tactics module<a class="headerlink" href="#module-core.market_maker_tactics" title="Link to this heading">¶</a></h2>
+<section id="market-maker-specific-tactics">
+<h3>Market Maker Specific Tactics<a class="headerlink" href="#market-maker-specific-tactics" title="Link to this heading">¶</a></h3>
+<p>Specialized trading algorithms and tactics optimized for copying
+professional market maker behavior patterns.</p>
+<p>Features:
+- Spread capture algorithms
+- Latency arbitrage detection
+- Inventory management simulation
+- Cross-market arbitrage
+- Gas-optimized high-frequency trading
+- Time-based position management
+- Profitability threshold enforcement</p>
+</section>
+<dl class="py class">
+<dt class="sig sig-object py" id="core.market_maker_tactics.MarketMakerTactics">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">core.market_maker_tactics.</span></span><span class="sig-name descname"><span class="pre">MarketMakerTactics</span></span><a class="reference internal" href="../_modules/core/market_maker_tactics.html#MarketMakerTactics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.market_maker_tactics.MarketMakerTactics" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Specialized tactics for copying market maker trading patterns.</p>
+<p>Implements algorithms that replicate professional market making behavior:
+- Spread capture through bid-ask trading
+- Inventory management and hedging
+- Latency arbitrage detection
+- Cross-market price discrepancies
+- Gas-efficient execution strategies</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="core.market_maker_tactics.MarketMakerTactics.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/market_maker_tactics.html#MarketMakerTactics.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.market_maker_tactics.MarketMakerTactics.__init__" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.market_maker_tactics.MarketMakerTactics.evaluate_spread_capture_opportunity">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">evaluate_spread_capture_opportunity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wallet_address</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trade_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">market_data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/market_maker_tactics.html#MarketMakerTactics.evaluate_spread_capture_opportunity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.market_maker_tactics.MarketMakerTactics.evaluate_spread_capture_opportunity" title="Link to this definition">¶</a></dt>
+<dd><p>Evaluate spread capture opportunity for market maker copying.</p>
+<p>Market makers profit from buying at bid and selling at ask prices,
+capturing the spread. This tactic identifies when a market maker
+is likely engaging in spread capture behavior.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.market_maker_tactics.MarketMakerTactics.detect_latency_arbitrage_opportunity">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">detect_latency_arbitrage_opportunity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wallet_address</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trade_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">market_data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/market_maker_tactics.html#MarketMakerTactics.detect_latency_arbitrage_opportunity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.market_maker_tactics.MarketMakerTactics.detect_latency_arbitrage_opportunity" title="Link to this definition">¶</a></dt>
+<dd><p>Detect potential latency arbitrage opportunities.</p>
+<p>Latency arbitrage exploits small price discrepancies that exist
+for brief moments due to differences in trade execution speed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.market_maker_tactics.MarketMakerTactics.simulate_inventory_management">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">simulate_inventory_management</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wallet_address</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_position</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">market_conditions</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/market_maker_tactics.html#MarketMakerTactics.simulate_inventory_management"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.market_maker_tactics.MarketMakerTactics.simulate_inventory_management" title="Link to this definition">¶</a></dt>
+<dd><p>Simulate market maker inventory management decisions.</p>
+<p>Market makers constantly adjust their inventory to maintain
+market neutrality and avoid directional risk.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.market_maker_tactics.MarketMakerTactics.detect_cross_market_arbitrage">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">detect_cross_market_arbitrage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wallet_address</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trade_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">related_markets</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/market_maker_tactics.html#MarketMakerTactics.detect_cross_market_arbitrage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.market_maker_tactics.MarketMakerTactics.detect_cross_market_arbitrage" title="Link to this definition">¶</a></dt>
+<dd><p>Detect cross-market arbitrage opportunities.</p>
+<p>Market makers often arbitrage price discrepancies between
+related markets or different market venues.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.market_maker_tactics.MarketMakerTactics.optimize_gas_efficiency">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">optimize_gas_efficiency</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wallet_address</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pending_trades</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gas_conditions</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/market_maker_tactics.html#MarketMakerTactics.optimize_gas_efficiency"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.market_maker_tactics.MarketMakerTactics.optimize_gas_efficiency" title="Link to this definition">¶</a></dt>
+<dd><p>Optimize trade execution for gas efficiency.</p>
+<p>High-frequency market maker strategies require careful gas management
+to maintain profitability.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.market_maker_tactics.MarketMakerTactics.apply_time_based_position_management">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">apply_time_based_position_management</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">position_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">market_conditions</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/market_maker_tactics.html#MarketMakerTactics.apply_time_based_position_management"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.market_maker_tactics.MarketMakerTactics.apply_time_based_position_management" title="Link to this definition">¶</a></dt>
+<dd><p>Apply time-based position management rules.</p>
+<p>Market makers often have strict time limits on positions
+to manage inventory and avoid overnight risk.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.market_maker_tactics.MarketMakerTactics.enforce_profitability_thresholds">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">enforce_profitability_thresholds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trade_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wallet_info</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">market_conditions</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/market_maker_tactics.html#MarketMakerTactics.enforce_profitability_thresholds"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.market_maker_tactics.MarketMakerTactics.enforce_profitability_thresholds" title="Link to this definition">¶</a></dt>
+<dd><p>Enforce minimum profitability thresholds for market maker trades.</p>
+<p>Ensures trades meet profitability requirements before execution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.market_maker_tactics.MarketMakerTactics.update_tactic_performance">
+<span class="sig-name descname"><span class="pre">update_tactic_performance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tactic_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">performance_data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/market_maker_tactics.html#MarketMakerTactics.update_tactic_performance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.market_maker_tactics.MarketMakerTactics.update_tactic_performance" title="Link to this definition">¶</a></dt>
+<dd><p>Update performance tracking for tactics.</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.market_maker_tactics.MarketMakerTactics.get_tactic_performance_summary">
+<span class="sig-name descname"><span class="pre">get_tactic_performance_summary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/market_maker_tactics.html#MarketMakerTactics.get_tactic_performance_summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.market_maker_tactics.MarketMakerTactics.get_tactic_performance_summary" title="Link to this definition">¶</a></dt>
+<dd><p>Get performance summary for all tactics.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-core.ml_strategy_optimizer">
+<span id="core-ml-strategy-optimizer-module"></span><h2>core.ml_strategy_optimizer module<a class="headerlink" href="#module-core.ml_strategy_optimizer" title="Link to this heading">¶</a></h2>
+<section id="machine-learning-strategy-optimizer">
+<h3>Machine Learning Strategy Optimizer<a class="headerlink" href="#machine-learning-strategy-optimizer" title="Link to this heading">¶</a></h3>
+<p>Advanced ML system for adaptive copy trading strategy optimization.</p>
+<p>Features:
+- Strategy prediction models using wallet behavior data
+- Real-time strategy recommendation engine
+- Reinforcement learning for continuous optimization
+- Model drift detection and automated retraining
+- Explainable AI for strategy transparency
+- Model monitoring and validation framework</p>
+</section>
+<dl class="py class">
+<dt class="sig sig-object py" id="core.ml_strategy_optimizer.MLStrategyOptimizer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">core.ml_strategy_optimizer.</span></span><span class="sig-name descname"><span class="pre">MLStrategyOptimizer</span></span><a class="reference internal" href="../_modules/core/ml_strategy_optimizer.html#MLStrategyOptimizer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.ml_strategy_optimizer.MLStrategyOptimizer" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Machine learning system for optimizing adaptive copy trading strategies.</p>
+<p>Uses advanced ML techniques to predict optimal strategies based on:
+- Wallet behavior patterns
+- Market conditions
+- Historical performance data
+- Real-time feature engineering</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="core.ml_strategy_optimizer.MLStrategyOptimizer.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/ml_strategy_optimizer.html#MLStrategyOptimizer.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.ml_strategy_optimizer.MLStrategyOptimizer.__init__" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.ml_strategy_optimizer.MLStrategyOptimizer.predict_optimal_strategy">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">predict_optimal_strategy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wallet_address</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wallet_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">market_conditions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">available_strategies</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/ml_strategy_optimizer.html#MLStrategyOptimizer.predict_optimal_strategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.ml_strategy_optimizer.MLStrategyOptimizer.predict_optimal_strategy" title="Link to this definition">¶</a></dt>
+<dd><p>Predict optimal trading strategy for a wallet using ML models.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>wallet_address</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Target wallet address</p></li>
+<li><p><strong>wallet_data</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span>) – Wallet behavior and classification data</p></li>
+<li><p><strong>market_conditions</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span>) – Current market conditions</p></li>
+<li><p><strong>available_strategies</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – List of available strategy options</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Strategy prediction with confidence scores</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.ml_strategy_optimizer.MLStrategyOptimizer.train_strategy_predictor">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">train_strategy_predictor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">training_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_retrain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/ml_strategy_optimizer.html#MLStrategyOptimizer.train_strategy_predictor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.ml_strategy_optimizer.MLStrategyOptimizer.train_strategy_predictor" title="Link to this definition">¶</a></dt>
+<dd><p>Train the strategy prediction model using historical data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>training_data</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]]]</span>) – Custom training data (optional)</p></li>
+<li><p><strong>force_retrain</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Force retraining even if recent model exists</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Training results and model performance metrics</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.ml_strategy_optimizer.MLStrategyOptimizer.train_performance_predictor">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">train_performance_predictor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">performance_data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/ml_strategy_optimizer.html#MLStrategyOptimizer.train_performance_predictor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.ml_strategy_optimizer.MLStrategyOptimizer.train_performance_predictor" title="Link to this definition">¶</a></dt>
+<dd><p>Train model to predict strategy performance under different conditions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>performance_data</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]]</span>) – Historical performance data with features and outcomes</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Training results for performance predictor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.ml_strategy_optimizer.MLStrategyOptimizer.initialize_reinforcement_learning">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">initialize_reinforcement_learning</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state_space_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action_space_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/ml_strategy_optimizer.html#MLStrategyOptimizer.initialize_reinforcement_learning"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.ml_strategy_optimizer.MLStrategyOptimizer.initialize_reinforcement_learning" title="Link to this definition">¶</a></dt>
+<dd><p>Initialize reinforcement learning agent for strategy optimization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>state_space_size</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Size of state representation</p></li>
+<li><p><strong>action_space_size</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Number of possible actions (strategies)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>RL initialization results</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.ml_strategy_optimizer.MLStrategyOptimizer.update_reinforcement_learning">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">update_reinforcement_learning</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reward</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">next_state</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/ml_strategy_optimizer.html#MLStrategyOptimizer.update_reinforcement_learning"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.ml_strategy_optimizer.MLStrategyOptimizer.update_reinforcement_learning" title="Link to this definition">¶</a></dt>
+<dd><p>Update reinforcement learning agent with new experience.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></span>) – Current state representation</p></li>
+<li><p><strong>action</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Action taken (strategy index)</p></li>
+<li><p><strong>reward</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Reward received</p></li>
+<li><p><strong>next_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></span>) – Next state after action</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Update results</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.ml_strategy_optimizer.MLStrategyOptimizer.detect_model_drift">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">detect_model_drift</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">recent_predictions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">performance_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.7</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/ml_strategy_optimizer.html#MLStrategyOptimizer.detect_model_drift"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.ml_strategy_optimizer.MLStrategyOptimizer.detect_model_drift" title="Link to this definition">¶</a></dt>
+<dd><p>Detect model drift using recent prediction performance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>recent_predictions</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]]</span>) – Recent prediction results with outcomes</p></li>
+<li><p><strong>performance_threshold</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Threshold for triggering retraining</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Drift detection results</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.ml_strategy_optimizer.MLStrategyOptimizer.get_model_explainability">
+<span class="sig-name descname"><span class="pre">get_model_explainability</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prediction</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/ml_strategy_optimizer.html#MLStrategyOptimizer.get_model_explainability"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.ml_strategy_optimizer.MLStrategyOptimizer.get_model_explainability" title="Link to this definition">¶</a></dt>
+<dd><p>Provide explainable AI insights for strategy predictions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>features</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span>) – Input features used for prediction</p></li>
+<li><p><strong>prediction</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Predicted strategy</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Explainability analysis</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.ml_strategy_optimizer.MLStrategyOptimizer.get_model_health_status">
+<span class="sig-name descname"><span class="pre">get_model_health_status</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/ml_strategy_optimizer.html#MLStrategyOptimizer.get_model_health_status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.ml_strategy_optimizer.MLStrategyOptimizer.get_model_health_status" title="Link to this definition">¶</a></dt>
+<dd><p>Get comprehensive model health and performance status.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.ml_strategy_optimizer.MLStrategyOptimizer.save_ml_models">
+<span class="sig-name descname"><span class="pre">save_ml_models</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/ml_strategy_optimizer.html#MLStrategyOptimizer.save_ml_models"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.ml_strategy_optimizer.MLStrategyOptimizer.save_ml_models" title="Link to this definition">¶</a></dt>
+<dd><p>Save trained ML models to disk.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.ml_strategy_optimizer.MLStrategyOptimizer.load_ml_models">
+<span class="sig-name descname"><span class="pre">load_ml_models</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/ml_strategy_optimizer.html#MLStrategyOptimizer.load_ml_models"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.ml_strategy_optimizer.MLStrategyOptimizer.load_ml_models" title="Link to this definition">¶</a></dt>
+<dd><p>Load trained ML models from disk.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.ml_strategy_optimizer.MLStrategyOptimizer.add_training_example">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">add_training_example</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selected_strategy</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcome</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/ml_strategy_optimizer.html#MLStrategyOptimizer.add_training_example"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.ml_strategy_optimizer.MLStrategyOptimizer.add_training_example" title="Link to this definition">¶</a></dt>
+<dd><p>Add a training example for model improvement.</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.ml_strategy_optimizer.MLStrategyOptimizer.run_model_monitoring_loop">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">run_model_monitoring_loop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">check_interval_minutes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">60</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/ml_strategy_optimizer.html#MLStrategyOptimizer.run_model_monitoring_loop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.ml_strategy_optimizer.MLStrategyOptimizer.run_model_monitoring_loop" title="Link to this definition">¶</a></dt>
+<dd><p>Run continuous model monitoring and retraining.</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-core.parameter_optimizer">
+<span id="core-parameter-optimizer-module"></span><h2>core.parameter_optimizer module<a class="headerlink" href="#module-core.parameter_optimizer" title="Link to this heading">¶</a></h2>
+<section id="parameter-optimization-framework">
+<h3>Parameter Optimization Framework<a class="headerlink" href="#parameter-optimization-framework" title="Link to this heading">¶</a></h3>
+<p>Advanced optimization system for copy trading strategy parameters using
+multiple algorithms: grid search, genetic algorithms, Bayesian optimization,
+with comprehensive validation and stability analysis.</p>
+<p>Features:
+- Grid search for parameter space exploration
+- Genetic algorithm optimization for complex parameter interactions
+- Bayesian optimization for efficient hyperparameter tuning
+- Out-of-sample validation to prevent overfitting
+- Parameter stability analysis across time periods
+- Optimization report generation with statistical validation</p>
+</section>
+<dl class="py class">
+<dt class="sig sig-object py" id="core.parameter_optimizer.ParameterOptimizer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">core.parameter_optimizer.</span></span><span class="sig-name descname"><span class="pre">ParameterOptimizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">backtesting_engine</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/parameter_optimizer.html#ParameterOptimizer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.parameter_optimizer.ParameterOptimizer" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Comprehensive parameter optimization framework for copy trading strategies.</p>
+<p>Supports multiple optimization algorithms with rigorous validation
+and stability analysis to ensure robust parameter selection.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="core.parameter_optimizer.ParameterOptimizer.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">backtesting_engine</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/parameter_optimizer.html#ParameterOptimizer.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.parameter_optimizer.ParameterOptimizer.__init__" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.parameter_optimizer.ParameterOptimizer.optimize_strategy_parameters">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">optimize_strategy_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">strategy_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">capital</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimization_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bayesian'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_space</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/parameter_optimizer.html#ParameterOptimizer.optimize_strategy_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.parameter_optimizer.ParameterOptimizer.optimize_strategy_parameters" title="Link to this definition">¶</a></dt>
+<dd><p>Optimize parameters for a specific strategy using chosen optimization method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>strategy_name</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Name of the strategy to optimize</p></li>
+<li><p><strong>dataset</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span>) – Historical dataset for optimization</p></li>
+<li><p><strong>start_date</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">datetime</span></code></a></span>) – Optimization start date</p></li>
+<li><p><strong>end_date</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">datetime</span></code></a></span>) – Optimization end date</p></li>
+<li><p><strong>capital</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Starting capital</p></li>
+<li><p><strong>optimization_method</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Optimization method (“grid”, “genetic”, “bayesian”)</p></li>
+<li><p><strong>parameter_space</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]]</span>) – Custom parameter space (optional)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Complete optimization results with validation</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.parameter_optimizer.ParameterOptimizer.get_optimization_summary">
+<span class="sig-name descname"><span class="pre">get_optimization_summary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/parameter_optimizer.html#ParameterOptimizer.get_optimization_summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.parameter_optimizer.ParameterOptimizer.get_optimization_summary" title="Link to this definition">¶</a></dt>
+<dd><p>Get summary of all optimization runs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.parameter_optimizer.ParameterOptimizer.save_optimization_results">
+<span class="sig-name descname"><span class="pre">save_optimization_results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/parameter_optimizer.html#ParameterOptimizer.save_optimization_results"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.parameter_optimizer.ParameterOptimizer.save_optimization_results" title="Link to this definition">¶</a></dt>
+<dd><p>Save optimization results to disk.</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="core-performance-analyzer-module">
+<h2>core.performance_analyzer module<a class="headerlink" href="#core-performance-analyzer-module" title="Link to this heading">¶</a></h2>
+</section>
+<section id="core-real-time-scorer-module">
+<h2>core.real_time_scorer module<a class="headerlink" href="#core-real-time-scorer-module" title="Link to this heading">¶</a></h2>
+</section>
+<section id="core-strategy-comparison-module">
+<h2>core.strategy_comparison module<a class="headerlink" href="#core-strategy-comparison-module" title="Link to this heading">¶</a></h2>
+</section>
+<section id="core-trade-executor-module">
+<h2>core.trade_executor module<a class="headerlink" href="#core-trade-executor-module" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-core.wallet_behavior_store">
+<span id="core-wallet-behavior-store-module"></span><h2>core.wallet_behavior_store module<a class="headerlink" href="#module-core.wallet_behavior_store" title="Link to this heading">¶</a></h2>
+<section id="wallet-behavior-data-storage-system">
+<h3>Wallet Behavior Data Storage System<a class="headerlink" href="#wallet-behavior-data-storage-system" title="Link to this heading">¶</a></h3>
+<p>Persistent storage system for wallet behavior analysis, classifications,
+and historical tracking. Provides efficient data management with
+compression, indexing, and automatic cleanup.</p>
+<p>Features:
+- Compressed JSON storage with metadata
+- Time-series data management
+- Automatic data cleanup and optimization
+- Backup and recovery capabilities
+- Performance analytics and caching</p>
+</section>
+<dl class="py class">
+<dt class="sig sig-object py" id="core.wallet_behavior_store.WalletBehaviorStore">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">core.wallet_behavior_store.</span></span><span class="sig-name descname"><span class="pre">WalletBehaviorStore</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/wallet_behavior_store.html#WalletBehaviorStore"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.wallet_behavior_store.WalletBehaviorStore" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Advanced data storage system for wallet behavior analysis.</p>
+<p>Handles persistent storage of:
+- Wallet classifications and metadata
+- Historical behavior analysis results
+- Performance metrics and trends
+- Market maker detection data</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="core.wallet_behavior_store.WalletBehaviorStore.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/wallet_behavior_store.html#WalletBehaviorStore.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.wallet_behavior_store.WalletBehaviorStore.__init__" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.wallet_behavior_store.WalletBehaviorStore.store_wallet_classification">
+<span class="sig-name descname"><span class="pre">store_wallet_classification</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wallet_address</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">classification_data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/wallet_behavior_store.html#WalletBehaviorStore.store_wallet_classification"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.wallet_behavior_store.WalletBehaviorStore.store_wallet_classification" title="Link to this definition">¶</a></dt>
+<dd><p>Store wallet classification data with metadata and timestamps.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>wallet_address</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Normalized wallet address</p></li>
+<li><p><strong>classification_data</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span>) – Complete classification analysis</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Success status</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.wallet_behavior_store.WalletBehaviorStore.store_behavior_history">
+<span class="sig-name descname"><span class="pre">store_behavior_history</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wallet_address</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">behavior_entry</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/wallet_behavior_store.html#WalletBehaviorStore.store_behavior_history"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.wallet_behavior_store.WalletBehaviorStore.store_behavior_history" title="Link to this definition">¶</a></dt>
+<dd><p>Store behavior analysis history entry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>wallet_address</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Normalized wallet address</p></li>
+<li><p><strong>behavior_entry</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span>) – Behavior analysis entry with timestamp</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Success status</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.wallet_behavior_store.WalletBehaviorStore.get_wallet_classification">
+<span class="sig-name descname"><span class="pre">get_wallet_classification</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wallet_address</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/wallet_behavior_store.html#WalletBehaviorStore.get_wallet_classification"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.wallet_behavior_store.WalletBehaviorStore.get_wallet_classification" title="Link to this definition">¶</a></dt>
+<dd><p>Retrieve wallet classification data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.wallet_behavior_store.WalletBehaviorStore.get_wallet_behavior_history">
+<span class="sig-name descname"><span class="pre">get_wallet_behavior_history</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wallet_address</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">days_back</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/wallet_behavior_store.html#WalletBehaviorStore.get_wallet_behavior_history"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.wallet_behavior_store.WalletBehaviorStore.get_wallet_behavior_history" title="Link to this definition">¶</a></dt>
+<dd><p>Retrieve wallet behavior history with optional filtering.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>wallet_address</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Normalized wallet address</p></li>
+<li><p><strong>limit</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]</span>) – Maximum number of entries to return</p></li>
+<li><p><strong>days_back</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]</span>) – Only return entries from last N days</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List of behavior history entries (newest first)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.wallet_behavior_store.WalletBehaviorStore.get_all_classifications">
+<span class="sig-name descname"><span class="pre">get_all_classifications</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/wallet_behavior_store.html#WalletBehaviorStore.get_all_classifications"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.wallet_behavior_store.WalletBehaviorStore.get_all_classifications" title="Link to this definition">¶</a></dt>
+<dd><p>Get all wallet classifications</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.wallet_behavior_store.WalletBehaviorStore.get_behavior_summary_stats">
+<span class="sig-name descname"><span class="pre">get_behavior_summary_stats</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/wallet_behavior_store.html#WalletBehaviorStore.get_behavior_summary_stats"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.wallet_behavior_store.WalletBehaviorStore.get_behavior_summary_stats" title="Link to this definition">¶</a></dt>
+<dd><p>Get summary statistics for stored behavior data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.wallet_behavior_store.WalletBehaviorStore.detect_classification_changes">
+<span class="sig-name descname"><span class="pre">detect_classification_changes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hours_back</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">24</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/wallet_behavior_store.html#WalletBehaviorStore.detect_classification_changes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.wallet_behavior_store.WalletBehaviorStore.detect_classification_changes" title="Link to this definition">¶</a></dt>
+<dd><p>Detect wallets with recent classification changes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>hours_back</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Hours to look back for changes</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List of wallets with classification changes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.wallet_behavior_store.WalletBehaviorStore.optimize_storage">
+<span class="sig-name descname"><span class="pre">optimize_storage</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/wallet_behavior_store.html#WalletBehaviorStore.optimize_storage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.wallet_behavior_store.WalletBehaviorStore.optimize_storage" title="Link to this definition">¶</a></dt>
+<dd><p>Optimize storage by cleaning up old data and compressing</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.wallet_behavior_store.WalletBehaviorStore.create_backup">
+<span class="sig-name descname"><span class="pre">create_backup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/wallet_behavior_store.html#WalletBehaviorStore.create_backup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.wallet_behavior_store.WalletBehaviorStore.create_backup" title="Link to this definition">¶</a></dt>
+<dd><p>Create a backup of all behavior data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.wallet_behavior_store.WalletBehaviorStore.restore_from_backup">
+<span class="sig-name descname"><span class="pre">restore_from_backup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">backup_file</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/wallet_behavior_store.html#WalletBehaviorStore.restore_from_backup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.wallet_behavior_store.WalletBehaviorStore.restore_from_backup" title="Link to this definition">¶</a></dt>
+<dd><p>Restore data from backup file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.wallet_behavior_store.WalletBehaviorStore.get_storage_stats">
+<span class="sig-name descname"><span class="pre">get_storage_stats</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/wallet_behavior_store.html#WalletBehaviorStore.get_storage_stats"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.wallet_behavior_store.WalletBehaviorStore.get_storage_stats" title="Link to this definition">¶</a></dt>
+<dd><p>Get detailed storage statistics</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.wallet_behavior_store.WalletBehaviorStore.cleanup_old_backups">
+<span class="sig-name descname"><span class="pre">cleanup_old_backups</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">keep_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/core/wallet_behavior_store.html#WalletBehaviorStore.cleanup_old_backups"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#core.wallet_behavior_store.WalletBehaviorStore.cleanup_old_backups" title="Link to this definition">¶</a></dt>
+<dd><p>Clean up old backup files</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="core-wallet-monitor-module">
+<h2>core.wallet_monitor module<a class="headerlink" href="#core-wallet-monitor-module" title="Link to this heading">¶</a></h2>
+</section>
+<section id="core-wallet-optimizer-module">
+<h2>core.wallet_optimizer module<a class="headerlink" href="#core-wallet-optimizer-module" title="Link to this heading">¶</a></h2>
+</section>
+<section id="core-wallet-quality-scorer-module">
+<h2>core.wallet_quality_scorer module<a class="headerlink" href="#core-wallet-quality-scorer-module" title="Link to this heading">¶</a></h2>
+</section>
+<section id="core-wallet-selector-module">
+<h2>core.wallet_selector module<a class="headerlink" href="#core-wallet-selector-module" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-core">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-core" title="Link to this heading">¶</a></h2>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="core/modules.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">core</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="modules.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">core</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, Contributors
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">core package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#core-adaptive-strategy-engine-module">core.adaptive_strategy_engine module</a></li>
+<li><a class="reference internal" href="#core-backtesting-engine-module">core.backtesting_engine module</a></li>
+<li><a class="reference internal" href="#core-behavioral-analyzer-module">core.behavioral_analyzer module</a></li>
+<li><a class="reference internal" href="#core-clob-client-module">core.clob_client module</a></li>
+<li><a class="reference internal" href="#module-core.historical_data_manager">core.historical_data_manager module</a><ul>
+<li><a class="reference internal" href="#historical-data-manager-for-backtesting">Historical Data Manager for Backtesting</a></li>
+<li><a class="reference internal" href="#core.historical_data_manager.HistoricalDataManager"><code class="docutils literal notranslate"><span class="pre">HistoricalDataManager</span></code></a><ul>
+<li><a class="reference internal" href="#core.historical_data_manager.HistoricalDataManager.__init__"><code class="docutils literal notranslate"><span class="pre">HistoricalDataManager.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#core.historical_data_manager.HistoricalDataManager.collect_comprehensive_dataset"><code class="docutils literal notranslate"><span class="pre">HistoricalDataManager.collect_comprehensive_dataset()</span></code></a></li>
+<li><a class="reference internal" href="#core.historical_data_manager.HistoricalDataManager.save_dataset"><code class="docutils literal notranslate"><span class="pre">HistoricalDataManager.save_dataset()</span></code></a></li>
+<li><a class="reference internal" href="#core.historical_data_manager.HistoricalDataManager.load_dataset"><code class="docutils literal notranslate"><span class="pre">HistoricalDataManager.load_dataset()</span></code></a></li>
+<li><a class="reference internal" href="#core.historical_data_manager.HistoricalDataManager.get_data_collection_status"><code class="docutils literal notranslate"><span class="pre">HistoricalDataManager.get_data_collection_status()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#core-hybrid-portfolio-constructor-module">core.hybrid_portfolio_constructor module</a></li>
+<li><a class="reference internal" href="#core-market-maker-alerts-module">core.market_maker_alerts module</a></li>
+<li><a class="reference internal" href="#core-market-maker-backtester-module">core.market_maker_backtester module</a></li>
+<li><a class="reference internal" href="#core-market-maker-detector-module">core.market_maker_detector module</a></li>
+<li><a class="reference internal" href="#core-market-maker-risk-manager-module">core.market_maker_risk_manager module</a></li>
+<li><a class="reference internal" href="#module-core.market_maker_tactics">core.market_maker_tactics module</a><ul>
+<li><a class="reference internal" href="#market-maker-specific-tactics">Market Maker Specific Tactics</a></li>
+<li><a class="reference internal" href="#core.market_maker_tactics.MarketMakerTactics"><code class="docutils literal notranslate"><span class="pre">MarketMakerTactics</span></code></a><ul>
+<li><a class="reference internal" href="#core.market_maker_tactics.MarketMakerTactics.__init__"><code class="docutils literal notranslate"><span class="pre">MarketMakerTactics.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#core.market_maker_tactics.MarketMakerTactics.evaluate_spread_capture_opportunity"><code class="docutils literal notranslate"><span class="pre">MarketMakerTactics.evaluate_spread_capture_opportunity()</span></code></a></li>
+<li><a class="reference internal" href="#core.market_maker_tactics.MarketMakerTactics.detect_latency_arbitrage_opportunity"><code class="docutils literal notranslate"><span class="pre">MarketMakerTactics.detect_latency_arbitrage_opportunity()</span></code></a></li>
+<li><a class="reference internal" href="#core.market_maker_tactics.MarketMakerTactics.simulate_inventory_management"><code class="docutils literal notranslate"><span class="pre">MarketMakerTactics.simulate_inventory_management()</span></code></a></li>
+<li><a class="reference internal" href="#core.market_maker_tactics.MarketMakerTactics.detect_cross_market_arbitrage"><code class="docutils literal notranslate"><span class="pre">MarketMakerTactics.detect_cross_market_arbitrage()</span></code></a></li>
+<li><a class="reference internal" href="#core.market_maker_tactics.MarketMakerTactics.optimize_gas_efficiency"><code class="docutils literal notranslate"><span class="pre">MarketMakerTactics.optimize_gas_efficiency()</span></code></a></li>
+<li><a class="reference internal" href="#core.market_maker_tactics.MarketMakerTactics.apply_time_based_position_management"><code class="docutils literal notranslate"><span class="pre">MarketMakerTactics.apply_time_based_position_management()</span></code></a></li>
+<li><a class="reference internal" href="#core.market_maker_tactics.MarketMakerTactics.enforce_profitability_thresholds"><code class="docutils literal notranslate"><span class="pre">MarketMakerTactics.enforce_profitability_thresholds()</span></code></a></li>
+<li><a class="reference internal" href="#core.market_maker_tactics.MarketMakerTactics.update_tactic_performance"><code class="docutils literal notranslate"><span class="pre">MarketMakerTactics.update_tactic_performance()</span></code></a></li>
+<li><a class="reference internal" href="#core.market_maker_tactics.MarketMakerTactics.get_tactic_performance_summary"><code class="docutils literal notranslate"><span class="pre">MarketMakerTactics.get_tactic_performance_summary()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-core.ml_strategy_optimizer">core.ml_strategy_optimizer module</a><ul>
+<li><a class="reference internal" href="#machine-learning-strategy-optimizer">Machine Learning Strategy Optimizer</a></li>
+<li><a class="reference internal" href="#core.ml_strategy_optimizer.MLStrategyOptimizer"><code class="docutils literal notranslate"><span class="pre">MLStrategyOptimizer</span></code></a><ul>
+<li><a class="reference internal" href="#core.ml_strategy_optimizer.MLStrategyOptimizer.__init__"><code class="docutils literal notranslate"><span class="pre">MLStrategyOptimizer.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#core.ml_strategy_optimizer.MLStrategyOptimizer.predict_optimal_strategy"><code class="docutils literal notranslate"><span class="pre">MLStrategyOptimizer.predict_optimal_strategy()</span></code></a></li>
+<li><a class="reference internal" href="#core.ml_strategy_optimizer.MLStrategyOptimizer.train_strategy_predictor"><code class="docutils literal notranslate"><span class="pre">MLStrategyOptimizer.train_strategy_predictor()</span></code></a></li>
+<li><a class="reference internal" href="#core.ml_strategy_optimizer.MLStrategyOptimizer.train_performance_predictor"><code class="docutils literal notranslate"><span class="pre">MLStrategyOptimizer.train_performance_predictor()</span></code></a></li>
+<li><a class="reference internal" href="#core.ml_strategy_optimizer.MLStrategyOptimizer.initialize_reinforcement_learning"><code class="docutils literal notranslate"><span class="pre">MLStrategyOptimizer.initialize_reinforcement_learning()</span></code></a></li>
+<li><a class="reference internal" href="#core.ml_strategy_optimizer.MLStrategyOptimizer.update_reinforcement_learning"><code class="docutils literal notranslate"><span class="pre">MLStrategyOptimizer.update_reinforcement_learning()</span></code></a></li>
+<li><a class="reference internal" href="#core.ml_strategy_optimizer.MLStrategyOptimizer.detect_model_drift"><code class="docutils literal notranslate"><span class="pre">MLStrategyOptimizer.detect_model_drift()</span></code></a></li>
+<li><a class="reference internal" href="#core.ml_strategy_optimizer.MLStrategyOptimizer.get_model_explainability"><code class="docutils literal notranslate"><span class="pre">MLStrategyOptimizer.get_model_explainability()</span></code></a></li>
+<li><a class="reference internal" href="#core.ml_strategy_optimizer.MLStrategyOptimizer.get_model_health_status"><code class="docutils literal notranslate"><span class="pre">MLStrategyOptimizer.get_model_health_status()</span></code></a></li>
+<li><a class="reference internal" href="#core.ml_strategy_optimizer.MLStrategyOptimizer.save_ml_models"><code class="docutils literal notranslate"><span class="pre">MLStrategyOptimizer.save_ml_models()</span></code></a></li>
+<li><a class="reference internal" href="#core.ml_strategy_optimizer.MLStrategyOptimizer.load_ml_models"><code class="docutils literal notranslate"><span class="pre">MLStrategyOptimizer.load_ml_models()</span></code></a></li>
+<li><a class="reference internal" href="#core.ml_strategy_optimizer.MLStrategyOptimizer.add_training_example"><code class="docutils literal notranslate"><span class="pre">MLStrategyOptimizer.add_training_example()</span></code></a></li>
+<li><a class="reference internal" href="#core.ml_strategy_optimizer.MLStrategyOptimizer.run_model_monitoring_loop"><code class="docutils literal notranslate"><span class="pre">MLStrategyOptimizer.run_model_monitoring_loop()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-core.parameter_optimizer">core.parameter_optimizer module</a><ul>
+<li><a class="reference internal" href="#parameter-optimization-framework">Parameter Optimization Framework</a></li>
+<li><a class="reference internal" href="#core.parameter_optimizer.ParameterOptimizer"><code class="docutils literal notranslate"><span class="pre">ParameterOptimizer</span></code></a><ul>
+<li><a class="reference internal" href="#core.parameter_optimizer.ParameterOptimizer.__init__"><code class="docutils literal notranslate"><span class="pre">ParameterOptimizer.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#core.parameter_optimizer.ParameterOptimizer.optimize_strategy_parameters"><code class="docutils literal notranslate"><span class="pre">ParameterOptimizer.optimize_strategy_parameters()</span></code></a></li>
+<li><a class="reference internal" href="#core.parameter_optimizer.ParameterOptimizer.get_optimization_summary"><code class="docutils literal notranslate"><span class="pre">ParameterOptimizer.get_optimization_summary()</span></code></a></li>
+<li><a class="reference internal" href="#core.parameter_optimizer.ParameterOptimizer.save_optimization_results"><code class="docutils literal notranslate"><span class="pre">ParameterOptimizer.save_optimization_results()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#core-performance-analyzer-module">core.performance_analyzer module</a></li>
+<li><a class="reference internal" href="#core-real-time-scorer-module">core.real_time_scorer module</a></li>
+<li><a class="reference internal" href="#core-strategy-comparison-module">core.strategy_comparison module</a></li>
+<li><a class="reference internal" href="#core-trade-executor-module">core.trade_executor module</a></li>
+<li><a class="reference internal" href="#module-core.wallet_behavior_store">core.wallet_behavior_store module</a><ul>
+<li><a class="reference internal" href="#wallet-behavior-data-storage-system">Wallet Behavior Data Storage System</a></li>
+<li><a class="reference internal" href="#core.wallet_behavior_store.WalletBehaviorStore"><code class="docutils literal notranslate"><span class="pre">WalletBehaviorStore</span></code></a><ul>
+<li><a class="reference internal" href="#core.wallet_behavior_store.WalletBehaviorStore.__init__"><code class="docutils literal notranslate"><span class="pre">WalletBehaviorStore.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#core.wallet_behavior_store.WalletBehaviorStore.store_wallet_classification"><code class="docutils literal notranslate"><span class="pre">WalletBehaviorStore.store_wallet_classification()</span></code></a></li>
+<li><a class="reference internal" href="#core.wallet_behavior_store.WalletBehaviorStore.store_behavior_history"><code class="docutils literal notranslate"><span class="pre">WalletBehaviorStore.store_behavior_history()</span></code></a></li>
+<li><a class="reference internal" href="#core.wallet_behavior_store.WalletBehaviorStore.get_wallet_classification"><code class="docutils literal notranslate"><span class="pre">WalletBehaviorStore.get_wallet_classification()</span></code></a></li>
+<li><a class="reference internal" href="#core.wallet_behavior_store.WalletBehaviorStore.get_wallet_behavior_history"><code class="docutils literal notranslate"><span class="pre">WalletBehaviorStore.get_wallet_behavior_history()</span></code></a></li>
+<li><a class="reference internal" href="#core.wallet_behavior_store.WalletBehaviorStore.get_all_classifications"><code class="docutils literal notranslate"><span class="pre">WalletBehaviorStore.get_all_classifications()</span></code></a></li>
+<li><a class="reference internal" href="#core.wallet_behavior_store.WalletBehaviorStore.get_behavior_summary_stats"><code class="docutils literal notranslate"><span class="pre">WalletBehaviorStore.get_behavior_summary_stats()</span></code></a></li>
+<li><a class="reference internal" href="#core.wallet_behavior_store.WalletBehaviorStore.detect_classification_changes"><code class="docutils literal notranslate"><span class="pre">WalletBehaviorStore.detect_classification_changes()</span></code></a></li>
+<li><a class="reference internal" href="#core.wallet_behavior_store.WalletBehaviorStore.optimize_storage"><code class="docutils literal notranslate"><span class="pre">WalletBehaviorStore.optimize_storage()</span></code></a></li>
+<li><a class="reference internal" href="#core.wallet_behavior_store.WalletBehaviorStore.create_backup"><code class="docutils literal notranslate"><span class="pre">WalletBehaviorStore.create_backup()</span></code></a></li>
+<li><a class="reference internal" href="#core.wallet_behavior_store.WalletBehaviorStore.restore_from_backup"><code class="docutils literal notranslate"><span class="pre">WalletBehaviorStore.restore_from_backup()</span></code></a></li>
+<li><a class="reference internal" href="#core.wallet_behavior_store.WalletBehaviorStore.get_storage_stats"><code class="docutils literal notranslate"><span class="pre">WalletBehaviorStore.get_storage_stats()</span></code></a></li>
+<li><a class="reference internal" href="#core.wallet_behavior_store.WalletBehaviorStore.cleanup_old_backups"><code class="docutils literal notranslate"><span class="pre">WalletBehaviorStore.cleanup_old_backups()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#core-wallet-monitor-module">core.wallet_monitor module</a></li>
+<li><a class="reference internal" href="#core-wallet-optimizer-module">core.wallet_optimizer module</a></li>
+<li><a class="reference internal" href="#core-wallet-quality-scorer-module">core.wallet_quality_scorer module</a></li>
+<li><a class="reference internal" href="#core-wallet-selector-module">core.wallet_selector module</a></li>
+<li><a class="reference internal" href="#module-core">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=4ebf8126"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/custom.js"></script>
+    </body>
+</html>

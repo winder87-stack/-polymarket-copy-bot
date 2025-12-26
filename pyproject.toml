@@ -65,6 +65,10 @@ profile = "black"
 line_length = 100
 known_first_party = ["config", "core", "utils", "tests"]
 
+[tool.bandit]
+exclude_dirs = ["tests", "venv", ".venv", "build", "dist"]
+skips = ["B101", "B601"]
+
 [tool.mypy]
 python_version = "3.9"
 warn_return_any = true
