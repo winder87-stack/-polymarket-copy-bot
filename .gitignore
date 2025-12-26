@@ -1,5 +1,6 @@
 # Security
 .env
+.env.example
 *.key
 *.pem
 secrets/
