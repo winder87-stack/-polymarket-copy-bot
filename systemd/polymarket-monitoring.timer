@@ -1,0 +1,11 @@
+[Unit]
+Description=Polymarket Bot Daily Monitoring Timer
+Requires=polymarket-monitoring.service
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+RandomizedDelaySec=3600  # Random delay up to 1 hour to avoid thundering herd
+
+[Install]
+WantedBy=timers.target

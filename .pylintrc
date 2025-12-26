@@ -1,0 +1,123 @@
+[MASTER]
+# Use multiple processes to speed up Pylint
+jobs=0
+
+# Python code to execute, usually for sys.path manipulation
+init-hook='import sys; sys.path.append(".")'
+
+[MESSAGES CONTROL]
+# Disable some annoying warnings that don't apply to this project
+disable=
+    too-few-public-methods,
+    too-many-arguments,
+    too-many-locals,
+    too-many-branches,
+    too-many-statements,
+    invalid-name,
+    missing-docstring,
+    logging-fstring-interpolation,
+    broad-except,
+    fixme,
+    line-too-long,
+    too-many-instance-attributes,
+    too-many-public-methods,
+    protected-access,
+    arguments-differ,
+    signature-differs,
+    abstract-method,
+    no-self-use,
+    unused-argument,
+    import-outside-toplevel,
+    global-statement,
+    redefined-outer-name,
+    too-many-nested-blocks,
+    consider-using-f-string,
+    consider-using-with,
+    consider-using-dict-items,
+    consider-using-enumerate,
+    consider-using-generator,
+    consider-using-set-comprehension,
+    consider-using-dict-comprehension,
+    consider-using-list-comprehension,
+    consider-using-any-or-all,
+    consider-using-max-builtin,
+    consider-using-min-builtin,
+    consider-using-sum-builtin
+
+[FORMAT]
+# Maximum number of characters on a single line
+max-line-length=120
+
+# String used as indentation unit
+indent-string='    '
+
+# Number of spaces of indent required inside a hanging or continued line
+indent-after-paren=4
+
+[REPORTS]
+# Set the output format
+output-format=colorized
+
+# Include message's id in output
+include-ids=yes
+
+# Template used to display messages
+msg-template='{path}:{line}:{column}: [{msg_id}({symbol}), {obj}] {msg}'
+
+[BASIC]
+# Naming style matching correct function names
+function-naming-style=snake_case
+
+# Naming style matching correct variable names
+variable-naming-style=snake_case
+
+# Naming style matching correct constant names
+const-naming-style=UPPER_CASE
+
+# Naming style matching correct method names
+method-naming-style=snake_case
+
+# Naming style matching correct class names
+class-naming-style=PascalCase
+
+# Naming style matching correct module names
+module-naming-style=snake_case
+
+# Naming style matching correct argument names
+argument-naming-style=snake_case
+
+# Naming style matching correct attribute names
+attr-naming-style=snake_case
+
+[SIMILARITIES]
+# Minimum lines number of a similarity
+min-similarity-lines=6
+
+# Ignore comments when computing similarities
+ignore-comments=yes
+
+# Ignore docstrings when computing similarities
+ignore-docstrings=yes
+
+[DESIGN]
+# Maximum number of arguments for function / method
+max-args=8
+
+# Maximum number of locals for function / method body
+max-locals=20
+
+# Maximum number of return / yield for function / method body
+max-returns=8
+
+# Maximum number of branch for function / method body
+max-branches=15
+
+# Maximum number of statements in function / method body
+max-statements=50
+
+[IMPORTS]
+# Allow wildcard imports from these modules
+allow-wildcard-with-all=no
+
+# Analyse import fallback blocks
+analyse-fallback-blocks=no

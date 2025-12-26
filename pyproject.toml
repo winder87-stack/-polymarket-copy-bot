@@ -1,0 +1,108 @@
+[tool.poetry]
+name = "polymarket-copy-bot"
+version = "1.0.0"
+description = "Automated Polymarket copy trading bot with risk management"
+authors = ["Polymarket Bot Team"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "polymarket_copy_bot"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+web3 = "6.15.1"
+py-clob-client = "0.16.0"
+python-telegram-bot = "20.7"
+pydantic = "2.5.3"
+tenacity = "8.2.3"
+python-json-logger = "2.0.7"
+cryptography = "41.0.7"
+requests = "2.31.0"
+aiohttp = "3.9.1"
+pytest = "7.4.3"
+pytest-asyncio = "0.21.1"
+pytest-cov = "4.1.0"
+black = "23.12.1"
+isort = "5.13.2"
+mypy = "1.7.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "7.4.3"
+pytest-asyncio = "0.21.1"
+pytest-cov = "4.1.0"
+black = "23.12.1"
+isort = "5.13.2"
+mypy = "1.7.1"
+
+[tool.poetry.group.security.dependencies]
+bandit = "1.7.5"
+safety = "2.3.5"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 100
+target-version = ['py39']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+known_first_party = ["config", "core", "utils", "tests"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+ignore_errors = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--disable-warnings",
+    "--cov=.",
+    "--cov-report=html:htmlcov",
+    "--cov-report=term-missing",
+    "--cov-fail-under=90"
+]
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "performance: Performance tests",
+    "security: Security tests",
+    "slow: Slow running tests"
+]
+asyncio_mode = "auto"

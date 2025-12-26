@@ -1,0 +1,43 @@
+[Unit]
+Description=Polymarket Copy Trading Bot (Staging)
+After=network.target network-online.target
+Wants=network-online.target
+Requires=polymarket-bot-staging.service
+
+[Service]
+Type=simple
+User=polymarket-staging
+Group=polymarket-staging
+WorkingDirectory=/home/polymarket-staging/polymarket-copy-bot
+Environment="PATH=/home/polymarket-staging/polymarket-copy-bot/venv/bin"
+Environment="PYTHONUNBUFFERED=1"
+Environment="STAGING_MODE=1"
+EnvironmentFile=-/home/polymarket-staging/polymarket-copy-bot/.env.staging
+ExecStart=/home/polymarket-staging/polymarket-copy-bot/venv/bin/python /home/polymarket-staging/polymarket-copy-bot/main_staging.py
+Restart=always
+RestartSec=15
+StartLimitInterval=300
+StartLimitBurst=5
+TimeoutStartSec=300
+TimeoutStopSec=30
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=polymarket-bot-staging
+PermissionsStartOnly=true
+
+# Security hardening for staging
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWriteDirectories=/home/polymarket-staging/polymarket-copy-bot/logs /home/polymarket-staging/polymarket-copy-bot/data
+ReadOnlyDirectories=/home/polymarket-staging/polymarket-copy-bot/config
+InaccessibleDirectories=/home /root /boot /usr /etc /var
+MemoryDenyWriteExecute=yes
+MemoryLimit=256M
+CPUQuota=25%
+LimitNOFILE=512
+
+[Install]
+WantedBy=multi-user.target

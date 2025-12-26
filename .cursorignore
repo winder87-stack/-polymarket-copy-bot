@@ -1,0 +1,21 @@
+# AI Context Ignore Rules
+**/node_modules/**
+**/.git/**
+**/__pycache__/**
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.venv/**
+**/venv/**
+**/logs/**
+**/data/**
+**/.env
+**/*.log
+**/*.sqlite
+**/*.db
+**/.cursor/**
+**/.vscode/**
+**/.idea/**
+**/*.swp
+**/*.swo
+**/.DS_Store

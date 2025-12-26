@@ -1,0 +1,34 @@
+[Unit]
+Description=Polymarket Copy Trading Bot
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=polymarket-bot
+Group=polymarket-bot
+WorkingDirectory=/home/polymarket-bot/polymarket-copy-bot
+Environment="PATH=/home/polymarket-bot/polymarket-copy-bot/venv/bin"
+Environment="PYTHONUNBUFFERED=1"
+ExecStart=/home/polymarket-bot/polymarket-copy-bot/venv/bin/python /home/polymarket-bot/polymarket-copy-bot/main.py
+Restart=always
+RestartSec=10
+StartLimitInterval=300
+StartLimitBurst=5
+TimeoutStartSec=300
+TimeoutStopSec=30
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=polymarket-bot
+PermissionsStartOnly=true
+
+# Security hardening
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWriteDirectories=/home/polymarket-bot/polymarket-copy-bot/logs /home/polymarket-bot/polymarket-copy-bot/data
+
+[Install]
+WantedBy=multi-user.target

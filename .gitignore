@@ -1,0 +1,55 @@
+# Security
+.env
+*.key
+*.pem
+secrets/
+keys/
+private_keys/
+*.p12
+*.pfx
+
+# Virtual Environment
+venv/
+polymarket-bot-env/
+.env/bin/
+.env/include/
+.env/lib/
+.env/pyvenv.cfg
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pye
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*,cover
+.hypothesis/
+
+# Logs and Databases
+logs/
+data/
+*.log
+*.sqlite
+*.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+.cursor/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/

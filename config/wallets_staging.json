@@ -1,0 +1,21 @@
+{
+  "target_wallets": [
+    "0x742d35Cc6597C0E31e0dC2b6e4C7a2b5c8d9e0f1a",
+    "0x852e46Dd76a81F42e5b8C9d3f6E7a8b9c0d1e2f3a",
+    "0x963f57Ee87b92F53e6c9d4e7f8a9b0c1d2e3f4a5b"
+  ],
+  "blacklisted_markets": [],
+  "whitelisted_markets": [],
+  "min_confidence_score": 0.8,
+  "max_trade_frequency": 3,
+  "min_trade_interval_minutes": 10,
+  "staging_mode": true,
+  "testnet_only": true,
+  "notes": [
+    "Staging environment with conservative settings",
+    "Only 3 target wallets for controlled testing",
+    "Higher confidence threshold (0.8 vs 0.7)",
+    "Lower trade frequency limits",
+    "Smaller position sizes and stricter risk limits"
+  ]
+}

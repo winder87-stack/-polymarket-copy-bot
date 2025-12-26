@@ -1,0 +1,29 @@
+[Unit]
+Description=Polymarket Bot Monitoring Service
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=polymarket-bot
+Group=polymarket-bot
+WorkingDirectory=/home/polymarket-bot/polymarket-copy-bot
+Environment="PATH=/home/polymarket-bot/polymarket-copy-bot/venv/bin"
+Environment="PYTHONUNBUFFERED=1"
+ExecStart=/home/polymarket-bot/polymarket-copy-bot/venv/bin/python /home/polymarket-bot/polymarket-copy-bot/monitoring/monitor_all.py --schedule daily
+TimeoutStartSec=1800  # 30 minutes timeout
+TimeoutStopSec=300    # 5 minutes to stop
+
+# Security hardening
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWriteDirectories=/home/polymarket-bot/polymarket-copy-bot/monitoring /home/polymarket-bot/polymarket-copy-bot/logs
+ReadOnlyDirectories=/home/polymarket-bot/polymarket-copy-bot/config
+InaccessibleDirectories=/home /root /boot /usr /etc /var
+MemoryDenyWriteExecute=yes
+MemoryLimit=1G
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,174 @@
+Cursor IDE Rules for Polymarket Copy Bot
+# Language: Python
+# Framework: Web3.py + Polymarket CLOB
+
+rule "security_sensitive_data" {
+  description = "Flag private keys, secrets, and sensitive data"
+  pattern = '''
+  (private_key|PRIVATE_KEY|secret|SECRET|password|PASSWORD|token|TOKEN|key|KEY)
+  '''
+  severity = "error"
+  fix = "REPLACE_WITH_ENV_VAR"
+}
+
+rule "gas_optimization" {
+  description = "Check for gas optimization opportunities"
+  pattern = '''
+  (gas_price|GAS_PRICE|gas_limit|GAS_LIMIT)
+  '''
+  severity = "warning"
+  fix = "ADD_DYNAMIC_GAS_PRICING"
+}
+
+rule "error_handling" {
+  description = "Ensure proper error handling in critical paths"
+  pattern = '''
+  (try:|except|try-catch)
+  '''
+  severity = "info"
+  fix = "ADD_COMPREHENSIVE_ERROR_HANDLING"
+}
+
+rule "type_hints" {
+  description = "Enforce type hints for better code quality"
+  pattern = '''
+  def ([a-zA-Z_][a-zA-Z0-9_]*)\\(.*\\):
+  '''
+  severity = "info"
+  fix = "ADD_TYPE_HINTS"
+}
+
+rule "logging_best_practices" {
+  description = "Ensure proper logging with context"
+  pattern = '''
+  (logger\\.info|logger\\.error|logger\\.warning)
+  '''
+  severity = "info"
+  fix = "ADD_STRUCTURED_LOGGING"
+}
+
+rule "async_await_patterns" {
+  description = "Enforce proper async/await patterns in trading operations"
+  pattern = '''
+  (def [a-zA-Z_][a-zA-Z0-9_]*\\(.*\\):[^{]*$)
+  '''
+  severity = "warning"
+  fix = "ADD_ASYNC_IF_BLOCKING_IO"
+}
+
+rule "web3_address_validation" {
+  description = "Ensure proper Web3 address validation and checksum"
+  pattern = '''
+  (0x[a-fA-F0-9]{40})
+  '''
+  severity = "warning"
+  fix = "ADD_WEB3_CHECKSUM_VALIDATION"
+}
+
+rule "decimal_precision" {
+  description = "Flag potential floating point precision issues in financial calculations"
+  pattern = '''
+  ([0-9]+\\.[0-9]+.*[*/+\\-].*[0-9]+\\.[0-9]+)
+  '''
+  severity = "warning"
+  fix = "USE_DECIMAL_FOR_FINANCIAL_CALCS"
+}
+
+rule "api_rate_limiting" {
+  description = "Ensure rate limiting for external API calls"
+  pattern = '''
+  (requests\\.get|requests\\.post|client\\.[a-zA-Z_]*\\(\\))
+  '''
+  severity = "warning"
+  fix = "ADD_RATE_LIMITING_DECORATOR"
+}
+
+rule "caching_patterns" {
+  description = "Implement caching for expensive operations"
+  pattern = '''
+  (get_market|get_balance|get_order_book)
+  '''
+  severity = "info"
+  fix = "ADD_CACHE_DECORATOR"
+}
+
+rule "blockchain_retry_logic" {
+  description = "Add retry logic for blockchain operations"
+  pattern = '''
+  (web3\\.eth\\.|contract\\.functions\\.)
+  '''
+  severity = "warning"
+  fix = "ADD_TENACITY_RETRY_DECORATOR"
+}
+
+rule "input_validation" {
+  description = "Validate inputs for financial operations"
+  pattern = '''
+  (amount.*=|price.*=|condition_id.*=)
+  '''
+  severity = "warning"
+  fix = "ADD_INPUT_VALIDATION"
+}
+
+rule "secure_logging" {
+  description = "Use secure logging for sensitive operations"
+  pattern = '''
+  (logger\\.(info|error|warning).*private_key|logger\\.(info|error|warning).*wallet)
+  '''
+  severity = "error"
+  fix = "USE_SECURE_LOG_FUNCTION"
+}
+
+rule "position_risk_management" {
+  description = "Ensure position sizing respects risk limits"
+  pattern = '''
+  (max_position|max_daily_loss|stop_loss)
+  '''
+  severity = "warning"
+  fix = "ADD_POSITION_SIZE_VALIDATION"
+}
+
+rule "contract_interaction_safety" {
+  description = "Safe contract interaction patterns"
+  pattern = '''
+  (contract\\..*call|contract\\..*transact)
+  '''
+  severity = "warning"
+  fix = "ADD_CONTRACT_SAFETY_CHECKS"
+}
+
+rule "environment_config_validation" {
+  description = "Validate environment configuration on startup"
+  pattern = '''
+  (os\\.getenv|environ\\.get)
+  '''
+  severity = "info"
+  fix = "ADD_CONFIG_VALIDATION"
+}
+
+rule "health_check_patterns" {
+  description = "Implement health checks for critical components"
+  pattern = '''
+  (class.*Client|class.*Monitor|class.*Executor)
+  '''
+  severity = "info"
+  fix = "ADD_HEALTH_CHECK_METHOD"
+}
+
+rule "graceful_shutdown" {
+  description = "Ensure graceful shutdown handling"
+  pattern = '''
+  (signal\\.signal|KeyboardInterrupt)
+  '''
+  severity = "info"
+  fix = "ADD_GRACEFUL_SHUTDOWN_HANDLER"
+}
+
+rule "memory_management" {
+  description = "Monitor and manage memory usage in long-running processes"
+  pattern = '''
+  (asyncio\\.create_task|while.*True|for.*in.*range)
+  '''
+  severity = "info"
+  fix = "ADD_MEMORY_MONITORING"
+}
