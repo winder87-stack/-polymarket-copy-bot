@@ -18,22 +18,17 @@ class ScannerConfig(BaseModel):
             "https://falling-solitary-research.matic.quiknode.pro/fa518d685fd0c4d00c5d3284da3bb7d63f046e14",
         )
     )
-    USE_TESTNET: bool = Field(default=os.getenv("USE_TESTNET", "true").lower() == "true")
-
-    # FIX: API endpoint configuration
-    API_BASE_URL: str = Field(default="https://polymarket.com/api/v1")  # Updated base URL
-    API_VERSION: str = Field(default="v1")  # Explicit API version
-
-    # FIX: Add fallback endpoints
-    FALLBACK_ENDPOINTS: List[str] = Field(default=[
-        "/leaderboard",
-        "/traders/leaderboard",
-        "/market/leaderboard",
-        "/api/leaderboard"  # Original for fallback
-    ])
-
-    # FIX: Health check configuration
-    HEALTH_CHECK_ENDPOINT: str = Field(default="/health")
+    # 🔴 FIX: Add API endpoint configuration with fallbacks
+    API_ENDPOINTS: List[str] = Field(
+        default=[
+            "https://polymarket.com/api/v1/leaderboard",  # Primary (updated)
+            "https://polymarket.com/api/leaderboard",      # Fallback (original)
+            "https://polymarket.com/v1/leaderboard",       # Alternative
+            "https://polymarket.com/leaderboard"           # Last resort
+        ]
+    )
+    USE_TESTNET: bool = Field(default=False)  # Set to False for production
+    API_TIMEOUT: int = Field(default=30)  # seconds
 
     # Scanner parameters
     MIN_WALLET_AGE_DAYS: int = Field(default=30, description="Minimum wallet age to consider")
