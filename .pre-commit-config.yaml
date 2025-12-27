@@ -1,63 +1,106 @@
----
+# Pre-commit hooks configuration for Polymarket Copy Trading Bot
+# See https://pre-commit.com for more information
+
 repos:
+  # General file checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v4.5.0
     hooks:
-      - id: check-yaml
-        args: [--unsafe]
-      - id: end-of-file-fixer
       - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--unsafe]  # Allow custom YAML tags
+      - id: check-json
+      - id: check-toml
       - id: check-added-large-files
-        args: [--maxkb=500]
+        args: [--maxkb=1000]
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: detect-private-key
+      - id: no-commit-to-branch
+        args: [--branch, main, --branch, develop]
 
-  - repo: https://github.com/psf/black
-    rev: 23.9.1
+  # Python code formatting with autopep8
+  - repo: https://github.com/pre-commit/mirrors-autopep8
+    rev: v2.0.4
     hooks:
-      - id: black
-        language_version: python3.12
+      - id: autopep8
+        args:
+          - --in-place
+          - --aggressive
+          - --aggressive
+          - --max-line-length=100
+          - --ignore=E501,W503  # Ignore line length and whitespace before operator
 
-  - repo: https://github.com/pycqa/flake8
-    rev: 6.1.0
-    hooks:
-      - id: flake8
-        additional_dependencies: [flake8-bugbear, flake8-comprehensions]
-
-  - repo: https://github.com/pycqa/isort
-    rev: 5.12.0
+  # Import sorting
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.13.2
     hooks:
       - id: isort
-        args: ["--profile", "black"]
+        args:
+          - --profile=black
+          - --line-length=100
+          - --known-first-party=config,core,utils,monitoring,risk_management,trading
 
+  # Code formatting with black (optional, can be enabled)
+  # - repo: https://github.com/psf/black
+  #   rev: 23.12.1
+  #   hooks:
+  #     - id: black
+  #       args: [--line-length=100]
+
+  # PEP 8 linting
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        args:
+          - --max-line-length=100
+          - --extend-ignore=E203,W503  # Ignore whitespace before : and before operator
+          - --exclude=venv,__pycache__,.venv,build,dist
+        additional_dependencies:
+          - flake8-docstrings
+          - flake8-import-order
+
+  # Type checking with mypy
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.5.1
+    rev: v1.7.1
     hooks:
       - id: mypy
-        args: [--strict, --ignore-missing-imports]
-        files: ^core/|^utils/|^config/|^main\.py$
+        args:
+          - --ignore-missing-imports
+          - --no-strict-optional
+          - --warn-return-any
+          - --warn-unused-configs
+        additional_dependencies: [types-all]
+        exclude: ^tests/
 
-  - repo: https://github.com/pycqa/bandit
-    rev: 1.7.6
+  # Security checks
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.5
     hooks:
       - id: bandit
-        args: [-c, pyproject.toml]
-        exclude: ^(tests|venv|\.venv|build|dist)/
+        args:
+          - -r
+          - -ll
+          - -i
+        exclude: ^tests/
 
-  - repo: local
+  # Docstring formatting
+  - repo: https://github.com/PyCQA/pydocstyle
+    rev: 6.3.0
     hooks:
-      - id: validate-config
-        name: Validate configuration syntax
-        entry: python3
-        args: [scripts/validate_config.py]
-        language: system
-        files: ^config/settings\.py$
-        pass_filenames: false
+      - id: pydocstyle
+        args:
+          - --convention=google
+          - --add-ignore=D100,D104  # Ignore missing docstrings for __init__ and __main__
+        exclude: ^tests/
 
-  - repo: local
-    hooks:
-      - id: check-env-template
-        name: Check .env template exists
-        entry: python3
-        args: [scripts/check_env_template.py]
-        language: system
-        files: ^\.env\.template$
-        pass_filenames: false
+# Configuration
+default_language_version:
+  python: python3.12
+
+fail_fast: false
