@@ -147,8 +147,12 @@ class SystemMonitor:
                             name=proc.info["name"],
                             cpu_percent=proc.info["cpu_percent"] or 0.0,
                             memory_percent=proc.info["memory_percent"] or 0.0,
-                            memory_rss_mb=mem_info.rss / (1024 * 1024) if mem_info else 0.0,
-                            memory_vms_mb=mem_info.vms / (1024 * 1024) if mem_info else 0.0,
+                            memory_rss_mb=mem_info.rss / (1024 * 1024)
+                            if mem_info
+                            else 0.0,
+                            memory_vms_mb=mem_info.vms / (1024 * 1024)
+                            if mem_info
+                            else 0.0,
                             threads=proc.info["num_threads"] or 0,
                             file_descriptors=num_fds,
                             connections=connections,
@@ -180,13 +184,17 @@ class SystemMonitor:
 
         # Memory alerts
         if metrics.memory_percent > 95:
-            alerts["memory"] = f"CRITICAL: Memory usage at {metrics.memory_percent:.1f}%"
+            alerts["memory"] = (
+                f"CRITICAL: Memory usage at {metrics.memory_percent:.1f}%"
+            )
         elif metrics.memory_percent > 85:
             alerts["memory"] = f"WARNING: Memory usage at {metrics.memory_percent:.1f}%"
 
         # Disk alerts
         if metrics.disk_usage_percent > 95:
-            alerts["disk"] = f"CRITICAL: Disk usage at {metrics.disk_usage_percent:.1f}%"
+            alerts["disk"] = (
+                f"CRITICAL: Disk usage at {metrics.disk_usage_percent:.1f}%"
+            )
         elif metrics.disk_usage_percent > 90:
             alerts["disk"] = f"WARNING: Disk usage at {metrics.disk_usage_percent:.1f}%"
 
@@ -251,28 +259,38 @@ class SystemMonitor:
 
         # Process counts
         process_count = len(psutil.pids())
-        thread_count = sum(1 for p in psutil.process_iter(["num_threads"]) if p.info["num_threads"])
+        thread_count = sum(
+            1 for p in psutil.process_iter(["num_threads"]) if p.info["num_threads"]
+        )
 
         # Calculate rates (MB/s)
         time_diff = 1.0  # Assuming 1 second interval
         disk_read_mb = (
-            (disk_io.read_bytes - self.prev_disk_io.read_bytes) / (1024 * 1024) / time_diff
+            (disk_io.read_bytes - self.prev_disk_io.read_bytes)
+            / (1024 * 1024)
+            / time_diff
             if self.prev_disk_io
             else 0
         )
         disk_write_mb = (
-            (disk_io.write_bytes - self.prev_disk_io.write_bytes) / (1024 * 1024) / time_diff
+            (disk_io.write_bytes - self.prev_disk_io.write_bytes)
+            / (1024 * 1024)
+            / time_diff
             if self.prev_disk_io
             else 0
         )
 
         network_rx_mb = (
-            (net_io.bytes_recv - self.prev_net_io.bytes_recv) / (1024 * 1024) / time_diff
+            (net_io.bytes_recv - self.prev_net_io.bytes_recv)
+            / (1024 * 1024)
+            / time_diff
             if self.prev_net_io
             else 0
         )
         network_tx_mb = (
-            (net_io.bytes_sent - self.prev_net_io.bytes_sent) / (1024 * 1024) / time_diff
+            (net_io.bytes_sent - self.prev_net_io.bytes_sent)
+            / (1024 * 1024)
+            / time_diff
             if self.prev_net_io
             else 0
         )
@@ -311,8 +329,12 @@ def main():
     """CLI interface for system monitoring"""
     import argparse
 
-    parser = argparse.ArgumentParser(description="System Monitor for Polymarket Copy Bot")
-    parser.add_argument("action", choices=["snapshot", "monitor", "processes", "alerts"])
+    parser = argparse.ArgumentParser(
+        description="System Monitor for Polymarket Copy Bot"
+    )
+    parser.add_argument(
+        "action", choices=["snapshot", "monitor", "processes", "alerts"]
+    )
     parser.add_argument(
         "--interval", type=float, default=5.0, help="Monitoring interval in seconds"
     )
@@ -329,16 +351,24 @@ def main():
             print(json.dumps(asdict(metrics), default=str, indent=2))
         else:
             print(f"System Metrics Snapshot ({metrics.timestamp}):")
-            print(f"  CPU: {metrics.cpu_percent:.1f}% (Load: {metrics.cpu_load_1m:.2f})")
-            print(f"  Memory: {metrics.memory_percent:.1f}% ({metrics.memory_used_gb:.1f}GB used)")
-            print(f"  Disk: {metrics.disk_usage_percent:.1f}% ({metrics.disk_used_gb:.1f}GB used)")
+            print(
+                f"  CPU: {metrics.cpu_percent:.1f}% (Load: {metrics.cpu_load_1m:.2f})"
+            )
+            print(
+                f"  Memory: {metrics.memory_percent:.1f}% ({metrics.memory_used_gb:.1f}GB used)"
+            )
+            print(
+                f"  Disk: {metrics.disk_usage_percent:.1f}% ({metrics.disk_used_gb:.1f}GB used)"
+            )
             print(
                 f"  Network: RX {metrics.network_rx_mb:.2f}MB/s, TX {metrics.network_tx_mb:.2f}MB/s"
             )
             print(
                 f"  File Descriptors: {metrics.file_descriptors_used}/{metrics.file_descriptors_limit}"
             )
-            print(f"  Processes: {metrics.process_count}, Threads: {metrics.thread_count}")
+            print(
+                f"  Processes: {metrics.process_count}, Threads: {metrics.thread_count}"
+            )
 
     elif args.action == "monitor":
         print("Starting system monitoring... (Ctrl+C to stop)")

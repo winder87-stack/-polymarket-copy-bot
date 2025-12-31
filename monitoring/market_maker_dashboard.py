@@ -36,7 +36,7 @@ class MarketMakerDashboard:
     insights for trading strategy optimization.
     """
 
-    def __init__(self, market_maker_detector: MarketMakerDetector):
+    def __init__(self, market_maker_detector: MarketMakerDetector) -> None:
         self.detector = market_maker_detector
         self.dashboard_dir = Path("monitoring/dashboard")
         self.market_maker_dir = self.dashboard_dir / "market_maker"
@@ -71,7 +71,9 @@ class MarketMakerDashboard:
 
         try:
             # Generate summary statistics
-            dashboard_data["summary_stats"] = await self.detector.get_market_maker_summary()
+            dashboard_data[
+                "summary_stats"
+            ] = await self.detector.get_market_maker_summary()
 
             # Generate all charts
             dashboard_data["charts"] = await self._generate_all_charts()
@@ -114,16 +116,24 @@ class MarketMakerDashboard:
             df["wallet_address"] = df.index
 
             # 1. Classification Distribution Pie Chart
-            charts["classification_distribution"] = self._create_classification_pie_chart(df)
+            charts["classification_distribution"] = (
+                self._create_classification_pie_chart(df)
+            )
 
             # 2. Market Maker Probability Histogram
-            charts["mm_probability_histogram"] = self._create_mm_probability_histogram(df)
+            charts["mm_probability_histogram"] = self._create_mm_probability_histogram(
+                df
+            )
 
             # 3. Confidence Score Distribution
-            charts["confidence_distribution"] = self._create_confidence_distribution_chart(df)
+            charts["confidence_distribution"] = (
+                self._create_confidence_distribution_chart(df)
+            )
 
             # 4. Trading Frequency vs Balance Score Scatter
-            charts["frequency_balance_scatter"] = self._create_frequency_balance_scatter(df)
+            charts["frequency_balance_scatter"] = (
+                self._create_frequency_balance_scatter(df)
+            )
 
             # 5. Classification Confidence Heatmap
             charts["classification_heatmap"] = self._create_classification_heatmap(df)
@@ -150,14 +160,17 @@ class MarketMakerDashboard:
                     labels=classification_counts.index,
                     values=classification_counts.values,
                     marker_colors=[
-                        self.colors.get(cls, "#95a5a6") for cls in classification_counts.index
+                        self.colors.get(cls, "#95a5a6")
+                        for cls in classification_counts.index
                     ],
                     title="Wallet Classification Distribution",
                 )
             ]
         )
 
-        fig.update_layout(title="Market Maker Classification Distribution", font=dict(size=12))
+        fig.update_layout(
+            title="Market Maker Classification Distribution", font=dict(size=12)
+        )
 
         return {
             "data": fig.to_json(),
@@ -292,7 +305,9 @@ class MarketMakerDashboard:
                         mode="markers",
                         name=classification.replace("_", " ").title(),
                         marker=dict(
-                            size=8, color=self.colors.get(classification, "#95a5a6"), opacity=0.7
+                            size=8,
+                            color=self.colors.get(classification, "#95a5a6"),
+                            opacity=0.7,
                         ),
                         text=class_data["wallet"],
                         hovertemplate="<b>Wallet:</b> %{text}<br>"
@@ -324,12 +339,19 @@ class MarketMakerDashboard:
             title="Trading Frequency vs Balance Score",
             xaxis_title="Trades per Hour",
             yaxis_title="Buy/Sell Balance Score",
-            xaxis=dict(range=[0, max(plot_df["frequency"].max() * 1.1, 10) if plot_data else 10]),
+            xaxis=dict(
+                range=[
+                    0,
+                    max(plot_df["frequency"].max() * 1.1, 10) if plot_data else 10,
+                ]
+            ),
         )
 
         return {
             "data": fig.to_json(),
-            "insights": self._analyze_scatter_plot_insights(plot_data) if plot_data else [],
+            "insights": self._analyze_scatter_plot_insights(plot_data)
+            if plot_data
+            else [],
         }
 
     def _create_classification_heatmap(self, df: pd.DataFrame) -> Dict[str, Any]:
@@ -337,11 +359,15 @@ class MarketMakerDashboard:
 
         # Create pivot table for heatmap
         heatmap_data = df.pivot_table(
-            values="confidence_score", index="classification", aggfunc=["count", "mean", "std"]
+            values="confidence_score",
+            index="classification",
+            aggfunc=["count", "mean", "std"],
         ).round(3)
 
         # Flatten column names
-        heatmap_data.columns = ["_".join(col).strip() for col in heatmap_data.columns.values]
+        heatmap_data.columns = [
+            "_".join(col).strip() for col in heatmap_data.columns.values
+        ]
         heatmap_data = heatmap_data.reset_index()
 
         fig = go.Figure(
@@ -377,15 +403,17 @@ class MarketMakerDashboard:
             wallet
             for wallet, data in all_classifications.items()
             if data.get("classification") == "market_maker"
-        ][
-            :5
-        ]  # Top 5 market makers
+        ][:5]  # Top 5 market makers
 
         for wallet in market_makers:
-            history = self.detector.storage.get_wallet_behavior_history(wallet, limit=20)
+            history = self.detector.storage.get_wallet_behavior_history(
+                wallet, limit=20
+            )
 
             if len(history) >= 2:
-                timestamps = [datetime.fromisoformat(entry["timestamp"]) for entry in history]
+                timestamps = [
+                    datetime.fromisoformat(entry["timestamp"]) for entry in history
+                ]
                 probabilities = [entry["market_maker_probability"] for entry in history]
 
                 fig.add_trace(
@@ -454,7 +482,9 @@ class MarketMakerDashboard:
             )
 
             # Position breaches by classification
-            breaches_by_class = risk_df.groupby("classification")["position_breaches"].mean()
+            breaches_by_class = risk_df.groupby("classification")[
+                "position_breaches"
+            ].mean()
             fig.add_trace(
                 go.Bar(
                     x=breaches_by_class.index,
@@ -480,12 +510,16 @@ class MarketMakerDashboard:
             )
 
             fig.update_layout(
-                title="Risk Assessment by Classification Type", showlegend=False, height=400
+                title="Risk Assessment by Classification Type",
+                showlegend=False,
+                height=400,
             )
 
         return {"data": fig.to_json() if risk_data else None}
 
-    def _analyze_scatter_plot_insights(self, plot_data: List[Dict[str, Any]]) -> List[str]:
+    def _analyze_scatter_plot_insights(
+        self, plot_data: List[Dict[str, Any]]
+    ) -> List[str]:
         """Analyze scatter plot data for insights"""
 
         insights = []
@@ -496,7 +530,9 @@ class MarketMakerDashboard:
 
         # High frequency, high balance = likely market makers
         mm_candidates = df[
-            (df["frequency"] >= 5) & (df["balance"] >= 0.7) & (df["mm_probability"] >= 0.7)
+            (df["frequency"] >= 5)
+            & (df["balance"] >= 0.7)
+            & (df["mm_probability"] >= 0.7)
         ]
 
         if len(mm_candidates) > 0:
@@ -540,7 +576,9 @@ class MarketMakerDashboard:
             insights.append(
                 f"📊 Analyzed {total_wallets} wallets with {mm_percentage:.1f}% classified as market makers"
             )
-            insights.append(f"🎯 Average classification confidence: {avg_confidence:.2f}")
+            insights.append(
+                f"🎯 Average classification confidence: {avg_confidence:.2f}"
+            )
 
             # Classification distribution insights
             distribution = summary.get("classification_distribution", {})
@@ -564,7 +602,9 @@ class MarketMakerDashboard:
                     "⚠️ High market maker concentration detected - potential market manipulation concerns"
                 )
             elif mm_percentage < 5:
-                insights.append("📉 Low market maker activity - limited liquidity provision")
+                insights.append(
+                    "📉 Low market maker activity - limited liquidity provision"
+                )
 
         except Exception as e:
             insights.append(f"Error generating insights: {e}")
@@ -648,7 +688,7 @@ class MarketMakerDashboard:
         <div class="header">
             <h1>🎯 Market Maker Analysis Dashboard</h1>
             <p>Advanced behavioral analysis of Polymarket trading patterns</p>
-            <p style="opacity: 0.9; font-size: 0.9em;">Generated: {dashboard_data['generated_at'][:19].replace('T', ' ')}</p>
+            <p style="opacity: 0.9; font-size: 0.9em;">Generated: {dashboard_data["generated_at"][:19].replace("T", " ")}</p>
         </div>
 
         <!-- Summary Statistics -->
@@ -662,9 +702,21 @@ class MarketMakerDashboard:
         # Key metrics cards
         metrics = [
             ("Total Wallets", summary.get("total_wallets_analyzed", 0), "wallets"),
-            ("Market Makers", f"{summary.get('market_maker_percentage', 0)*100:.1f}%", "of total"),
-            ("Avg MM Probability", f"{summary.get('average_mm_probability', 0):.2f}", "score"),
-            ("High Confidence", summary.get("high_confidence_classifications", 0), "wallets"),
+            (
+                "Market Makers",
+                f"{summary.get('market_maker_percentage', 0) * 100:.1f}%",
+                "of total",
+            ),
+            (
+                "Avg MM Probability",
+                f"{summary.get('average_mm_probability', 0):.2f}",
+                "score",
+            ),
+            (
+                "High Confidence",
+                summary.get("high_confidence_classifications", 0),
+                "wallets",
+            ),
         ]
 
         for label, value, unit in metrics:
@@ -738,8 +790,8 @@ class MarketMakerDashboard:
             alert_class = f"alert-{alert['level']}"
             html += f"""
             <div class="{alert_class} alert">
-                <strong>{alert['title']}</strong><br>
-                {alert['message']}
+                <strong>{alert["title"]}</strong><br>
+                {alert["message"]}
             </div>
             """
 

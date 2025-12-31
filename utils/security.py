@@ -73,7 +73,8 @@ def _mask_sensitive_value(key: str, value: Any) -> Any:
 
         # API key detection
         if any(
-            keyword in value_lower for keyword in ["sk_live", "pk_live", "api_key", "secret_key"]
+            keyword in value_lower
+            for keyword in ["sk_live", "pk_live", "api_key", "secret_key"]
         ):
             return "[REDACTED]"
 
@@ -83,7 +84,9 @@ def _mask_sensitive_value(key: str, value: Any) -> Any:
 
     elif isinstance(value, list):
         # Recursively mask list items
-        return [_mask_sensitive_value(f"item_{i}", item) for i, item in enumerate(value)]
+        return [
+            _mask_sensitive_value(f"item_{i}", item) for i, item in enumerate(value)
+        ]
 
     return value
 
@@ -128,7 +131,15 @@ def get_environment_hash() -> str:
         key_lower = key.lower()
         if any(
             sensitive in key_lower
-            for sensitive in ["key", "secret", "password", "token", "auth", "wallet", "private"]
+            for sensitive in [
+                "key",
+                "secret",
+                "password",
+                "token",
+                "auth",
+                "wallet",
+                "private",
+            ]
         ):
             continue
         env_vars[key] = os.environ[key]
@@ -164,7 +175,10 @@ if __name__ == "__main__":
         "amount": 100.0,
         "token_id": "0x1234567890abcdef1234567890abcdef12345678",
         "password": "mysecretpassword",
-        "nested": {"secret_key": "nested_secret_value", "data": [1, 2, 3, "sensitive_data"]},
+        "nested": {
+            "secret_key": "nested_secret_value",
+            "data": [1, 2, 3, "sensitive_data"],
+        },
     }
 
     logging.basicConfig(level=logging.INFO)

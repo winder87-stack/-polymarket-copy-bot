@@ -239,7 +239,9 @@ class TestCircuitBreakerErrorHandling:
     """Test circuit breaker error handling and edge cases"""
 
     @pytest.mark.asyncio
-    async def test_circuit_breaker_handles_time_calculation_errors(self, trade_executor):
+    async def test_circuit_breaker_handles_time_calculation_errors(
+        self, trade_executor
+    ):
         """Test circuit breaker handles errors in time calculations gracefully"""
         # Setup
         trade_executor.activate_circuit_breaker("Test errors")
@@ -315,7 +317,9 @@ class TestCircuitBreakerConcurrency:
             if index % 3 == 0:
                 trade_executor.activate_circuit_breaker(f"Activation {index}")
             # All tasks check circuit breaker
-            return await trade_executor._check_circuit_breaker_for_trade(f"trade_{index}")
+            return await trade_executor._check_circuit_breaker_for_trade(
+                f"trade_{index}"
+            )
 
         # Execute concurrent operations
         tasks = [activate_and_check(i) for i in range(15)]
@@ -324,7 +328,9 @@ class TestCircuitBreakerConcurrency:
         # Verify circuit breaker was activated and all trades blocked
         assert trade_executor.circuit_breaker_active
         # Most results should be blocked (some might slip through before activation)
-        blocked_count = sum(1 for r in results if r is not None and r["status"] == "skipped")
+        blocked_count = sum(
+            1 for r in results if r is not None and r["status"] == "skipped"
+        )
         assert blocked_count > 10  # At least most trades should be blocked
 
 

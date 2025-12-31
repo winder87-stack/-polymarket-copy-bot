@@ -302,7 +302,9 @@ class TestJsonSanitization:
 
     def test_json_with_dangerous_content(self):
         """Test sanitization of JSON with potentially dangerous content"""
-        dangerous_json = '{"script": "<script>alert(\'xss\')</script>", "normal": "safe"}'
+        dangerous_json = (
+            '{"script": "<script>alert(\'xss\')</script>", "normal": "safe"}'
+        )
         result = InputValidator.sanitize_json_input(dangerous_json)
 
         # Should remove dangerous fields
@@ -601,8 +603,16 @@ class TestErrorMessages:
     def test_descriptive_error_messages(self):
         """Test that error messages are descriptive and safe"""
         test_cases = [
-            ("", InputValidator.validate_wallet_address, "Wallet address cannot be empty"),
-            ("invalid", InputValidator.validate_private_key, "Invalid private key format"),
+            (
+                "",
+                InputValidator.validate_wallet_address,
+                "Wallet address cannot be empty",
+            ),
+            (
+                "invalid",
+                InputValidator.validate_private_key,
+                "Invalid private key format",
+            ),
             (-1, InputValidator.validate_trade_amount, "Invalid amount value"),
             (1.5, InputValidator.validate_price, "out of valid range"),
             ("", InputValidator.validate_condition_id, "Condition ID cannot be empty"),
@@ -623,7 +633,12 @@ class TestErrorMessages:
     def test_error_message_consistency(self):
         """Test that similar validation errors have consistent messages"""
         # Test multiple invalid wallet addresses
-        invalid_addresses = ["", "0x", "invalid", "0xgggggggggggggggggggggggggggggggggggggggg"]
+        invalid_addresses = [
+            "",
+            "0x",
+            "invalid",
+            "0xgggggggggggggggggggggggggggggggggggggggg",
+        ]
 
         for address in invalid_addresses:
             try:
@@ -676,12 +691,17 @@ class TestValidationIntegration:
             # Should validate successfully
             validated_config = InputValidator.validate_config_settings(config_dict)
             assert validated_config["PRIVATE_KEY"] == config_dict["PRIVATE_KEY"]
-            assert validated_config["MAX_POSITION_SIZE"] == config_dict["MAX_POSITION_SIZE"]
+            assert (
+                validated_config["MAX_POSITION_SIZE"]
+                == config_dict["MAX_POSITION_SIZE"]
+            )
 
     def test_trade_workflow_validation(self):
         """Test complete trade workflow validation"""
         # Simulate a complete trade order validation
-        condition_id = "0x1234567890123456789012345678901234567890123456789012345678901234"
+        condition_id = (
+            "0x1234567890123456789012345678901234567890123456789012345678901234"
+        )
         amount = 10.5
         price = 0.75
         token_id = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"

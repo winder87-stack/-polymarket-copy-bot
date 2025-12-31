@@ -145,10 +145,14 @@ class InputValidator:
                 raise ValidationError(f"Amount must be positive: {decimal_amount}")
 
             if float(decimal_amount) < min_amount:
-                raise ValidationError(f"Amount below minimum {min_amount}: {decimal_amount}")
+                raise ValidationError(
+                    f"Amount below minimum {min_amount}: {decimal_amount}"
+                )
 
             if float(decimal_amount) > max_amount:
-                raise ValidationError(f"Amount above maximum {max_amount}: {decimal_amount}")
+                raise ValidationError(
+                    f"Amount above maximum {max_amount}: {decimal_amount}"
+                )
 
             # Convert to float with precision
             return float(decimal_amount.quantize(Decimal("0.000000")))
@@ -158,7 +162,9 @@ class InputValidator:
 
     @staticmethod
     def validate_price(
-        price: Union[int, float, str, Decimal], min_price: float = 0.01, max_price: float = 0.99
+        price: Union[int, float, str, Decimal],
+        min_price: float = 0.01,
+        max_price: float = 0.99,
     ) -> float:
         """
         Validate price between 0 and 1
@@ -190,7 +196,9 @@ class InputValidator:
 
             # Validate precision
             if decimal_price.as_tuple().exponent < -6:  # More than 6 decimal places
-                logger.warning(f"Price {decimal_price} has high precision, rounding to 6 decimals")
+                logger.warning(
+                    f"Price {decimal_price} has high precision, rounding to 6 decimals"
+                )
                 decimal_price = decimal_price.quantize(Decimal("0.000000"))
 
             return float(decimal_price)
@@ -312,14 +320,17 @@ class InputValidator:
             return {
                 k: InputValidator._deep_sanitize(v)
                 for k, v in obj.items()
-                if not k.lower().startswith(("script", "eval", "exec", "import", "os", "sys"))
+                if not k.lower().startswith(
+                    ("script", "eval", "exec", "import", "os", "sys")
+                )
             }
         elif isinstance(obj, list):
             return [InputValidator._deep_sanitize(item) for item in obj]
         elif isinstance(obj, str):
             # Remove potentially dangerous patterns
             if any(
-                pattern in obj.lower() for pattern in ["<script", "javascript:", "data:text/html"]
+                pattern in obj.lower()
+                for pattern in ["<script", "javascript:", "data:text/html"]
             ):
                 return "[SANITIZED]"
             return obj
@@ -406,7 +417,9 @@ class InputValidator:
         return response_data
 
     @staticmethod
-    def validate_hex_string(hex_str: str, min_length: int = 2, max_length: int = 66) -> str:
+    def validate_hex_string(
+        hex_str: str, min_length: int = 2, max_length: int = 66
+    ) -> str:
         """
         Validate hexadecimal string
 

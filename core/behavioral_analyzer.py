@@ -51,7 +51,9 @@ class BehaviorPatternTracker:
 
         # Behavioral state tracking
         self.wallet_patterns: Dict[str, Dict[str, Any]] = {}
-        self.performance_trends = BoundedCache(max_size=5000, ttl_seconds=2592000)  # 30 days
+        self.performance_trends = BoundedCache(
+            max_size=5000, ttl_seconds=2592000
+        )  # 30 days
 
         logger.info("🧠 Behavior pattern tracker initialized")
 
@@ -80,7 +82,9 @@ class BehaviorPatternTracker:
             # Filter recent trades
             cutoff_date = datetime.now() - timedelta(days=analysis_period_days)
             recent_trades = [
-                t for t in trade_history if datetime.fromisoformat(t["timestamp"]) > cutoff_date
+                t
+                for t in trade_history
+                if datetime.fromisoformat(t["timestamp"]) > cutoff_date
             ]
 
             if len(recent_trades) < 20:
@@ -97,35 +101,37 @@ class BehaviorPatternTracker:
             }
 
             # Core behavioral metrics
-            analysis_results["strategy_evolution"] = await self._detect_strategy_evolution(
-                recent_trades
-            )
-            analysis_results["performance_decay"] = await self._analyze_performance_decay(
-                recent_trades
-            )
-            analysis_results["behavioral_consistency"] = await self._assess_behavioral_consistency(
-                recent_trades
-            )
-            analysis_results["emotional_trading"] = await self._detect_emotional_trading(
-                recent_trades
-            )
-            analysis_results["risk_management_quality"] = (
-                await self._assess_risk_management_quality(recent_trades)
-            )
-            analysis_results["capital_efficiency"] = await self._analyze_capital_efficiency(
-                recent_trades
-            )
-            analysis_results["pattern_stability"] = await self._assess_pattern_stability(
-                recent_trades
-            )
+            analysis_results[
+                "strategy_evolution"
+            ] = await self._detect_strategy_evolution(recent_trades)
+            analysis_results[
+                "performance_decay"
+            ] = await self._analyze_performance_decay(recent_trades)
+            analysis_results[
+                "behavioral_consistency"
+            ] = await self._assess_behavioral_consistency(recent_trades)
+            analysis_results[
+                "emotional_trading"
+            ] = await self._detect_emotional_trading(recent_trades)
+            analysis_results[
+                "risk_management_quality"
+            ] = await self._assess_risk_management_quality(recent_trades)
+            analysis_results[
+                "capital_efficiency"
+            ] = await self._analyze_capital_efficiency(recent_trades)
+            analysis_results[
+                "pattern_stability"
+            ] = await self._assess_pattern_stability(recent_trades)
 
             # Composite sustainability score
-            analysis_results["sustainability_score"] = self._calculate_sustainability_score(
-                analysis_results
+            analysis_results["sustainability_score"] = (
+                self._calculate_sustainability_score(analysis_results)
             )
 
             # Early warning signals
-            analysis_results["early_warnings"] = self._generate_early_warnings(analysis_results)
+            analysis_results["early_warnings"] = self._generate_early_warnings(
+                analysis_results
+            )
 
             # Store pattern data for future comparison
             self._store_behavioral_patterns(wallet_address, analysis_results)
@@ -133,7 +139,9 @@ class BehaviorPatternTracker:
             return analysis_results
 
         except Exception as e:
-            logger.error(f"Error analyzing behavioral patterns for {wallet_address}: {e}")
+            logger.error(
+                f"Error analyzing behavioral patterns for {wallet_address}: {e}"
+            )
             return {
                 "wallet_address": wallet_address,
                 "error": str(e),
@@ -180,21 +188,33 @@ class BehaviorPatternTracker:
             # Analyze change point significance
             if change_points:
                 # Find most significant change points across all metrics
-                significant_changes = self._analyze_change_point_significance(change_points)
+                significant_changes = self._analyze_change_point_significance(
+                    change_points
+                )
 
                 if significant_changes:
                     evolution_analysis["evolution_detected"] = True
-                    evolution_analysis["evolution_points"] = significant_changes["change_points"]
-                    evolution_analysis["evolution_magnitude"] = significant_changes["magnitude"]
-                    evolution_analysis["evolution_confidence"] = significant_changes["confidence"]
+                    evolution_analysis["evolution_points"] = significant_changes[
+                        "change_points"
+                    ]
+                    evolution_analysis["evolution_magnitude"] = significant_changes[
+                        "magnitude"
+                    ]
+                    evolution_analysis["evolution_confidence"] = significant_changes[
+                        "confidence"
+                    ]
 
                     # Calculate strategy stability score (lower evolution = higher stability)
                     stability_penalty = min(100, significant_changes["magnitude"] * 200)
-                    evolution_analysis["strategy_stability_score"] = max(0, 100 - stability_penalty)
+                    evolution_analysis["strategy_stability_score"] = max(
+                        0, 100 - stability_penalty
+                    )
 
                     # Create evolution timeline
-                    evolution_analysis["evolution_timeline"] = self._create_evolution_timeline(
-                        significant_changes, trade_history
+                    evolution_analysis["evolution_timeline"] = (
+                        self._create_evolution_timeline(
+                            significant_changes, trade_history
+                        )
                     )
 
             return evolution_analysis
@@ -262,7 +282,9 @@ class BehaviorPatternTracker:
 
         return metrics
 
-    def _detect_change_points(self, values: List[float], metric_name: str) -> List[Dict[str, Any]]:
+    def _detect_change_points(
+        self, values: List[float], metric_name: str
+    ) -> List[Dict[str, Any]]:
         """Detect change points in a time series using statistical methods."""
 
         try:
@@ -333,9 +355,9 @@ class BehaviorPatternTracker:
             rolling_var = pd.Series(values).rolling(window=window_size).var()
 
             # Find significant variance changes
-            var_changes = np.where(np.abs(np.diff(rolling_var.values)) > np.std(rolling_var) * 1.5)[
-                0
-            ]
+            var_changes = np.where(
+                np.abs(np.diff(rolling_var.values)) > np.std(rolling_var) * 1.5
+            )[0]
 
             return var_changes.tolist()
 
@@ -356,8 +378,12 @@ class BehaviorPatternTracker:
                 after_segment = values[i : i + window_size]
 
                 if len(before_segment) >= 5 and len(after_segment) >= 5:
-                    before_slope = np.polyfit(range(len(before_segment)), before_segment, 1)[0]
-                    after_slope = np.polyfit(range(len(after_segment)), after_segment, 1)[0]
+                    before_slope = np.polyfit(
+                        range(len(before_segment)), before_segment, 1
+                    )[0]
+                    after_slope = np.polyfit(
+                        range(len(after_segment)), after_segment, 1
+                    )[0]
 
                     slope_change = abs(after_slope - before_slope)
 
@@ -369,7 +395,9 @@ class BehaviorPatternTracker:
         except Exception:
             return []
 
-    def _filter_change_points(self, change_points: List[int], series_length: int) -> List[int]:
+    def _filter_change_points(
+        self, change_points: List[int], series_length: int
+    ) -> List[int]:
         """Filter and deduplicate change points."""
 
         if not change_points:
@@ -381,14 +409,19 @@ class BehaviorPatternTracker:
         filtered_cps = []
         for cp in sorted_cps:
             # Check if too close to previously added points
-            if not filtered_cps or min(abs(cp - prev_cp) for prev_cp in filtered_cps) >= 5:
+            if (
+                not filtered_cps
+                or min(abs(cp - prev_cp) for prev_cp in filtered_cps) >= 5
+            ):
                 # Ensure within valid range
                 if 0.1 * series_length <= cp <= 0.9 * series_length:
                     filtered_cps.append(cp)
 
         return filtered_cps
 
-    def _calculate_change_point_confidence(self, change_point: int, values: np.ndarray) -> float:
+    def _calculate_change_point_confidence(
+        self, change_point: int, values: np.ndarray
+    ) -> float:
         """Calculate confidence score for a change point."""
 
         try:
@@ -403,8 +436,14 @@ class BehaviorPatternTracker:
             t_stat, p_value = stats.ttest_ind(before_values, after_values)
 
             # F-test for variance difference
-            f_stat = np.var(before_values) / np.var(after_values) if np.var(after_values) > 0 else 1
-            f_p_value = stats.f.cdf(f_stat, len(before_values) - 1, len(after_values) - 1)
+            f_stat = (
+                np.var(before_values) / np.var(after_values)
+                if np.var(after_values) > 0
+                else 1
+            )
+            f_p_value = stats.f.cdf(
+                f_stat, len(before_values) - 1, len(after_values) - 1
+            )
 
             # Combined confidence (lower p-values = higher confidence)
             mean_confidence = 1 - p_value
@@ -470,7 +509,9 @@ class BehaviorPatternTracker:
                 positions_scaled = scaler.fit_transform(positions.reshape(-1, 1))
 
                 # Cluster positions
-                kmeans = KMeans(n_clusters=min(3, len(positions)), random_state=42, n_init=10)
+                kmeans = KMeans(
+                    n_clusters=min(3, len(positions)), random_state=42, n_init=10
+                )
                 clusters = kmeans.fit_predict(positions_scaled)
 
                 # Group by cluster
@@ -488,7 +529,9 @@ class BehaviorPatternTracker:
                 cluster_stats = []
                 for cluster_id, cluster_changes in grouped.items():
                     np.mean([c["position"] for c in cluster_changes])
-                    total_confidence = np.mean([c["confidence"] for c in cluster_changes])
+                    total_confidence = np.mean(
+                        [c["confidence"] for c in cluster_changes]
+                    )
                     magnitude = (
                         len(cluster_changes) * total_confidence
                     )  # Simple magnitude calculation
@@ -587,18 +630,25 @@ class BehaviorPatternTracker:
 
             # Combine decay signals
             decay_signals = [trend_decay, volatility_decay, consistency_decay]
-            decay_scores = [d["decay_score"] for d in decay_signals if "decay_score" in d]
+            decay_scores = [
+                d["decay_score"] for d in decay_signals if "decay_score" in d
+            ]
 
             if decay_scores:
                 overall_decay_score = np.mean(decay_scores)
                 decay_confidence = np.std(decay_scores)  # Lower std = higher confidence
 
                 decay_analysis["decay_rate"] = overall_decay_score
-                decay_analysis["decay_confidence"] = min(1.0, 1.0 / (1.0 + decay_confidence))
+                decay_analysis["decay_confidence"] = min(
+                    1.0, 1.0 / (1.0 + decay_confidence)
+                )
 
                 # Determine if decay is significant
                 threshold = 0.1  # 10% decay threshold
-                if overall_decay_score > threshold and decay_analysis["decay_confidence"] > 0.7:
+                if (
+                    overall_decay_score > threshold
+                    and decay_analysis["decay_confidence"] > 0.7
+                ):
                     decay_analysis["decay_detected"] = True
                     decay_analysis["decay_magnitude"] = overall_decay_score
 
@@ -611,8 +661,10 @@ class BehaviorPatternTracker:
                         decay_analysis["performance_trend"] = "mild_decay"
 
                     # Estimate time to significance
-                    decay_analysis["time_to_significance"] = self._estimate_decay_time_significance(
-                        performance_series, overall_decay_score
+                    decay_analysis["time_to_significance"] = (
+                        self._estimate_decay_time_significance(
+                            performance_series, overall_decay_score
+                        )
                     )
 
             return decay_analysis
@@ -622,7 +674,9 @@ class BehaviorPatternTracker:
             decay_analysis["error"] = str(e)
             return decay_analysis
 
-    def _extract_performance_series(self, trade_history: List[Dict[str, Any]]) -> List[float]:
+    def _extract_performance_series(
+        self, trade_history: List[Dict[str, Any]]
+    ) -> List[float]:
         """Extract rolling performance metrics for decay analysis."""
 
         try:
@@ -665,7 +719,9 @@ class BehaviorPatternTracker:
 
             # Linear regression trend
             x = np.arange(len(performance_series))
-            slope, intercept, r_value, p_value, std_err = stats.linregress(x, performance_series)
+            slope, intercept, r_value, p_value, std_err = stats.linregress(
+                x, performance_series
+            )
 
             # Negative slope indicates decay
             decay_score = max(0, -slope)  # Only consider negative trends
@@ -681,7 +737,9 @@ class BehaviorPatternTracker:
         except Exception:
             return {"decay_score": 0.0}
 
-    def _detect_volatility_decay(self, performance_series: List[float]) -> Dict[str, Any]:
+    def _detect_volatility_decay(
+        self, performance_series: List[float]
+    ) -> Dict[str, Any]:
         """Detect decay through increasing volatility."""
 
         try:
@@ -699,7 +757,9 @@ class BehaviorPatternTracker:
 
             # Check if volatility is increasing
             if len(rolling_volatility) >= 3:
-                vol_trend = np.polyfit(range(len(rolling_volatility)), rolling_volatility, 1)[0]
+                vol_trend = np.polyfit(
+                    range(len(rolling_volatility)), rolling_volatility, 1
+                )[0]
                 decay_score = max(0, vol_trend * 10)  # Scale appropriately
             else:
                 decay_score = 0.0
@@ -709,7 +769,9 @@ class BehaviorPatternTracker:
         except Exception:
             return {"decay_score": 0.0}
 
-    def _detect_consistency_decay(self, trade_history: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _detect_consistency_decay(
+        self, trade_history: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Detect decay in behavioral consistency."""
 
         try:
@@ -743,7 +805,9 @@ class BehaviorPatternTracker:
         except Exception:
             return {"decay_score": 0.0}
 
-    def _calculate_consistency_metrics(self, trades: List[Dict[str, Any]]) -> Dict[str, float]:
+    def _calculate_consistency_metrics(
+        self, trades: List[Dict[str, Any]]
+    ) -> Dict[str, float]:
         """Calculate consistency metrics for a set of trades."""
 
         metrics = {}
@@ -781,7 +845,9 @@ class BehaviorPatternTracker:
 
             # Simple extrapolation - how many more periods until performance reaches zero
             current_performance = performance_series[-1]
-            periods_to_zero = int(current_performance / decay_rate) if decay_rate > 0 else 0
+            periods_to_zero = (
+                int(current_performance / decay_rate) if decay_rate > 0 else 0
+            )
 
             return min(periods_to_zero, 365)  # Cap at 1 year
 
@@ -802,8 +868,12 @@ class BehaviorPatternTracker:
 
         try:
             # Analyze different aspects of consistency
-            temporal_consistency = await self._analyze_temporal_consistency(trade_history)
-            strategy_consistency = await self._analyze_strategy_consistency(trade_history)
+            temporal_consistency = await self._analyze_temporal_consistency(
+                trade_history
+            )
+            strategy_consistency = await self._analyze_strategy_consistency(
+                trade_history
+            )
             risk_consistency = await self._analyze_risk_consistency(trade_history)
 
             consistency_components = {
@@ -813,7 +883,9 @@ class BehaviorPatternTracker:
             }
 
             # Calculate overall consistency score
-            component_scores = [c["score"] for c in consistency_components.values() if "score" in c]
+            component_scores = [
+                c["score"] for c in consistency_components.values() if "score" in c
+            ]
             overall_score = np.mean(component_scores) if component_scores else 0.5
 
             consistency_analysis["consistency_score"] = overall_score
@@ -1015,7 +1087,9 @@ class BehaviorPatternTracker:
                     risk_metrics["sharpe_consistency"] = max(0, 1 - sharpe_cv)
 
             # Overall risk consistency score
-            risk_scores = [score for score in risk_metrics.values() if score is not None]
+            risk_scores = [
+                score for score in risk_metrics.values() if score is not None
+            ]
             risk_consistency_score = np.mean(risk_scores) if risk_scores else 0.5
 
             return {
@@ -1058,7 +1132,12 @@ class BehaviorPatternTracker:
             panic_selling = self._detect_panic_selling(trade_history)
             size_escalation = self._detect_size_escalation(trade_history)
 
-            emotional_patterns = [revenge_trading, overconfidence, panic_selling, size_escalation]
+            emotional_patterns = [
+                revenge_trading,
+                overconfidence,
+                panic_selling,
+                size_escalation,
+            ]
             emotional_scores = [p["score"] for p in emotional_patterns if "score" in p]
 
             if emotional_scores:
@@ -1086,7 +1165,9 @@ class BehaviorPatternTracker:
             emotional_analysis["error"] = str(e)
             return emotional_analysis
 
-    def _detect_revenge_trading(self, trade_history: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _detect_revenge_trading(
+        self, trade_history: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Detect revenge trading patterns (increasing size after losses)."""
 
         try:
@@ -1114,12 +1195,14 @@ class BehaviorPatternTracker:
             if len(trade_history) > 5:
                 revenge_ratio = revenge_instances / (len(trade_history) - 2)
                 revenge_score = (
-                    revenge_score / max(1, revenge_instances) if revenge_instances > 0 else 0
+                    revenge_score / max(1, revenge_instances)
+                    if revenge_instances > 0
+                    else 0
                 )
 
                 return {
                     "pattern": "revenge_trading",
-                    "score": min(revenue_score, 1.0),
+                    "score": min(revenge_score, 1.0),
                     "instances": revenge_instances,
                     "ratio": revenge_ratio,
                     "detected": revenge_ratio > 0.1,
@@ -1130,7 +1213,9 @@ class BehaviorPatternTracker:
         except Exception:
             return {"pattern": "revenge_trading", "score": 0.0}
 
-    def _detect_overconfidence(self, trade_history: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _detect_overconfidence(
+        self, trade_history: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Detect overconfidence patterns (increasing risk after wins)."""
 
         try:
@@ -1143,7 +1228,9 @@ class BehaviorPatternTracker:
 
                 # Check for win followed by increased risk
                 prev_pnl = prev_trade.get("pnl_pct", 0)
-                prev_risk = abs(prev_trade.get("stop_loss_pct", 0) or 0.02)  # Default 2%
+                prev_risk = abs(
+                    prev_trade.get("stop_loss_pct", 0) or 0.02
+                )  # Default 2%
                 current_risk = abs(current_trade.get("stop_loss_pct", 0) or 0.02)
 
                 if (
@@ -1153,7 +1240,9 @@ class BehaviorPatternTracker:
                     overconfidence_score += min(1.0, (current_risk / prev_risk - 1) / 2)
 
             if len(trade_history) > 5:
-                overconfidence_ratio = overconfidence_instances / (len(trade_history) - 1)
+                overconfidence_ratio = overconfidence_instances / (
+                    len(trade_history) - 1
+                )
                 overconfidence_score = (
                     overconfidence_score / max(1, overconfidence_instances)
                     if overconfidence_instances > 0
@@ -1173,7 +1262,9 @@ class BehaviorPatternTracker:
         except Exception:
             return {"pattern": "overconfidence", "score": 0.0}
 
-    def _detect_panic_selling(self, trade_history: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _detect_panic_selling(
+        self, trade_history: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Detect panic selling patterns during drawdowns."""
 
         try:
@@ -1207,7 +1298,9 @@ class BehaviorPatternTracker:
 
             if len(trade_history) > 5:
                 panic_ratio = panic_instances / len(trade_history)
-                panic_score = panic_score / max(1, panic_instances) if panic_instances > 0 else 0
+                panic_score = (
+                    panic_score / max(1, panic_instances) if panic_instances > 0 else 0
+                )
 
                 return {
                     "pattern": "panic_selling",
@@ -1222,11 +1315,14 @@ class BehaviorPatternTracker:
         except Exception:
             return {"pattern": "panic_selling", "score": 0.0}
 
-    def _detect_size_escalation(self, trade_history: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _detect_size_escalation(
+        self, trade_history: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Detect position size escalation during streaks."""
 
         try:
             escalation_instances = 0
+            escalation_score = 0.0
 
             current_streak = 0
             streak_direction = 0
@@ -1257,7 +1353,9 @@ class BehaviorPatternTracker:
                     streak_direction = 0
 
                 # Check for size escalation during streaks
-                if current_streak >= 2 and current_size > prev_size * 1.3:  # 30% size increase
+                if (
+                    current_streak >= 2 and current_size > prev_size * 1.3
+                ):  # 30% size increase
                     escalation_instances += 1
                     escalation_score += min(
                         1.0, (current_size / prev_size - 1) / 2
@@ -1311,7 +1409,9 @@ class BehaviorPatternTracker:
 
             # Analyze drawdown management
             drawdown_management = self._analyze_drawdown_management(trade_history)
-            risk_assessment["risk_components"]["drawdown_management"] = drawdown_management
+            risk_assessment["risk_components"]["drawdown_management"] = (
+                drawdown_management
+            )
 
             # Analyze diversification
             diversification = self._analyze_portfolio_diversification(trade_history)
@@ -1338,7 +1438,9 @@ class BehaviorPatternTracker:
                     risk_assessment["risk_rating"] = "poor"
 
                 # Identify improvement areas
-                for component_name, component_data in risk_assessment["risk_components"].items():
+                for component_name, component_data in risk_assessment[
+                    "risk_components"
+                ].items():
                     if component_data.get("score", 1.0) < 0.6:
                         risk_assessment["improvement_areas"].append(component_name)
 
@@ -1355,11 +1457,17 @@ class BehaviorPatternTracker:
         """Analyze how effectively stop losses are used."""
 
         try:
-            trades_with_stops = [t for t in trade_history if t.get("stop_loss_pct") is not None]
+            trades_with_stops = [
+                t for t in trade_history if t.get("stop_loss_pct") is not None
+            ]
             total_trades = len(trade_history)
 
             if not trades_with_stops:
-                return {"score": 0.0, "stop_loss_usage": 0.0, "reason": "No stop losses detected"}
+                return {
+                    "score": 0.0,
+                    "stop_loss_usage": 0.0,
+                    "reason": "No stop losses detected",
+                }
 
             stop_usage_rate = len(trades_with_stops) / total_trades
 
@@ -1368,8 +1476,12 @@ class BehaviorPatternTracker:
             avg_stop_distance = np.mean(stop_distances)
 
             # Analyze stop execution
-            stops_hit = sum(1 for t in trades_with_stops if t.get("stop_executed", False))
-            stop_execution_rate = stops_hit / len(trades_with_stops) if trades_with_stops else 0
+            stops_hit = sum(
+                1 for t in trades_with_stops if t.get("stop_executed", False)
+            )
+            stop_execution_rate = (
+                stops_hit / len(trades_with_stops) if trades_with_stops else 0
+            )
 
             # Score based on reasonable stop distances (2-15% typically good)
             if 0.02 <= avg_stop_distance <= 0.15:
@@ -1404,7 +1516,11 @@ class BehaviorPatternTracker:
         """Analyze quality of position sizing decisions."""
 
         try:
-            sizes = [abs(t.get("amount", 0)) for t in trade_history if t.get("amount", 0) != 0]
+            sizes = [
+                abs(t.get("amount", 0))
+                for t in trade_history
+                if t.get("amount", 0) != 0
+            ]
 
             if not sizes:
                 return {"score": 0.5, "reason": "No position size data"}
@@ -1418,12 +1534,16 @@ class BehaviorPatternTracker:
             if 0.3 <= size_cv <= 0.8:
                 consistency_score = 1.0
             elif size_cv < 0.3:
-                consistency_score = 0.7  # Too consistent (may indicate lack of adaptability)
+                consistency_score = (
+                    0.7  # Too consistent (may indicate lack of adaptability)
+                )
             else:
                 consistency_score = 0.4  # Too volatile (may indicate emotional trading)
 
             # Analyze size vs outcome relationship
-            size_outcome_correlation = self._calculate_size_outcome_correlation(trade_history)
+            size_outcome_correlation = self._calculate_size_outcome_correlation(
+                trade_history
+            )
 
             # Good sizing should not have strong correlation with outcomes (avoids size escalation)
             sizing_adaptability = 1 - abs(size_outcome_correlation)
@@ -1442,7 +1562,9 @@ class BehaviorPatternTracker:
             logger.error(f"Error analyzing position sizing quality: {e}")
             return {"score": 0.5, "error": str(e)}
 
-    def _calculate_size_outcome_correlation(self, trade_history: List[Dict[str, Any]]) -> float:
+    def _calculate_size_outcome_correlation(
+        self, trade_history: List[Dict[str, Any]]
+    ) -> float:
         """Calculate correlation between position size and trade outcomes."""
 
         try:
@@ -1467,7 +1589,9 @@ class BehaviorPatternTracker:
         except Exception:
             return 0.0
 
-    def _analyze_drawdown_management(self, trade_history: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _analyze_drawdown_management(
+        self, trade_history: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Analyze how well drawdowns are managed."""
 
         try:
@@ -1511,7 +1635,9 @@ class BehaviorPatternTracker:
             max_dd_score = max(0, 1 - max_drawdown / 0.25)  # 25% max drawdown threshold
 
             if avg_recovery_time > 0:
-                recovery_score = max(0, 1 - avg_recovery_time / 50)  # 50 trades recovery target
+                recovery_score = max(
+                    0, 1 - avg_recovery_time / 50
+                )  # 50 trades recovery target
             else:
                 recovery_score = 1.0  # No drawdowns to recover from
 
@@ -1528,7 +1654,9 @@ class BehaviorPatternTracker:
             logger.error(f"Error analyzing drawdown management: {e}")
             return {"score": 0.5, "error": str(e)}
 
-    def _identify_drawdown_periods(self, cumulative_pnl: List[float]) -> List[Dict[str, Any]]:
+    def _identify_drawdown_periods(
+        self, cumulative_pnl: List[float]
+    ) -> List[Dict[str, Any]]:
         """Identify distinct drawdown periods."""
 
         try:
@@ -1546,7 +1674,8 @@ class BehaviorPatternTracker:
                             {
                                 "start_idx": drawdown_start,
                                 "end_idx": i,
-                                "depth": peak - min(cumulative_pnl[drawdown_start : i + 1]),
+                                "depth": peak
+                                - min(cumulative_pnl[drawdown_start : i + 1]),
                                 "recovered": recovered,
                             }
                         )
@@ -1608,7 +1737,9 @@ class BehaviorPatternTracker:
             logger.error(f"Error analyzing portfolio diversification: {e}")
             return {"score": 0.5, "error": str(e)}
 
-    def _calculate_strategy_diversity(self, trade_history: List[Dict[str, Any]]) -> float:
+    def _calculate_strategy_diversity(
+        self, trade_history: List[Dict[str, Any]]
+    ) -> float:
         """Calculate diversity in trading strategies used."""
 
         try:
@@ -1646,8 +1777,12 @@ class BehaviorPatternTracker:
             # Efficiency score based on risk-adjusted returns
             returns = [t.get("pnl_pct", 0) for t in trade_history]
             if returns:
-                sharpe_like_ratio = np.mean(returns) / np.std(returns) if np.std(returns) > 0 else 0
-                efficiency_score = min(1.0, max(0, sharpe_like_ratio * 25 + 0.5))  # Scale to 0-1
+                sharpe_like_ratio = (
+                    np.mean(returns) / np.std(returns) if np.std(returns) > 0 else 0
+                )
+                efficiency_score = min(
+                    1.0, max(0, sharpe_like_ratio * 25 + 0.5)
+                )  # Scale to 0-1
             else:
                 efficiency_score = 0.5
 
@@ -1699,7 +1834,11 @@ class BehaviorPatternTracker:
                     avg_size = np.mean(sizes) if sizes else 0
 
                     quarter_metrics.append(
-                        {"win_rate": win_rate, "avg_return": avg_return, "avg_size": avg_size}
+                        {
+                            "win_rate": win_rate,
+                            "avg_return": avg_return,
+                            "avg_size": avg_size,
+                        }
                     )
 
             # Calculate stability across quarters
@@ -1709,7 +1848,9 @@ class BehaviorPatternTracker:
                 avg_sizes = [m["avg_size"] for m in quarter_metrics]
 
                 win_rate_stability = (
-                    1 - np.std(win_rates) / np.mean(win_rates) if np.mean(win_rates) > 0 else 0
+                    1 - np.std(win_rates) / np.mean(win_rates)
+                    if np.mean(win_rates) > 0
+                    else 0
                 )
                 return_stability = (
                     1 - np.std(avg_returns) / abs(np.mean(avg_returns))
@@ -1717,15 +1858,21 @@ class BehaviorPatternTracker:
                     else 0
                 )
                 size_stability = (
-                    1 - np.std(avg_sizes) / np.mean(avg_sizes) if np.mean(avg_sizes) > 0 else 0
+                    1 - np.std(avg_sizes) / np.mean(avg_sizes)
+                    if np.mean(avg_sizes) > 0
+                    else 0
                 )
 
-                overall_stability = (win_rate_stability + return_stability + size_stability) / 3
+                overall_stability = (
+                    win_rate_stability + return_stability + size_stability
+                ) / 3
 
                 stability_rating = (
                     "high"
                     if overall_stability >= 0.8
-                    else "medium" if overall_stability >= 0.6 else "low"
+                    else "medium"
+                    if overall_stability >= 0.6
+                    else "low"
                 )
 
                 return {
@@ -1742,7 +1889,9 @@ class BehaviorPatternTracker:
             logger.error(f"Error assessing pattern stability: {e}")
             return {"score": 0.5, "stability": "error", "error": str(e)}
 
-    def _calculate_sustainability_score(self, analysis_results: Dict[str, Any]) -> float:
+    def _calculate_sustainability_score(
+        self, analysis_results: Dict[str, Any]
+    ) -> float:
         """Calculate overall behavioral sustainability score."""
 
         try:
@@ -1795,7 +1944,9 @@ class BehaviorPatternTracker:
             logger.error(f"Error calculating sustainability score: {e}")
             return 0.5
 
-    def _generate_early_warnings(self, analysis_results: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _generate_early_warnings(
+        self, analysis_results: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """Generate early warning signals based on analysis results."""
 
         warnings = []
@@ -1808,7 +1959,9 @@ class BehaviorPatternTracker:
                     {
                         "type": "strategy_evolution",
                         "severity": (
-                            "high" if evolution.get("evolution_magnitude", 0) > 0.3 else "medium"
+                            "high"
+                            if evolution.get("evolution_magnitude", 0) > 0.3
+                            else "medium"
                         ),
                         "message": f"Strategy evolution detected with {evolution.get('evolution_magnitude', 0):.1%} magnitude",
                         "recommendation": "Monitor strategy changes closely",
@@ -1869,25 +2022,29 @@ class BehaviorPatternTracker:
 
         return warnings
 
-    def _store_behavioral_patterns(self, wallet_address: str, analysis_results: Dict[str, Any]):
+    def _store_behavioral_patterns(
+        self, wallet_address: str, analysis_results: Dict[str, Any]
+    ):
         """Store behavioral pattern analysis for future comparison."""
 
         try:
             key_metrics = {
                 "sustainability_score": analysis_results.get("sustainability_score", 0),
-                "consistency_score": analysis_results.get("behavioral_consistency", {}).get(
-                    "consistency_score", 0
+                "consistency_score": analysis_results.get(
+                    "behavioral_consistency", {}
+                ).get("consistency_score", 0),
+                "evolution_magnitude": analysis_results.get(
+                    "strategy_evolution", {}
+                ).get("evolution_magnitude", 0),
+                "decay_rate": analysis_results.get("performance_decay", {}).get(
+                    "decay_rate", 0
                 ),
-                "evolution_magnitude": analysis_results.get("strategy_evolution", {}).get(
-                    "evolution_magnitude", 0
-                ),
-                "decay_rate": analysis_results.get("performance_decay", {}).get("decay_rate", 0),
                 "emotional_score": analysis_results.get("emotional_trading", {}).get(
                     "emotional_score", 0
                 ),
-                "risk_management_score": analysis_results.get("risk_management_quality", {}).get(
-                    "risk_management_score", 0
-                ),
+                "risk_management_score": analysis_results.get(
+                    "risk_management_quality", {}
+                ).get("risk_management_score", 0),
             }
 
             self.wallet_patterns[wallet_address] = {

@@ -288,7 +288,7 @@ class AlertingSystem:
                     name="Circuit Breaker Active",
                     category="SECURITY",
                     severity="CRITICAL",
-                    condition=lambda m: m.get("circuit_breaker_active", False) == True,
+                    condition=lambda m: m.get("circuit_breaker_active", False),
                     message_template="Circuit breaker has been activated due to system instability",
                     cooldown_minutes=1,
                     notification_channels=["log", "email", "telegram"],
@@ -336,13 +336,19 @@ class AlertingSystem:
             [
                 a
                 for a in self.active_alerts.values()
-                if a.category == alert.category and a.severity == alert.severity and not a.resolved
+                if a.category == alert.category
+                and a.severity == alert.severity
+                and not a.resolved
             ]
         )
 
         # Find the alert rule
         rule = next(
-            (r for r in self.alert_rules if r.category == alert.category and r.name in alert.title),
+            (
+                r
+                for r in self.alert_rules
+                if r.category == alert.category and r.name in alert.title
+            ),
             None,
         )
 
@@ -355,7 +361,9 @@ class AlertingSystem:
             if "telegram" not in alert.notification_channels:
                 alert.notification_channels.append("telegram")
 
-            logger.warning(f"ALERT ESCALATED: {alert.title} (Level {alert.escalation_level})")
+            logger.warning(
+                f"ALERT ESCALATED: {alert.title} (Level {alert.escalation_level})"
+            )
             self._send_notifications(alert)
 
     def _send_notifications(self, alert: Alert) -> None:
@@ -446,7 +454,9 @@ This is an automated alert from the Polymarket Copy Bot monitoring system.
 
     def _send_log_notification(self, alert: Alert) -> None:
         """Send log notification (always enabled)"""
-        log_level = logging.WARNING if alert.severity in ["CRITICAL", "HIGH"] else logging.INFO
+        log_level = (
+            logging.WARNING if alert.severity in ["CRITICAL", "HIGH"] else logging.INFO
+        )
         logger.log(log_level, f"ALERT: {alert.title} - {alert.message}")
 
 
@@ -454,14 +464,18 @@ def main():
     """CLI interface for alerting system"""
     import argparse
 
-    parser = argparse.ArgumentParser(description="Alerting System for Polymarket Copy Bot")
+    parser = argparse.ArgumentParser(
+        description="Alerting System for Polymarket Copy Bot"
+    )
     parser.add_argument(
         "action", choices=["check", "list-active", "list-history", "resolve", "test"]
     )
     parser.add_argument("--category", help="Filter by category")
     parser.add_argument("--severity", help="Filter by severity")
     parser.add_argument("--alert-id", help="Alert ID for resolution")
-    parser.add_argument("--hours", type=int, default=24, help="Hours of history to show")
+    parser.add_argument(
+        "--hours", type=int, default=24, help="Hours of history to show"
+    )
     parser.add_argument("--json", action="store_true", help="Output in JSON format")
 
     args = parser.parse_args()
@@ -480,7 +494,9 @@ def main():
         alerts = alerting.check_alerts(test_metrics)
 
         if args.json:
-            print(json.dumps([asdict(alert) for alert in alerts], default=str, indent=2))
+            print(
+                json.dumps([asdict(alert) for alert in alerts], default=str, indent=2)
+            )
         else:
             print(f"Generated {len(alerts)} alerts:")
             for alert in alerts:
@@ -490,18 +506,24 @@ def main():
         alerts = alerting.get_active_alerts(args.category, args.severity)
 
         if args.json:
-            print(json.dumps([asdict(alert) for alert in alerts], default=str, indent=2))
+            print(
+                json.dumps([asdict(alert) for alert in alerts], default=str, indent=2)
+            )
         else:
             print(f"Active alerts: {len(alerts)}")
             for alert in alerts:
                 status = "ESCALATED" if alert.escalation_level > 0 else "ACTIVE"
-                print(f"  {alert.severity} [{status}]: {alert.title} ({alert.timestamp})")
+                print(
+                    f"  {alert.severity} [{status}]: {alert.title} ({alert.timestamp})"
+                )
 
     elif args.action == "list-history":
         alerts = alerting.get_alert_history(args.hours)
 
         if args.json:
-            print(json.dumps([asdict(alert) for alert in alerts], default=str, indent=2))
+            print(
+                json.dumps([asdict(alert) for alert in alerts], default=str, indent=2)
+            )
         else:
             print(f"Alert history (last {args.hours} hours): {len(alerts)} alerts")
             for alert in alerts:

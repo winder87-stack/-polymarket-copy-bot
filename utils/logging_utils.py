@@ -4,26 +4,35 @@ import sys
 import traceback
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
+from typing import Any, Dict
 
 from pythonjsonlogger import jsonlogger
 
 from config.settings import settings
-from utils.logging_security import SecureLogger, SensitiveDataMasker, get_log_security_manager
+from utils.logging_security import (
+    SecureLogger,
+    SensitiveDataMasker,
+    get_log_security_manager,
+)
 
 
 class CustomJsonFormatter(jsonlogger.JsonFormatter):
     """Custom JSON formatter for structured logging with comprehensive security"""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._masker = SensitiveDataMasker()
 
-    def add_fields(self, log_record, record, message_dict):
+    def add_fields(
+        self, log_record: Any, record: Any, message_dict: Dict[str, Any]
+    ) -> None:
         super().add_fields(log_record, record, message_dict)
 
         # Add timestamp if not present
         if not log_record.get("timestamp"):
-            log_record["timestamp"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+            log_record["timestamp"] = datetime.utcnow().strftime(
+                "%Y-%m-%dT%H:%M:%S.%fZ"
+            )
 
         # Add log level
         if log_record.get("level"):
@@ -61,7 +70,8 @@ class CustomJsonFormatter(jsonlogger.JsonFormatter):
                     str(record.exc_info[1]), context="exception_message"
                 ),
                 "traceback": self._masker.mask_sensitive_data(
-                    "".join(traceback.format_tb(record.exc_info[2])), context="exception_traceback"
+                    "".join(traceback.format_tb(record.exc_info[2])),
+                    context="exception_traceback",
                 ),
             }
             log_record["exception"] = exception_info
@@ -92,7 +102,8 @@ def setup_logging() -> None:
         # Console handler (human-readable)
         console_handler = logging.StreamHandler(sys.stdout)
         console_formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
         )
         console_handler.setFormatter(console_formatter)
         console_handler.setLevel(log_level)
@@ -100,11 +111,11 @@ def setup_logging() -> None:
 
         # Secure rotating file handler (JSON format) with custom rotation
         class SecureRotatingFileHandler(RotatingFileHandler):
-            def __init__(self, *args, **kwargs):
+            def __init__(self, *args: Any, **kwargs: Any) -> None:
                 super().__init__(*args, **kwargs)
                 self.log_security = get_log_security_manager(self.baseFilename)
 
-            def doRollover(self):
+            def doRollover(self) -> None:
                 """Override rollover to use secure rotation"""
                 super().doRollover()
                 # Apply secure permissions to rotated files
@@ -155,7 +166,8 @@ def setup_logging() -> None:
     except Exception as e:
         # Fallback to basic logging if configuration fails
         logging.basicConfig(
-            level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+            level=logging.INFO,
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         )
         logger = logging.getLogger(__name__)
         logger.error(f"Error setting up secure logging: {e}")
@@ -164,7 +176,9 @@ def setup_logging() -> None:
 
 def log_performance_metrics(metrics: dict, logger: logging.Logger) -> None:
     """Log performance metrics in structured format with secure masking"""
-    SecureLogger.log("info", "Performance metrics", data=metrics, context={"logger": logger.name})
+    SecureLogger.log(
+        "info", "Performance metrics", data=metrics, context={"logger": logger.name}
+    )
 
 
 def log_trade_execution(trade_details: dict, logger: logging.Logger) -> None:
@@ -178,7 +192,9 @@ def log_trade_execution(trade_details: dict, logger: logging.Logger) -> None:
     )
 
 
-def log_error(error: Exception, context: dict = None, logger: logging.Logger = None) -> None:
+def log_error(
+    error: Exception, context: dict = None, logger: logging.Logger = None
+) -> None:
     """Log error with context using secure logging"""
     error_context = {
         "error_type": type(error).__name__,

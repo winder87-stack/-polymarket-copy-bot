@@ -14,13 +14,19 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 
+# Import BoundedCache for memory-safe caching
+sys.path.insert(0, "utils")
+from helpers import BoundedCache
+
 # Add the core directory to path for imports
 sys.path.insert(0, "core")
 
 # Import only the BatchTransactionProcessor class directly
 import importlib.util
 
-spec = importlib.util.spec_from_file_location("wallet_monitor", "core/wallet_monitor.py")
+spec = importlib.util.spec_from_file_location(
+    "wallet_monitor", "core/wallet_monitor.py"
+)
 wallet_module = importlib.util.module_from_spec(spec)
 
 
@@ -30,7 +36,12 @@ class BatchTransactionProcessor:
 
     def __init__(self, monitor):
         self.monitor = monitor
-        self._batch_cache = {}
+        self._batch_cache = BoundedCache(
+            max_size=5000,
+            ttl_seconds=86400,
+            memory_threshold_mb=50.0,
+            cleanup_interval_seconds=60,
+        )
         self._batch_stats = {
             "total_processed": 0,
             "filtered_out": 0,
@@ -57,7 +68,9 @@ class BatchTransactionProcessor:
             confidence_scores = await self._batch_confidence_scoring(filtered_txs)
 
             # Phase 3: Parallel trade detection
-            trades = await self._parallel_trade_detection(filtered_txs, confidence_scores)
+            trades = await self._parallel_trade_detection(
+                filtered_txs, confidence_scores
+            )
 
             # Phase 4: Batch deduplication and processing
             unique_trades = self._deduplicate_trades(trades)
@@ -92,11 +105,15 @@ class BatchTransactionProcessor:
         """Fast pre-filtering of transactions before deep processing"""
         # Filter 1: Skip already processed transactions
         unprocessed_txs = [
-            tx for tx in transactions if tx["hash"] not in self.monitor.processed_transactions
+            tx
+            for tx in transactions
+            if tx["hash"] not in self.monitor.processed_transactions
         ]
 
         # Filter 2: Skip transactions to non-Polymarket contracts
-        polymarket_contract_set = {normalize_address(c) for c in self.monitor.polymarket_contracts}
+        polymarket_contract_set = {
+            normalize_address(c) for c in self.monitor.polymarket_contracts
+        }
         relevant_txs = [
             tx
             for tx in unprocessed_txs
@@ -108,7 +125,8 @@ class BatchTransactionProcessor:
         recent_txs = [
             tx
             for tx in relevant_txs
-            if abs(current_time - int(tx.get("timeStamp", current_time))) < 3600  # Last hour
+            if abs(current_time - int(tx.get("timeStamp", current_time)))
+            < 3600  # Last hour
         ]
 
         print(
@@ -160,7 +178,9 @@ class BatchTransactionProcessor:
 
         return {tx["hash"]: float(score) for tx, score in zip(transactions, scores)}
 
-    async def _batch_pattern_scoring(self, transactions: List[Dict[str, Any]]) -> np.ndarray:
+    async def _batch_pattern_scoring(
+        self, transactions: List[Dict[str, Any]]
+    ) -> np.ndarray:
         """Batch pattern matching for trade detection"""
         pattern_scores = np.zeros(len(transactions))
 
@@ -230,7 +250,9 @@ class BatchTransactionProcessor:
                 "block_number": int(tx.get("blockNumber", 0)),
                 "wallet_address": normalize_address(tx["from"]),
                 "contract_address": normalize_address(tx["to"]),
-                "value_eth": float(tx.get("value", 0)) / 10**18 if tx.get("value") else 0,
+                "value_eth": float(tx.get("value", 0)) / 10**18
+                if tx.get("value")
+                else 0,
                 "gas_used": int(tx.get("gasUsed", 0)),
                 "gas_price": int(tx.get("gasPrice", 0)),
                 "input_data": tx.get("input", "")[:200],  # Truncate for performance
@@ -319,7 +341,10 @@ class BatchTransactionProcessor:
     def _estimate_memory_usage(self) -> int:
         """Estimate memory usage in bytes"""
         # Rough estimation for testing
-        return len(self._batch_cache) * 1024 + len(self.monitor.processed_transactions) * 32
+        batch_cache_size = (
+            len(self._batch_cache._cache) if hasattr(self._batch_cache, "_cache") else 0
+        )
+        return batch_cache_size * 1024 + len(self.monitor.processed_transactions) * 32
 
     def get_batch_stats(self) -> Dict[str, Any]:
         """Get batch processing statistics"""
@@ -364,7 +389,9 @@ class MockWalletMonitor:
         if len(self.processed_transactions) > self.max_processed_cache:
             # Remove oldest 20% of entries (simple FIFO eviction)
             remove_count = int(self.max_processed_cache * 0.2)
-            self.processed_transactions = set(list(self.processed_transactions)[remove_count:])
+            self.processed_transactions = set(
+                list(self.processed_transactions)[remove_count:]
+            )
 
     def parse_polymarket_trade(self, tx: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Mock trade parsing for testing"""
@@ -372,7 +399,9 @@ class MockWalletMonitor:
             # Simple mock - check if transaction looks like a Polymarket trade
             input_data = tx.get("input", "")
             if "0x8a8c523c" in input_data.lower():  # Mock Polymarket signature
-                timestamp = datetime.fromtimestamp(int(tx.get("timeStamp", time.time())))
+                timestamp = datetime.fromtimestamp(
+                    int(tx.get("timeStamp", time.time()))
+                )
 
                 # Skip recent transactions to avoid reorgs
                 if timestamp > datetime.now() - timedelta(seconds=30):
@@ -384,7 +413,9 @@ class MockWalletMonitor:
                     "block_number": int(tx.get("blockNumber", 0)),
                     "wallet_address": normalize_address(tx["from"]),
                     "contract_address": normalize_address(tx["to"]),
-                    "value_eth": float(tx.get("value", 0)) / 10**18 if tx.get("value") else 0,
+                    "value_eth": float(tx.get("value", 0)) / 10**18
+                    if tx.get("value")
+                    else 0,
                     "gas_used": int(tx.get("gasUsed", 0)),
                     "gas_price": int(tx.get("gasPrice", 0)),
                     "input_data": tx.get("input", "")[:1000],
@@ -393,7 +424,9 @@ class MockWalletMonitor:
                     "market_id": "unknown",
                     "outcome_index": 0,
                     "side": "BUY",
-                    "amount": float(tx.get("value", 0)) / 10**18 if tx.get("value") else 0,
+                    "amount": float(tx.get("value", 0)) / 10**18
+                    if tx.get("value")
+                    else 0,
                     "price": 0.5,
                     "token_id": "unknown",
                 }
@@ -409,7 +442,12 @@ def generate_mock_transactions(count: int, wallet_address: str) -> List[Dict[str
 
     for i in range(count):
         # Create varied transaction types
-        tx_types = ["polymarket_trade", "regular_transfer", "contract_call", "old_transaction"]
+        tx_types = [
+            "polymarket_trade",
+            "regular_transfer",
+            "contract_call",
+            "old_transaction",
+        ]
         tx_type = random.choice(tx_types)
 
         if tx_type == "polymarket_trade":
@@ -419,7 +457,9 @@ def generate_mock_transactions(count: int, wallet_address: str) -> List[Dict[str
                     "0x8c16f85a4d5f8f23d29e9c7e3d4a3a5a6e4f2b2e",
                 ]
             )
-            input_data = f"0x8a8c523c{random.randint(0, 2**256):064x}"  # Mock Polymarket input
+            input_data = (
+                f"0x8a8c523c{random.randint(0, 2**256):064x}"  # Mock Polymarket input
+            )
             gas_used = random.randint(100000, 300000)
             value = str(random.randint(10**16, 10**18))  # 0.01 to 1 ETH
         elif tx_type == "regular_transfer":
@@ -470,7 +510,9 @@ def legacy_detect_polymarket_trades(
 
         # Fast contract check
         to_address = normalize_address(tx.get("to", ""))
-        if to_address not in [normalize_address(c) for c in monitor.polymarket_contracts]:
+        if to_address not in [
+            normalize_address(c) for c in monitor.polymarket_contracts
+        ]:
             continue
 
         # Parse the trade (simplified version)
@@ -520,7 +562,9 @@ async def benchmark_batch_processing():
 
         # Benchmark batch processing
         batch_start = time.time()
-        batch_trades = await batch_processor.process_transaction_batch(transactions, wallet_address)
+        batch_trades = await batch_processor.process_transaction_batch(
+            transactions, wallet_address
+        )
         batch_time = time.time() - batch_start
 
         # Calculate metrics
@@ -544,7 +588,9 @@ async def benchmark_batch_processing():
         print(".3f")
         print(".3f")
         print(".2f")
-        print(f"   Trades Found: Legacy={len(legacy_trades)}, Batch={len(batch_trades)}")
+        print(
+            f"   Trades Found: Legacy={len(legacy_trades)}, Batch={len(batch_trades)}"
+        )
         print(f"   Accuracy Diff: {accuracy_diff} trades")
         print(".1f")
 
@@ -602,14 +648,18 @@ async def stress_test_large_batch():
     transactions = generate_mock_transactions(2000, wallet_address)
 
     start_time = time.time()
-    trades = await batch_processor.process_transaction_batch(transactions, wallet_address)
+    trades = await batch_processor.process_transaction_batch(
+        transactions, wallet_address
+    )
     processing_time = time.time() - start_time
 
     print("   Transactions: 2000")
     print(f"   Processing Time: {processing_time:.3f}s")
-    print(f"   Throughput: {2000/processing_time:.1f} tx/sec")
+    print(f"   Throughput: {2000 / processing_time:.1f} tx/sec")
     print(f"   Trades Detected: {len(trades)}")
-    print(f"   Memory Usage: {batch_processor._estimate_memory_usage()/1024/1024:.1f}MB")
+    print(
+        f"   Memory Usage: {batch_processor._estimate_memory_usage() / 1024 / 1024:.1f}MB"
+    )
 
     # Check that processing time scales reasonably (should be < 10 seconds for 2000 tx)
     if processing_time < 10.0:
@@ -633,7 +683,9 @@ if __name__ == "__main__":
         overall_success = main_success and stress_success
 
         if overall_success:
-            print("\n🎉 ALL BENCHMARKS PASSED! Batch processing optimization successful.")
+            print(
+                "\n🎉 ALL BENCHMARKS PASSED! Batch processing optimization successful."
+            )
             sys.exit(0)
         else:
             print("\n⚠️ SOME BENCHMARKS FAILED. Review implementation.")

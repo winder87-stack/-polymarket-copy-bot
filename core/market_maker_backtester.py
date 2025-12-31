@@ -87,7 +87,12 @@ class MarketMakerBacktester:
         """
 
         if strategies_to_test is None:
-            strategies_to_test = ["baseline", "conservative_mm", "aggressive_mm", "adaptive"]
+            strategies_to_test = [
+                "baseline",
+                "conservative_mm",
+                "aggressive_mm",
+                "adaptive",
+            ]
 
         logger.info(
             f"🧪 Starting comprehensive backtest: {test_data_type} data, {test_period_days} days, {len(strategies_to_test)} strategies"
@@ -107,7 +112,9 @@ class MarketMakerBacktester:
         comparison_results = self._compare_strategy_performance(strategy_results)
 
         # Generate robustness tests
-        robustness_results = await self._run_robustness_tests(strategy_results, test_data)
+        robustness_results = await self._run_robustness_tests(
+            strategy_results, test_data
+        )
 
         # Compile final results
         comprehensive_results = {
@@ -121,7 +128,9 @@ class MarketMakerBacktester:
             "strategy_results": strategy_results,
             "strategy_comparison": comparison_results,
             "robustness_tests": robustness_results,
-            "recommendations": self._generate_backtest_recommendations(comparison_results),
+            "recommendations": self._generate_backtest_recommendations(
+                comparison_results
+            ),
         }
 
         self.backtest_results = comprehensive_results
@@ -132,13 +141,19 @@ class MarketMakerBacktester:
         logger.info("🧪 Comprehensive backtest completed")
         return comprehensive_results
 
-    async def _generate_test_data(self, data_type: str, period_days: int) -> List[Dict[str, Any]]:
+    async def _generate_test_data(
+        self, data_type: str, period_days: int
+    ) -> List[Dict[str, Any]]:
         """Generate test data based on specified type."""
 
-        generator = self.test_data_generators.get(data_type, self._generate_synthetic_test_data)
+        generator = self.test_data_generators.get(
+            data_type, self._generate_synthetic_test_data
+        )
         return await generator(period_days)
 
-    async def _generate_synthetic_test_data(self, period_days: int) -> List[Dict[str, Any]]:
+    async def _generate_synthetic_test_data(
+        self, period_days: int
+    ) -> List[Dict[str, Any]]:
         """
         Generate synthetic test data that mimics real market maker behavior.
 
@@ -198,11 +213,15 @@ class MarketMakerBacktester:
                 is_win = random.random() < params["win_rate"]
                 if is_win:
                     pnl_pct = abs(
-                        random.gauss(params["avg_profit_pct"], params["avg_profit_pct"] * 0.5)
+                        random.gauss(
+                            params["avg_profit_pct"], params["avg_profit_pct"] * 0.5
+                        )
                     )
                 else:
                     pnl_pct = -abs(
-                        random.gauss(params["avg_loss_pct"], abs(params["avg_loss_pct"]) * 0.5)
+                        random.gauss(
+                            params["avg_loss_pct"], abs(params["avg_loss_pct"]) * 0.5
+                        )
                     )
 
                 # Generate trade data
@@ -237,7 +256,9 @@ class MarketMakerBacktester:
         )
         return test_data
 
-    async def _generate_historical_test_data(self, period_days: int) -> List[Dict[str, Any]]:
+    async def _generate_historical_test_data(
+        self, period_days: int
+    ) -> List[Dict[str, Any]]:
         """
         Generate test data from historical market maker behavior.
 
@@ -248,7 +269,9 @@ class MarketMakerBacktester:
         # For now, generate enhanced synthetic data
         return await self._generate_synthetic_test_data(period_days)
 
-    async def _generate_monte_carlo_scenarios(self, period_days: int) -> List[Dict[str, Any]]:
+    async def _generate_monte_carlo_scenarios(
+        self, period_days: int
+    ) -> List[Dict[str, Any]]:
         """
         Generate Monte Carlo scenarios by varying key parameters.
         """
@@ -339,7 +362,9 @@ class MarketMakerBacktester:
 
         return results
 
-    def _create_strategy_risk_manager(self, strategy_name: str) -> MarketMakerRiskManager:
+    def _create_strategy_risk_manager(
+        self, strategy_name: str
+    ) -> MarketMakerRiskManager:
         """Create a risk manager instance configured for the specific strategy."""
 
         # Create a deep copy to avoid modifying the original
@@ -440,10 +465,16 @@ class MarketMakerBacktester:
             stop_loss_triggered = False
             take_profit_triggered = False
 
-            if actual_pnl_pct <= -risk_evaluation["stop_loss_usd"] / position_size * 100:
+            if (
+                actual_pnl_pct
+                <= -risk_evaluation["stop_loss_usd"] / position_size * 100
+            ):
                 stop_loss_triggered = True
                 pnl_amount = -risk_evaluation["stop_loss_usd"]
-            elif actual_pnl_pct >= risk_evaluation["take_profit_usd"] / position_size * 100:
+            elif (
+                actual_pnl_pct
+                >= risk_evaluation["take_profit_usd"] / position_size * 100
+            ):
                 take_profit_triggered = True
                 pnl_amount = risk_evaluation["take_profit_usd"]
 
@@ -473,7 +504,9 @@ class MarketMakerBacktester:
         except Exception as e:
             logger.error(f"Error processing trade in backtest: {e}")
 
-    def _calculate_performance_metrics(self, portfolio: Dict[str, Any]) -> Dict[str, Any]:
+    def _calculate_performance_metrics(
+        self, portfolio: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Calculate comprehensive performance metrics."""
 
         trades = [t for t in portfolio["trade_history"] if t["action"] == "executed"]
@@ -545,7 +578,9 @@ class MarketMakerBacktester:
             avg_daily_return = np.mean(daily_returns)
             std_daily_return = np.std(daily_returns)
             sharpe_ratio = (
-                avg_daily_return / std_daily_return * np.sqrt(365) if std_daily_return > 0 else 0
+                avg_daily_return / std_daily_return * np.sqrt(365)
+                if std_daily_return > 0
+                else 0
             )
         else:
             sharpe_ratio = 0
@@ -618,7 +653,9 @@ class MarketMakerBacktester:
         performance_metrics = self._calculate_performance_metrics(portfolio)
         max_drawdown = performance_metrics["max_drawdown_pct"] / 100
         net_profit = performance_metrics["total_return_usd"]
-        recovery_factor = net_profit / max_drawdown if max_drawdown > 0 else float("inf")
+        recovery_factor = (
+            net_profit / max_drawdown if max_drawdown > 0 else float("inf")
+        )
 
         return {
             "value_at_risk_95": var_95,
@@ -662,7 +699,9 @@ class MarketMakerBacktester:
             }
 
         # Risk management effectiveness
-        rejected_trades = [t for t in portfolio["trade_history"] if t["action"] == "rejected"]
+        rejected_trades = [
+            t for t in portfolio["trade_history"] if t["action"] == "rejected"
+        ]
         rejection_rate = (
             len(rejected_trades) / len(portfolio["trade_history"])
             if portfolio["trade_history"]
@@ -678,11 +717,17 @@ class MarketMakerBacktester:
             "circuit_breaker_events": circuit_breaker_events,
             "avg_quality_score": np.mean([t.get("quality_score", 0) for t in trades]),
             "avg_risk_score": np.mean([t.get("risk_score", 0) for t in trades]),
-            "stop_loss_triggers": sum(1 for t in trades if t.get("stop_loss_triggered", False)),
-            "take_profit_triggers": sum(1 for t in trades if t.get("take_profit_triggered", False)),
+            "stop_loss_triggers": sum(
+                1 for t in trades if t.get("stop_loss_triggered", False)
+            ),
+            "take_profit_triggers": sum(
+                1 for t in trades if t.get("take_profit_triggered", False)
+            ),
         }
 
-    def _compare_strategy_performance(self, strategy_results: Dict[str, Any]) -> Dict[str, Any]:
+    def _compare_strategy_performance(
+        self, strategy_results: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Compare performance across different strategies."""
 
         comparison = {
@@ -704,7 +749,10 @@ class MarketMakerBacktester:
         )
 
         comparison["performance_rankings"] = [
-            {"strategy": name, "return_pct": result["performance_metrics"]["total_return_pct"]}
+            {
+                "strategy": name,
+                "return_pct": result["performance_metrics"]["total_return_pct"],
+            }
             for name, result in performance_rankings
         ]
 
@@ -718,7 +766,10 @@ class MarketMakerBacktester:
         )
 
         comparison["risk_adjusted_rankings"] = [
-            {"strategy": name, "sharpe_ratio": result["performance_metrics"]["sharpe_ratio"]}
+            {
+                "strategy": name,
+                "sharpe_ratio": result["performance_metrics"]["sharpe_ratio"],
+            }
             for name, result in risk_adjusted_rankings
         ]
 
@@ -735,11 +786,15 @@ class MarketMakerBacktester:
             }
 
         # Key differences analysis
-        comparison["key_differences"] = self._analyze_strategy_differences(strategy_results)
+        comparison["key_differences"] = self._analyze_strategy_differences(
+            strategy_results
+        )
 
         return comparison
 
-    def _analyze_strategy_differences(self, strategy_results: Dict[str, Any]) -> Dict[str, Any]:
+    def _analyze_strategy_differences(
+        self, strategy_results: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Analyze key differences between strategies."""
 
         differences = {}
@@ -753,14 +808,19 @@ class MarketMakerBacktester:
             for name, result in strategy_results.items()
         }
 
-        differences["win_rate_range"] = max(win_rates.values()) - min(win_rates.values())
+        differences["win_rate_range"] = max(win_rates.values()) - min(
+            win_rates.values()
+        )
 
         # Compare risk metrics
         volatilities = {
-            name: result["risk_metrics"]["volatility"] for name, result in strategy_results.items()
+            name: result["risk_metrics"]["volatility"]
+            for name, result in strategy_results.items()
         }
 
-        differences["volatility_range"] = max(volatilities.values()) - min(volatilities.values())
+        differences["volatility_range"] = max(volatilities.values()) - min(
+            volatilities.values()
+        )
 
         # Compare trade counts
         trade_counts = {
@@ -768,7 +828,9 @@ class MarketMakerBacktester:
             for name, result in strategy_results.items()
         }
 
-        differences["trade_count_range"] = max(trade_counts.values()) - min(trade_counts.values())
+        differences["trade_count_range"] = max(trade_counts.values()) - min(
+            trade_counts.values()
+        )
 
         return differences
 
@@ -784,7 +846,9 @@ class MarketMakerBacktester:
         }
 
         # Monte Carlo simulation
-        logger.info(f"Running {self.backtest_config['monte_carlo_runs']} Monte Carlo simulations")
+        logger.info(
+            f"Running {self.backtest_config['monte_carlo_runs']} Monte Carlo simulations"
+        )
 
         monte_carlo_results = {}
         for strategy_name in strategy_results.keys():
@@ -818,7 +882,9 @@ class MarketMakerBacktester:
         robustness_results["walk_forward_results"] = walk_forward_results
 
         # Stress tests
-        stress_test_results = await self._run_stress_tests(strategy_results, original_test_data)
+        stress_test_results = await self._run_stress_tests(
+            strategy_results, original_test_data
+        )
         robustness_results["stress_test_results"] = stress_test_results
 
         return robustness_results
@@ -842,13 +908,18 @@ class MarketMakerBacktester:
                 end_idx = (i + 1) * period_size
 
                 period_data = test_data[start_idx:end_idx]
-                period_result = await self._run_strategy_backtest(strategy_name, period_data)
-                period_returns.append(period_result["performance_metrics"]["total_return_pct"])
+                period_result = await self._run_strategy_backtest(
+                    strategy_name, period_data
+                )
+                period_returns.append(
+                    period_result["performance_metrics"]["total_return_pct"]
+                )
 
             walk_forward_results[strategy_name] = {
                 "period_returns": period_returns,
                 "avg_period_return": np.mean(period_returns),
-                "return_stability": 1 / (1 + np.std(period_returns)),  # Higher = more stable
+                "return_stability": 1
+                / (1 + np.std(period_returns)),  # Higher = more stable
                 "best_period": max(period_returns),
                 "worst_period": min(period_returns),
             }
@@ -867,9 +938,13 @@ class MarketMakerBacktester:
             },
             "low_liquidity": lambda trade: {
                 **trade,
-                "market_liquidity_score": trade.get("market_liquidity_score", 1.0) * 0.3,
+                "market_liquidity_score": trade.get("market_liquidity_score", 1.0)
+                * 0.3,
             },
-            "high_gas": lambda trade: {**trade, "gas_price": trade.get("gas_price", 100) * 3.0},
+            "high_gas": lambda trade: {
+                **trade,
+                "gas_price": trade.get("gas_price", 100) * 3.0,
+            },
             "adverse_pnl": lambda trade: {
                 **trade,
                 "actual_pnl_pct": trade.get("actual_pnl_pct", 0) * 1.5,
@@ -885,14 +960,18 @@ class MarketMakerBacktester:
             stressed_data = [scenario_func(trade.copy()) for trade in test_data]
 
             for strategy_name in strategy_results.keys():
-                stress_result = await self._run_strategy_backtest(strategy_name, stressed_data)
+                stress_result = await self._run_strategy_backtest(
+                    strategy_name, stressed_data
+                )
                 scenario_results[strategy_name] = stress_result["performance_metrics"]
 
             stress_results[scenario_name] = scenario_results
 
         return stress_results
 
-    def _generate_backtest_recommendations(self, comparison_results: Dict[str, Any]) -> List[str]:
+    def _generate_backtest_recommendations(
+        self, comparison_results: Dict[str, Any]
+    ) -> List[str]:
         """Generate recommendations based on backtest results."""
 
         recommendations = []
@@ -992,7 +1071,9 @@ class MarketMakerBacktester:
             self._create_optimized_strategy(strategy_name, params)
 
             # Run backtest
-            result = await self._run_strategy_backtest(f"{strategy_name}_opt", test_data)
+            result = await self._run_strategy_backtest(
+                f"{strategy_name}_opt", test_data
+            )
 
             # Store result with parameters
             result["parameters"] = params
@@ -1028,24 +1109,24 @@ class MarketMakerBacktester:
 
         # Apply optimized parameters to market maker config
         if "position_size_multiplier" in params:
-            strategy_manager.wallet_type_configs["market_maker"]["position_size_multiplier"] = (
-                params["position_size_multiplier"]
-            )
+            strategy_manager.wallet_type_configs["market_maker"][
+                "position_size_multiplier"
+            ] = params["position_size_multiplier"]
 
         if "stop_loss_pct" in params:
-            strategy_manager.wallet_type_configs["market_maker"]["stop_loss_pct"] = params[
-                "stop_loss_pct"
-            ]
+            strategy_manager.wallet_type_configs["market_maker"]["stop_loss_pct"] = (
+                params["stop_loss_pct"]
+            )
 
         if "take_profit_pct" in params:
-            strategy_manager.wallet_type_configs["market_maker"]["take_profit_pct"] = params[
-                "take_profit_pct"
-            ]
+            strategy_manager.wallet_type_configs["market_maker"]["take_profit_pct"] = (
+                params["take_profit_pct"]
+            )
 
         if "min_trade_quality_score" in params:
-            strategy_manager.wallet_type_configs["market_maker"]["min_trade_quality_score"] = (
-                params["min_trade_quality_score"]
-            )
+            strategy_manager.wallet_type_configs["market_maker"][
+                "min_trade_quality_score"
+            ] = params["min_trade_quality_score"]
 
         return strategy_manager
 
@@ -1058,7 +1139,9 @@ class MarketMakerBacktester:
 
         for param_name in param_names:
             param_values = [r["parameters"][param_name] for r in results]
-            performances = [r["performance_metrics"]["total_return_pct"] for r in results]
+            performances = [
+                r["performance_metrics"]["total_return_pct"] for r in results
+            ]
 
             # Calculate correlation between parameter and performance
             if len(set(param_values)) > 1:  # Only if parameter actually varies
@@ -1068,7 +1151,9 @@ class MarketMakerBacktester:
                     "impact_level": (
                         "high"
                         if abs(correlation) > 0.7
-                        else "medium" if abs(correlation) > 0.3 else "low"
+                        else "medium"
+                        if abs(correlation) > 0.3
+                        else "low"
                     ),
                 }
 

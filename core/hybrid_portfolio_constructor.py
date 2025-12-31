@@ -18,6 +18,7 @@ Features:
 import json
 import logging
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -106,7 +107,9 @@ class HybridPortfolioConstructor:
 
         # Apply allocation method
         if allocation_method == "risk_parity":
-            allocation = await self._risk_parity_allocation(valid_wallets, performance_data)
+            allocation = await self._risk_parity_allocation(
+                valid_wallets, performance_data
+            )
         elif allocation_method == "performance_weighted":
             allocation = await self._performance_weighted_allocation(
                 valid_wallets, performance_data
@@ -116,7 +119,9 @@ class HybridPortfolioConstructor:
                 valid_wallets, performance_data
             )
         elif allocation_method == "hybrid_optimization":
-            allocation = await self._hybrid_optimization_allocation(valid_wallets, performance_data)
+            allocation = await self._hybrid_optimization_allocation(
+                valid_wallets, performance_data
+            )
         else:
             allocation = await self._equal_weight_allocation(valid_wallets)
 
@@ -164,7 +169,9 @@ class HybridPortfolioConstructor:
 
         for wallet in wallets:
             wallet_address = wallet.get("address", "")
-            wallet_info = await self.analyzer.get_wallet_classification_report(wallet_address)
+            wallet_info = await self.analyzer.get_wallet_classification_report(
+                wallet_address
+            )
 
             if "error" in wallet_info:
                 continue
@@ -175,7 +182,9 @@ class HybridPortfolioConstructor:
                 continue
 
             # Check recent activity
-            recent_trades = await self._get_wallet_recent_activity(wallet_address, days=7)
+            recent_trades = await self._get_wallet_recent_activity(
+                wallet_address, days=7
+            )
             if len(recent_trades) < 5:  # Minimum 5 trades in last week
                 continue
 
@@ -226,7 +235,9 @@ class HybridPortfolioConstructor:
 
         return score
 
-    async def _get_wallet_performance_data(self, wallets: List[Dict[str, Any]]) -> Dict[str, Any]:
+    async def _get_wallet_performance_data(
+        self, wallets: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Get historical performance data for wallet portfolio construction."""
 
         performance_data = {
@@ -246,16 +257,26 @@ class HybridPortfolioConstructor:
             metrics = await self._calculate_wallet_historical_metrics(wallet_address)
 
             performance_data["returns"][wallet_address] = metrics.get("avg_return", 0.0)
-            performance_data["volatilities"][wallet_address] = metrics.get("volatility", 0.2)
-            performance_data["drawdowns"][wallet_address] = metrics.get("max_drawdown", 0.1)
-            performance_data["sharpe_ratios"][wallet_address] = metrics.get("sharpe_ratio", 1.0)
+            performance_data["volatilities"][wallet_address] = metrics.get(
+                "volatility", 0.2
+            )
+            performance_data["drawdowns"][wallet_address] = metrics.get(
+                "max_drawdown", 0.1
+            )
+            performance_data["sharpe_ratios"][wallet_address] = metrics.get(
+                "sharpe_ratio", 1.0
+            )
 
         # Calculate correlation matrix
-        performance_data["correlations"] = await self._calculate_wallet_correlations(wallets)
+        performance_data["correlations"] = await self._calculate_wallet_correlations(
+            wallets
+        )
 
         return performance_data
 
-    async def _calculate_wallet_historical_metrics(self, wallet_address: str) -> Dict[str, Any]:
+    async def _calculate_wallet_historical_metrics(
+        self, wallet_address: str
+    ) -> Dict[str, Any]:
         """Calculate historical performance metrics for a wallet."""
 
         # Get trade history
@@ -265,11 +286,17 @@ class HybridPortfolioConstructor:
             t
             for t in trades
             if t.get("wallet_address") == wallet_address
-            and datetime.fromisoformat(t["timestamp"]) > datetime.now() - timedelta(days=30)
+            and datetime.fromisoformat(t["timestamp"])
+            > datetime.now() - timedelta(days=30)
         ]
 
         if not wallet_trades:
-            return {"avg_return": 0.0, "volatility": 0.2, "max_drawdown": 0.1, "sharpe_ratio": 1.0}
+            return {
+                "avg_return": 0.0,
+                "volatility": 0.2,
+                "max_drawdown": 0.1,
+                "sharpe_ratio": 1.0,
+            }
 
         # Calculate returns
         pnl_values = np.array([t.get("pnl_usd", 0) for t in wallet_trades])
@@ -286,7 +313,9 @@ class HybridPortfolioConstructor:
 
         # Sharpe ratio
         risk_free_rate = self.construction_params.get("risk_free_rate", 0.02) / 365
-        sharpe_ratio = (avg_return - risk_free_rate) / volatility if volatility > 0 else 0
+        sharpe_ratio = (
+            (avg_return - risk_free_rate) / volatility if volatility > 0 else 0
+        )
 
         return {
             "avg_return": avg_return,
@@ -316,7 +345,9 @@ class HybridPortfolioConstructor:
                 if i < j:
                     # Simplified correlation calculation
                     corr_key = f"{wallet1[:8]}..._{wallet2[:8]}..."
-                    correlations[corr_key] = 0.1  # Placeholder - would calculate actual correlation
+                    correlations[corr_key] = (
+                        0.1  # Placeholder - would calculate actual correlation
+                    )
 
         return correlations
 
@@ -402,7 +433,9 @@ class HybridPortfolioConstructor:
         for wallet in wallets:
             wallet_address = wallet["address"]
             # Apply diversification bonus for less correlated assets
-            diversification_bonus = 1.0  # Simplified - would calculate based on correlations
+            diversification_bonus = (
+                1.0  # Simplified - would calculate based on correlations
+            )
             weight = base_weight * diversification_bonus
             allocation[wallet_address] = weight
 
@@ -456,7 +489,9 @@ class HybridPortfolioConstructor:
 
         return allocation
 
-    async def _equal_weight_allocation(self, wallets: List[Dict[str, Any]]) -> Dict[str, float]:
+    async def _equal_weight_allocation(
+        self, wallets: List[Dict[str, Any]]
+    ) -> Dict[str, float]:
         """Simple equal weight allocation across all wallets."""
 
         n_wallets = len(wallets)
@@ -472,7 +507,10 @@ class HybridPortfolioConstructor:
         return allocation
 
     def _apply_allocation_constraints(
-        self, allocation: Dict[str, float], total_capital: float, constraints: Dict[str, Any]
+        self,
+        allocation: Dict[str, float],
+        total_capital: float,
+        constraints: Dict[str, Any],
     ) -> Dict[str, float]:
         """
         Apply allocation constraints and validate portfolio.
@@ -550,7 +588,8 @@ class HybridPortfolioConstructor:
 
         # Expected portfolio volatility (simplified)
         volatilities = [
-            performance_data["volatilities"].get(wallet, 0.2) for wallet in allocation.keys()
+            performance_data["volatilities"].get(wallet, 0.2)
+            for wallet in allocation.keys()
         ]
         performance_data.get("correlations", {})
 
@@ -559,8 +598,12 @@ class HybridPortfolioConstructor:
         portfolio_metrics["expected_volatility"] = avg_volatility
 
         # Expected portfolio return
-        returns = [performance_data["returns"].get(wallet, 0.0) for wallet in allocation.keys()]
-        portfolio_metrics["expected_return"] = np.average(returns, weights=weights_normalized)
+        returns = [
+            performance_data["returns"].get(wallet, 0.0) for wallet in allocation.keys()
+        ]
+        portfolio_metrics["expected_return"] = np.average(
+            returns, weights=weights_normalized
+        )
 
         # Portfolio Sharpe ratio
         risk_free_rate = self.construction_params.get("risk_free_rate", 0.02)
@@ -624,7 +667,9 @@ class HybridPortfolioConstructor:
 
         # Check time since last rebalance
         if self.portfolio_history:
-            last_rebalance = datetime.fromisoformat(self.portfolio_history[-1]["timestamp"])
+            last_rebalance = datetime.fromisoformat(
+                self.portfolio_history[-1]["timestamp"]
+            )
             hours_since = (datetime.now() - last_rebalance).total_seconds() / 3600
 
             if hours_since >= self.construction_params["rebalance_frequency_hours"]:
@@ -640,13 +685,17 @@ class HybridPortfolioConstructor:
                     drift = abs(current_weight - target_weight) / target_weight
                     total_drift += drift
 
-            avg_drift = total_drift / len(current_allocation) if current_allocation else 0
+            avg_drift = (
+                total_drift / len(current_allocation) if current_allocation else 0
+            )
             if avg_drift > 0.1:  # 10% average drift
                 return True
 
         return False
 
-    def _assess_portfolio_risk(self, portfolio_metrics: Dict[str, Any]) -> Dict[str, str]:
+    def _assess_portfolio_risk(
+        self, portfolio_metrics: Dict[str, Any]
+    ) -> Dict[str, str]:
         """Assess overall portfolio risk level."""
 
         risk_assessment = {
@@ -725,7 +774,9 @@ class HybridPortfolioConstructor:
         scenario_results = []
 
         for scenario in scenarios:
-            scenario_result = await self._run_single_stress_scenario(portfolio_allocation, scenario)
+            scenario_result = await self._run_single_stress_scenario(
+                portfolio_allocation, scenario
+            )
             scenario_results.append(scenario_result)
 
         # Aggregate results
@@ -740,7 +791,9 @@ class HybridPortfolioConstructor:
             )
             stress_results["volatility_under_stress"] = np.std(losses)
 
-        stress_results["scenario_breakdown"] = scenario_results[:10]  # First 10 for detail
+        stress_results["scenario_breakdown"] = scenario_results[
+            :10
+        ]  # First 10 for detail
 
         self.stress_test_results = stress_results
 
@@ -837,7 +890,9 @@ class HybridPortfolioConstructor:
         weights = weights / np.sum(weights)  # Normalize
 
         portfolio_return = np.dot(weights, stressed_returns)
-        portfolio_volatility = np.sqrt(np.dot(weights.T, np.dot(np.cov(stressed_returns), weights)))
+        portfolio_volatility = np.sqrt(
+            np.dot(weights.T, np.dot(np.cov(stressed_returns), weights))
+        )
 
         # Simulate drawdown
         cumulative_returns = np.cumprod(1 + stressed_returns) - 1
@@ -887,9 +942,13 @@ class HybridPortfolioConstructor:
                 "scenario_description": scenario.get("description", ""),
                 "allocation_adjustment": modified_allocation != portfolio_allocation,
                 "expected_return": scenario_performance.get("expected_return", 0),
-                "expected_volatility": scenario_performance.get("expected_volatility", 0),
+                "expected_volatility": scenario_performance.get(
+                    "expected_volatility", 0
+                ),
                 "sharpe_ratio": scenario_performance.get("sharpe_ratio", 0),
-                "survival_probability": scenario_performance.get("survival_probability", 1.0),
+                "survival_probability": scenario_performance.get(
+                    "survival_probability", 1.0
+                ),
             }
 
         return {
@@ -898,10 +957,12 @@ class HybridPortfolioConstructor:
             ),
             "scenario_analysis": scenario_results,
             "most_stressful_scenario": min(
-                scenario_results.keys(), key=lambda x: scenario_results[x]["sharpe_ratio"]
+                scenario_results.keys(),
+                key=lambda x: scenario_results[x]["sharpe_ratio"],
             ),
             "most_opportunistic_scenario": max(
-                scenario_results.keys(), key=lambda x: scenario_results[x]["expected_return"]
+                scenario_results.keys(),
+                key=lambda x: scenario_results[x]["expected_return"],
             ),
         }
 
@@ -952,7 +1013,8 @@ class HybridPortfolioConstructor:
 
         modified_performance = {
             "expected_return": base_performance["expected_return"] * scenario_modifier,
-            "expected_volatility": base_performance["expected_volatility"] * volatility_modifier,
+            "expected_volatility": base_performance["expected_volatility"]
+            * volatility_modifier,
             "sharpe_ratio": (base_performance["expected_return"] * scenario_modifier)
             / (base_performance["expected_volatility"] * volatility_modifier),
             "survival_probability": max(0.1, 1.0 - abs(scenario_modifier - 1.0)),
@@ -1002,7 +1064,9 @@ class HybridPortfolioConstructor:
             "portfolio_count": len(self.current_allocations),
             "total_allocated_capital": sum(self.current_allocations.values()),
             "last_rebalance": (
-                self.portfolio_history[-1]["timestamp"] if self.portfolio_history else None
+                self.portfolio_history[-1]["timestamp"]
+                if self.portfolio_history
+                else None
             ),
             "rebalance_due": self._check_rebalance_required(self.current_allocations),
             "risk_metrics": self.portfolio_risk_metrics,

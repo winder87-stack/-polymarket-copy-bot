@@ -3,19 +3,21 @@
 
 import asyncio
 import sys
-from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
 
 def mock_approx(value, rel=0.1):
     """Simple approximation check"""
+
     def check(expected):
         return abs(value - expected) / max(abs(value), abs(expected)) <= rel
+
     return check
 
 
 class MockSettings:
     """Mock settings for testing"""
+
     def __init__(self):
         self.risk = MagicMock()
         self.risk.min_trade_amount = 1.0
@@ -25,6 +27,7 @@ class MockSettings:
 
 class MockClobClient:
     """Mock CLOB client for testing"""
+
     def __init__(self):
         self.wallet_address = "0x1234567890abcdef1234567890abcdef12345678"
 
@@ -37,6 +40,7 @@ class MockClobClient:
 
 class MockTradeExecutor:
     """Mock trade executor for testing position calculations"""
+
     def __init__(self):
         self.clob_client = MockClobClient()
         self.settings = MockSettings()
@@ -50,18 +54,24 @@ class MockTradeExecutor:
 
             if balance is None or current_price is None:
                 # Fallback calculation
-                return min(original_trade["amount"] * 0.1, self.settings.risk.max_position_size)
+                return min(
+                    original_trade["amount"] * 0.1, self.settings.risk.max_position_size
+                )
 
             if balance <= 0:
                 # Fallback for invalid balance
-                return min(original_trade["amount"] * 0.1, self.settings.risk.max_position_size)
+                return min(
+                    original_trade["amount"] * 0.1, self.settings.risk.max_position_size
+                )
 
             original_price = original_trade["price"]
             price_risk = abs(current_price - original_price)
 
             if price_risk == 0:
                 # Zero price risk - fallback
-                return min(original_trade["amount"] * 0.1, self.settings.risk.max_position_size)
+                return min(
+                    original_trade["amount"] * 0.1, self.settings.risk.max_position_size
+                )
 
             # Calculate position size based on risk
             account_risk_amount = balance * self.settings.risk.account_risk_percent
@@ -75,7 +85,9 @@ class MockTradeExecutor:
 
         except Exception:
             # Fallback calculation on any error
-            return min(original_trade["amount"] * 0.1, self.settings.risk.max_position_size)
+            return min(
+                original_trade["amount"] * 0.1, self.settings.risk.max_position_size
+            )
 
 
 def test_basic_calculation():
@@ -92,10 +104,14 @@ def test_basic_calculation():
 
         # Should calculate based on 1% account risk
         expected_risk_amount = 1000.0 * 0.01  # 1% of balance
-        expected_position_size = expected_risk_amount / abs(0.52 - 0.5)  # Risk per price unit
+        expected_position_size = expected_risk_amount / abs(
+            0.52 - 0.5
+        )  # Risk per price unit
         expected_position_size = min(expected_position_size, 50.0)  # Max position size
 
-        assert mock_approx(result)(expected_position_size), f"Expected ~{expected_position_size}, got {result}"
+        assert mock_approx(result)(expected_position_size), (
+            f"Expected ~{expected_position_size}, got {result}"
+        )
         print("✅ Basic calculation test passed")
 
 
@@ -107,13 +123,17 @@ def test_zero_price_risk_fallback():
 
     with (
         patch.object(executor.clob_client, "get_balance", return_value=1000.0),
-        patch.object(executor.clob_client, "get_current_price", return_value=0.5),  # Same price = zero risk
+        patch.object(
+            executor.clob_client, "get_current_price", return_value=0.5
+        ),  # Same price = zero risk
     ):
         result = asyncio.run(executor._calculate_copy_amount(original_trade, {}))
 
         # Should use fallback calculation
         expected_fallback = min(10.0 * 0.1, 50.0)
-        assert result == expected_fallback, f"Expected {expected_fallback}, got {result}"
+        assert result == expected_fallback, (
+            f"Expected {expected_fallback}, got {result}"
+        )
         print("✅ Zero price risk fallback test passed")
 
 
@@ -131,7 +151,9 @@ def test_negative_balance_fallback():
 
         # Should use fallback calculation
         expected_fallback = min(10.0 * 0.1, 50.0)
-        assert result == expected_fallback, f"Expected {expected_fallback}, got {result}"
+        assert result == expected_fallback, (
+            f"Expected {expected_fallback}, got {result}"
+        )
         print("✅ Negative balance fallback test passed")
 
 
@@ -142,7 +164,9 @@ def test_respects_max_position():
     original_trade = {"amount": 10.0, "price": 0.5, "condition_id": "test_condition"}
 
     with (
-        patch.object(executor.clob_client, "get_balance", return_value=10000.0),  # Large balance
+        patch.object(
+            executor.clob_client, "get_balance", return_value=10000.0
+        ),  # Large balance
         patch.object(executor.clob_client, "get_current_price", return_value=0.52),
     ):
         result = asyncio.run(executor._calculate_copy_amount(original_trade, {}))
@@ -166,7 +190,9 @@ def test_none_values_fallback():
 
         # Should use fallback calculation
         expected_fallback = min(10.0 * 0.1, 50.0)
-        assert result == expected_fallback, f"Expected {expected_fallback}, got {result}"
+        assert result == expected_fallback, (
+            f"Expected {expected_fallback}, got {result}"
+        )
         print("✅ None values fallback test passed")
 
 
@@ -185,5 +211,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ Test failed: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

@@ -33,7 +33,9 @@ class CorrelationContext:
 
     _current_context = threading.local()
 
-    def __init__(self, correlation_id: Optional[str] = None, parent_id: Optional[str] = None):
+    def __init__(
+        self, correlation_id: Optional[str] = None, parent_id: Optional[str] = None
+    ):
         self.correlation_id = correlation_id or str(uuid.uuid4())
         self.parent_id = parent_id
 
@@ -205,7 +207,8 @@ class LogAnomalyDetector:
         self.log_entries = [
             entry
             for entry in self.log_entries
-            if datetime.fromisoformat(entry.get("timestamp", "2000-01-01T00:00:00")) > cutoff_time
+            if datetime.fromisoformat(entry.get("timestamp", "2000-01-01T00:00:00"))
+            > cutoff_time
         ]
 
     def detect_anomalies(self) -> List[Dict[str, Any]]:
@@ -225,13 +228,17 @@ class LogAnomalyDetector:
         failure_count = sum(
             1
             for entry in self.log_entries
-            if self.anomaly_patterns["repeated_failures"].search(entry.get("message", ""))
+            if self.anomaly_patterns["repeated_failures"].search(
+                entry.get("message", "")
+            )
         )
 
         perf_count = sum(
             1
             for entry in self.log_entries
-            if self.anomaly_patterns["performance_degradation"].search(entry.get("message", ""))
+            if self.anomaly_patterns["performance_degradation"].search(
+                entry.get("message", "")
+            )
         )
 
         security_count = sum(
@@ -447,7 +454,9 @@ class EnhancedLoggingSystem:
             return
 
         self.anomaly_active = True
-        self.anomaly_thread = threading.Thread(target=self._anomaly_detection_loop, daemon=True)
+        self.anomaly_thread = threading.Thread(
+            target=self._anomaly_detection_loop, daemon=True
+        )
         self.anomaly_thread.start()
 
     def stop_anomaly_detection(self) -> None:
@@ -504,7 +513,11 @@ class EnhancedLoggingSystem:
                 base_name = log_file.name.split(".")[0]
 
                 if base_name not in stats:
-                    stats[base_name] = {"total_size": 0, "file_count": 0, "last_modified": None}
+                    stats[base_name] = {
+                        "total_size": 0,
+                        "file_count": 0,
+                        "last_modified": None,
+                    }
 
                 stats[base_name]["total_size"] += stat_info.st_size
                 stats[base_name]["file_count"] += 1
@@ -578,7 +591,9 @@ class EnhancedLoggingSystem:
 
         return results
 
-    def export_logs(self, filename: str, hours: int = 24, logger_name: Optional[str] = None) -> str:
+    def export_logs(
+        self, filename: str, hours: int = 24, logger_name: Optional[str] = None
+    ) -> str:
         """Export logs to a compressed file"""
         import gzip
 
@@ -629,9 +644,12 @@ def main():
     """CLI interface for enhanced logging system"""
     import argparse
 
-    parser = argparse.ArgumentParser(description="Enhanced Logging System for Polymarket Copy Bot")
+    parser = argparse.ArgumentParser(
+        description="Enhanced Logging System for Polymarket Copy Bot"
+    )
     parser.add_argument(
-        "action", choices=["setup", "stats", "search", "export", "set-level", "anomalies"]
+        "action",
+        choices=["setup", "stats", "search", "export", "set-level", "anomalies"],
     )
     parser.add_argument("--level", help="Log level for setup")
     parser.add_argument("--query", help="Search query")
@@ -656,7 +674,9 @@ def main():
         print("📊 Log Statistics:")
         for logger_name, logger_stats in stats.items():
             size_mb = logger_stats["total_size"] / (1024 * 1024)
-            print(f"  {logger_name}: {size_mb:.1f}MB in {logger_stats['file_count']} files")
+            print(
+                f"  {logger_name}: {size_mb:.1f}MB in {logger_stats['file_count']} files"
+            )
             if logger_stats["last_modified"]:
                 print(f"    Last modified: {logger_stats['last_modified']}")
 
@@ -669,7 +689,9 @@ def main():
 
         print(f"🔍 Found {len(results)} matching log entries:")
         for entry in results[:10]:  # Show first 10
-            print(f"  [{entry.get('timestamp')}] {entry.get('level')} {entry.get('message')}")
+            print(
+                f"  [{entry.get('timestamp')}] {entry.get('level')} {entry.get('message')}"
+            )
 
         if len(results) > 10:
             print(f"  ... and {len(results) - 10} more")
@@ -679,7 +701,9 @@ def main():
             print("❌ Logging system not initialized. Run 'setup' first.")
             sys.exit(1)
 
-        filename = args.filename or f"logs_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        filename = (
+            args.filename or f"logs_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        )
         export_file = logging_system.export_logs(filename, args.hours, args.logger)
         print(f"📦 Logs exported to: {export_file}")
 
@@ -692,7 +716,9 @@ def main():
             print("❌ --new-level required")
             sys.exit(1)
 
-        success = logging_system.runtime_manager.set_log_level(args.logger or "all", args.new_level)
+        success = logging_system.runtime_manager.set_log_level(
+            args.logger or "all", args.new_level
+        )
         if success:
             print(f"✅ Log level changed to {args.new_level}")
         else:

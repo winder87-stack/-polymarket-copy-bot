@@ -32,16 +32,24 @@ class RiskManagementConfig(BaseModel):
         default=10.0, description="Circuit breaker threshold (staging: $10)", ge=0.0
     )
     min_trade_amount: float = Field(
-        default=0.5, description="Ignore trades smaller than this (staging: $0.50)", ge=0.01
+        default=0.5,
+        description="Ignore trades smaller than this (staging: $0.50)",
+        ge=0.01,
     )
     max_concurrent_positions: int = Field(
         default=3, description="Maximum open positions (staging: 3)", ge=1
     )
     stop_loss_percentage: float = Field(
-        default=0.10, description="10% stop loss (staging: more conservative)", ge=0.01, le=0.5
+        default=0.10,
+        description="10% stop loss (staging: more conservative)",
+        ge=0.01,
+        le=0.5,
     )
     take_profit_percentage: float = Field(
-        default=0.15, description="15% take profit (staging: more conservative)", ge=0.01, le=1.0
+        default=0.15,
+        description="15% take profit (staging: more conservative)",
+        ge=0.01,
+        le=1.0,
     )
     max_slippage: float = Field(
         default=0.05,
@@ -57,7 +65,8 @@ class NetworkConfig(BaseModel):
     )
     chain_id: int = Field(default=80001, description="Polygon Mumbai testnet")
     polygon_rpc_url: str = Field(
-        default="https://rpc-mumbai.maticvigil.com", description="Polygon Mumbai testnet RPC"
+        default="https://rpc-mumbai.maticvigil.com",
+        description="Polygon Mumbai testnet RPC",
     )
     polygonscan_api_key: str = Field(default="", description="Polygonscan API key")
 
@@ -78,10 +87,14 @@ class TradingConfig(BaseModel):
 
 class MonitoringConfig(BaseModel):
     monitor_interval: int = Field(
-        default=30, description="Seconds between wallet checks (staging: slower)", ge=5, le=300
+        default=30,
+        description="Seconds between wallet checks (staging: slower)",
+        ge=5,
+        le=300,
     )
     wallets_file: str = Field(
-        default="config/wallets_staging.json", description="Path to staging wallets config"
+        default="config/wallets_staging.json",
+        description="Path to staging wallets config",
     )
     target_wallets: List[str] = Field(
         default_factory=list, description="List of wallet addresses to monitor"
@@ -98,17 +111,25 @@ class AlertingConfig(BaseModel):
     telegram_bot_token: Optional[str] = Field(
         None, description="Telegram bot token (staging channel)"
     )
-    telegram_chat_id: Optional[str] = Field(None, description="Telegram chat ID (staging channel)")
-    alert_on_trade: bool = Field(default=True, description="Send alerts on trade execution")
+    telegram_chat_id: Optional[str] = Field(
+        None, description="Telegram chat ID (staging channel)"
+    )
+    alert_on_trade: bool = Field(
+        default=True, description="Send alerts on trade execution"
+    )
     alert_on_error: bool = Field(default=True, description="Send alerts on errors")
     alert_on_circuit_breaker: bool = Field(
         default=True, description="Send alerts when circuit breaker activates"
     )
-    staging_alert_prefix: str = Field(default="[STAGING] ", description="Prefix for staging alerts")
+    staging_alert_prefix: str = Field(
+        default="[STAGING] ", description="Prefix for staging alerts"
+    )
 
 
 class LoggingConfig(BaseModel):
-    log_level: str = Field(default="DEBUG", description="Logging level (staging: more verbose)")
+    log_level: str = Field(
+        default="DEBUG", description="Logging level (staging: more verbose)"
+    )
     log_file: str = Field(
         default="logs/polymarket_bot_staging.log", description="Staging log file path"
     )
@@ -125,13 +146,21 @@ class StagingConfig(BaseModel):
     testnet_faucet_url: str = Field(
         default="https://faucet.polygon.technology", description="Testnet faucet URL"
     )
-    enable_paper_trading: bool = Field(default=False, description="Enable paper trading mode")
-    staging_duration_days: int = Field(default=7, description="Staging test duration in days")
-    max_trades_per_day: int = Field(default=5, description="Maximum trades per day in staging")
+    enable_paper_trading: bool = Field(
+        default=False, description="Enable paper trading mode"
+    )
+    staging_duration_days: int = Field(
+        default=7, description="Staging test duration in days"
+    )
+    max_trades_per_day: int = Field(
+        default=5, description="Maximum trades per day in staging"
+    )
     enable_extended_logging: bool = Field(
         default=True, description="Enable detailed logging for debugging"
     )
-    alert_on_all_events: bool = Field(default=True, description="Alert on all significant events")
+    alert_on_all_events: bool = Field(
+        default=True, description="Alert on all significant events"
+    )
 
 
 class Settings(BaseModel):
@@ -194,7 +223,9 @@ class Settings(BaseModel):
                 with open(wallets_file, "r") as f:
                     wallets_config = json.load(f)
                     v["target_wallets"] = wallets_config.get("target_wallets", [])
-                    v["min_confidence_score"] = wallets_config.get("min_confidence_score", 0.8)
+                    v["min_confidence_score"] = wallets_config.get(
+                        "min_confidence_score", 0.8
+                    )
                     logger.info(
                         f"✅ Staging: Loaded {len(v['target_wallets'])} target wallets from {wallets_file}"
                     )
@@ -341,14 +372,19 @@ os.makedirs(log_dir, exist_ok=True)
 logging.basicConfig(
     level=getattr(logging, staging_settings.logging.log_level.upper(), logging.DEBUG),
     format=staging_settings.logging.log_format,
-    handlers=[logging.FileHandler(staging_settings.logging.log_file), logging.StreamHandler()],
+    handlers=[
+        logging.FileHandler(staging_settings.logging.log_file),
+        logging.StreamHandler(),
+    ],
 )
 
 logger.info("✅ Staging environment settings loaded successfully")
 logger.info(
     f"Network: {staging_settings.network.polygon_rpc_url} (Chain ID: {staging_settings.network.chain_id})"
 )
-logger.info(f"Risk management: Max daily loss=${staging_settings.risk.max_daily_loss:.2f}")
+logger.info(
+    f"Risk management: Max daily loss=${staging_settings.risk.max_daily_loss:.2f}"
+)
 logger.info("🚨 STAGING ENVIRONMENT - ALL TRADES ARE TESTNET ONLY 🚨")
 
 if __name__ == "__main__":

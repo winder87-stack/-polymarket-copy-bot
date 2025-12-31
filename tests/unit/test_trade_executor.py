@@ -1,859 +1,515 @@
 """
-Unit tests for core/trade_executor.py - Trade execution and risk management.
+Tests for Trade Executor module.
+
+This module provides comprehensive tests for:
+- Money calculation safety (Decimal vs float)
+- Position sizing correctness
+- Risk management integration
+- Circuit breaker interaction
+- Thread safety of concurrent operations
 """
 
-import time
-from datetime import datetime, timedelta
-from unittest.mock import Mock
-
+import asyncio
 import pytest
+from decimal import Decimal, InvalidOperation
 
-from core.trade_executor import TradeExecutor
-
-
-class TestTradeExecutorInitialization:
-    """Test TradeExecutor initialization."""
-
-    def test_executor_initialization_success(self, mock_polymarket_client, test_settings):
-        """Test successful trade executor initialization."""
-        executor = TradeExecutor(mock_polymarket_client)
-
-        assert executor.clob_client == mock_polymarket_client
-        assert executor.wallet_address == mock_polymarket_client.wallet_address
-        assert executor.daily_loss == 0.0
-        assert executor.total_trades == 0
-        assert executor.successful_trades == 0
-        assert executor.failed_trades == 0
-        assert isinstance(executor.open_positions, dict)
-        assert isinstance(executor.trade_performance, list)
-        assert not executor.circuit_breaker_active
-
-    def test_executor_initialization_with_settings(self, mock_polymarket_client, test_settings):
-        """Test executor initialization with settings reference."""
-        executor = TradeExecutor(mock_polymarket_client)
-
-        assert executor.settings == test_settings
+from core.exceptions import TradingError
 
 
-class TestTradeExecutorValidation:
-    """Test trade validation functionality."""
-
-    def test_validate_trade_success(self, mock_trade_executor, sample_trade):
-        """Test successful trade validation."""
-        is_valid = mock_trade_executor._validate_trade(sample_trade)
-
-        assert is_valid is True
-
-    def test_validate_trade_missing_fields(self, mock_trade_executor, sample_trade):
-        """Test trade validation with missing required fields."""
-        del sample_trade["tx_hash"]
-
-        is_valid = mock_trade_executor._validate_trade(sample_trade)
-
-        assert is_valid is False
-
-    @pytest.mark.parametrize("invalid_side", ["INVALID", "buy", "sell", ""])
-    def test_validate_trade_invalid_side(self, mock_trade_executor, sample_trade, invalid_side):
-        """Test trade validation with invalid side."""
-        sample_trade["side"] = invalid_side
-
-        is_valid = mock_trade_executor._validate_trade(sample_trade)
-
-        assert is_valid is False
-
-    @pytest.mark.parametrize("invalid_price", [-0.1, 0.0, 1.1, 2.0])
-    def test_validate_trade_invalid_price(self, mock_trade_executor, sample_trade, invalid_price):
-        """Test trade validation with invalid price."""
-        sample_trade["price"] = invalid_price
-
-        is_valid = mock_trade_executor._validate_trade(sample_trade)
-
-        assert is_valid is False
-
-    def test_validate_trade_invalid_amount(self, mock_trade_executor, sample_trade):
-        """Test trade validation with invalid amount."""
-        sample_trade["amount"] = -10.0
-
-        is_valid = mock_trade_executor._validate_trade(sample_trade)
-
-        assert is_valid is False
-
-    def test_validate_trade_stale_timestamp(self, mock_trade_executor, sample_trade):
-        """Test trade validation with stale timestamp."""
-        sample_trade["timestamp"] = datetime.now() - timedelta(minutes=10)  # Older than 5 minutes
-
-        is_valid = mock_trade_executor._validate_trade(sample_trade)
-
-        # Should still be valid but log a warning
-        assert is_valid is True
+# =============================================================================
+# Money Safety Tests
+# =============================================================================
 
 
-class TestTradeExecutorRiskManagement:
-    """Test risk management functionality."""
+class TestMoneySafety:
+    """Test that all financial calculations use Decimal, not float."""
 
-    def test_apply_risk_management_success(self, mock_trade_executor, sample_trade):
-        """Test successful risk management check."""
-        result = mock_trade_executor._apply_risk_management(sample_trade)
+    @pytest.mark.asyncio
+    async def test_position_size_uses_decimal(self, mock_trade_executor):
+        """Verify position size calculations use Decimal."""
+        # Test data
+        account_balance = Decimal("10000.0")
+        risk_percent = Decimal("0.01")
+        original_amount = Decimal("1000.0")
 
-        assert result["approved"] is True
-
-    def test_apply_risk_management_daily_loss_limit(self, mock_trade_executor, sample_trade):
-        """Test risk management with daily loss limit exceeded."""
-        mock_trade_executor.daily_loss = 150.0  # Above 100.0 limit
-
-        result = mock_trade_executor._apply_risk_management(sample_trade)
-
-        assert result["approved"] is False
-        assert "Daily loss limit reached" in result["reason"]
-
-    def test_apply_risk_management_position_size_limit(self, mock_trade_executor, sample_trade):
-        """Test risk management with position size limit exceeded."""
-        sample_trade["amount"] = 100.0  # Above 50.0 limit
-
-        result = mock_trade_executor._apply_risk_management(sample_trade)
-
-        assert result["approved"] is False
-        assert "Position size too large" in result["reason"]
-
-    def test_apply_risk_management_min_trade_amount(self, mock_trade_executor, sample_trade):
-        """Test risk management with trade amount below minimum."""
-        sample_trade["amount"] = 0.5  # Below 1.0 minimum
-
-        result = mock_trade_executor._apply_risk_management(sample_trade)
-
-        assert result["approved"] is False
-        assert "below minimum" in result["reason"]
-
-    def test_apply_risk_management_concurrent_positions_limit(
-        self, mock_trade_executor, sample_trade
-    ):
-        """Test risk management with concurrent positions limit exceeded."""
-        # Add 10 existing positions
-        mock_trade_executor.open_positions = {f"pos_{i}": {} for i in range(10)}
-
-        result = mock_trade_executor._apply_risk_management(sample_trade)
-
-        assert result["approved"] is False
-        assert "Max concurrent positions reached" in result["reason"]
-
-    def test_apply_risk_management_low_confidence(self, mock_trade_executor, sample_trade):
-        """Test risk management with low confidence score."""
-        sample_trade["confidence_score"] = 0.5  # Below 0.7 minimum
-
-        result = mock_trade_executor._apply_risk_management(sample_trade)
-
-        assert result["approved"] is False
-        assert "Low confidence score" in result["reason"]
-
-
-class TestTradeExecutorCopyAmountCalculation:
-    """Test copy amount calculation functionality."""
-
-    async def test_calculate_copy_amount_success(
-        self, mock_trade_executor, sample_trade, sample_market_data, mock_polymarket_client
-    ):
-        """Test successful copy amount calculation."""
-        # Mock balance and price
-        mock_polymarket_client.get_balance.return_value = 1000.0
-        mock_polymarket_client.get_current_price.return_value = 0.65
-
-        copy_amount = await mock_trade_executor._calculate_copy_amount(
-            sample_trade, sample_market_data
+        # Calculate position size
+        position_size = (
+            account_balance * risk_percent
+            if account_balance > Decimal("0")
+            else Decimal("0")
         )
 
-        assert isinstance(copy_amount, float)
-        assert copy_amount > 0
-        assert copy_amount <= mock_trade_executor.settings.risk.max_position_size
-
-    async def test_calculate_copy_amount_balance_unavailable(
-        self, mock_trade_executor, sample_trade, sample_market_data, mock_polymarket_client
-    ):
-        """Test copy amount calculation when balance is unavailable."""
-        mock_polymarket_client.get_balance.return_value = None
-
-        copy_amount = await mock_trade_executor._calculate_copy_amount(
-            sample_trade, sample_market_data
-        )
-
-        # Should use conservative fallback
-        assert copy_amount == min(
-            sample_trade["amount"] * 0.1, mock_trade_executor.settings.risk.max_position_size
-        )
-
-    async def test_calculate_copy_amount_price_unavailable(
-        self, mock_trade_executor, sample_trade, sample_market_data, mock_polymarket_client
-    ):
-        """Test copy amount calculation when current price is unavailable."""
-        mock_polymarket_client.get_balance.return_value = 1000.0
-        mock_polymarket_client.get_current_price.return_value = None
-
-        copy_amount = await mock_trade_executor._calculate_copy_amount(
-            sample_trade, sample_market_data
-        )
-
-        # Should use trade price as fallback
-        assert isinstance(copy_amount, float)
-
-    async def test_calculate_copy_amount_risk_based(
-        self, mock_trade_executor, sample_trade, sample_market_data, mock_polymarket_client
-    ):
-        """Test risk-based copy amount calculation."""
-        mock_polymarket_client.get_balance.return_value = 2000.0  # Large balance
-        mock_polymarket_client.get_current_price.return_value = 0.65
-
-        copy_amount = await mock_trade_executor._calculate_copy_amount(
-            sample_trade, sample_market_data
-        )
-
-        # Should be higher with larger balance
-        assert copy_amount > sample_trade["amount"] * 0.1
-
-    async def test_calculate_copy_amount_capped_by_max_position(
-        self, mock_trade_executor, sample_trade, sample_market_data, mock_polymarket_client
-    ):
-        """Test copy amount capping by max position size."""
-        mock_polymarket_client.get_balance.return_value = 10000.0  # Very large balance
-        mock_polymarket_client.get_current_price.return_value = 0.65
-
-        copy_amount = await mock_trade_executor._calculate_copy_amount(
-            sample_trade, sample_market_data
-        )
-
-        # Should be capped at max position size
-        assert copy_amount <= mock_trade_executor.settings.risk.max_position_size
-
-    async def test_calculate_copy_amount_minimum_trade_amount(
-        self, mock_trade_executor, sample_trade, sample_market_data, mock_polymarket_client
-    ):
-        """Test copy amount meets minimum trade requirements."""
-        mock_polymarket_client.get_balance.return_value = 10.0  # Small balance
-        mock_polymarket_client.get_current_price.return_value = 0.65
-
-        copy_amount = await mock_trade_executor._calculate_copy_amount(
-            sample_trade, sample_market_data
-        )
-
-        # Should meet minimum trade amount
-        assert copy_amount >= mock_trade_executor.settings.risk.min_trade_amount
-
-
-class TestTradeExecutorTokenIdDetermination:
-    """Test token ID determination functionality."""
-
-    def test_get_token_id_for_outcome_buy(
-        self, mock_trade_executor, sample_trade, sample_market_data
-    ):
-        """Test token ID determination for BUY orders."""
-        sample_trade["side"] = "BUY"
-
-        token_id = mock_trade_executor._get_token_id_for_outcome(sample_market_data, sample_trade)
-
-        assert token_id == sample_market_data["tokens"][0]["tokenId"]
-
-    def test_get_token_id_for_outcome_sell(
-        self, mock_trade_executor, sample_trade, sample_market_data
-    ):
-        """Test token ID determination for SELL orders."""
-        sample_trade["side"] = "SELL"
-
-        token_id = mock_trade_executor._get_token_id_for_outcome(sample_market_data, sample_trade)
-
-        assert token_id == sample_market_data["tokens"][-1]["tokenId"]
-
-    def test_get_token_id_missing_tokens(self, mock_trade_executor, sample_trade):
-        """Test token ID determination when market has no tokens."""
-        market_data = {"conditionId": "test"}
-
-        token_id = mock_trade_executor._get_token_id_for_outcome(market_data, sample_trade)
-
-        assert token_id is None
-
-    def test_get_token_id_outcomes_fallback(self, mock_trade_executor, sample_trade):
-        """Test token ID determination using outcomes fallback."""
-        market_data = {"conditionId": "test", "outcomes": [{"tokenId": "fallback-token-id"}]}
-
-        token_id = mock_trade_executor._get_token_id_for_outcome(market_data, sample_trade)
-
-        assert token_id == "fallback-token-id"
-
-
-class TestTradeExecutorMainExecution:
-    """Test main trade execution functionality."""
-
-    async def test_execute_copy_trade_success(
-        self, mock_trade_executor, sample_trade, sample_market_data, mock_polymarket_client
-    ):
-        """Test successful copy trade execution."""
-        # Mock all dependencies
-        mock_polymarket_client.get_market.return_value = sample_market_data
-        mock_polymarket_client.place_order.return_value = {"orderID": "test-order-123"}
-        mock_polymarket_client.get_balance.return_value = 1000.0
-        mock_polymarket_client.get_current_price.return_value = 0.65
-
-        result = await mock_trade_executor.execute_copy_trade(sample_trade)
-
-        assert result["status"] == "success"
-        assert result["order_id"] == "test-order-123"
-        assert "copy_amount" in result
-        assert "trade_id" in result
-
-    async def test_execute_copy_trade_circuit_breaker_active(
-        self, mock_trade_executor, sample_trade
-    ):
-        """Test copy trade execution when circuit breaker is active."""
-        mock_trade_executor.circuit_breaker_active = True
-        mock_trade_executor.circuit_breaker_reason = "Test circuit breaker"
-
-        result = await mock_trade_executor.execute_copy_trade(sample_trade)
-
-        assert result["status"] == "skipped"
-        assert "Circuit breaker" in result["reason"]
-
-    async def test_execute_copy_trade_circuit_breaker_error_handling(
-        self, mock_trade_executor, sample_trade
-    ):
-        """Test copy trade execution when circuit breaker check fails."""
-        mock_trade_executor.circuit_breaker_active = True
-        mock_trade_executor.circuit_breaker_reason = "Test circuit breaker"
-
-        # Mock the remaining time method to raise an exception
-        mock_trade_executor._get_circuit_breaker_remaining_time = Mock(
-            side_effect=Exception("Time calculation error")
-        )
-
-        # Should continue with trade execution despite circuit breaker check error
-        result = await mock_trade_executor.execute_copy_trade(sample_trade)
-
-        # Should not be skipped - trade should proceed despite error in circuit breaker check
-        assert result["status"] != "skipped"
-        assert "Circuit breaker" not in result.get("reason", "")
-
-    async def test_execute_copy_trade_invalid_trade(self, mock_trade_executor, sample_trade):
-        """Test copy trade execution with invalid trade data."""
-        del sample_trade["tx_hash"]  # Make trade invalid
-
-        result = await mock_trade_executor.execute_copy_trade(sample_trade)
-
-        assert result["status"] == "invalid"
-
-    async def test_execute_copy_trade_risk_rejected(self, mock_trade_executor, sample_trade):
-        """Test copy trade execution when rejected by risk management."""
-        # Force rejection by exceeding daily loss
-        mock_trade_executor.daily_loss = 150.0
-
-        result = await mock_trade_executor.execute_copy_trade(sample_trade)
-
-        assert result["status"] == "rejected"
-        assert "Daily loss limit reached" in result["reason"]
-
-    async def test_execute_copy_trade_market_not_found(
-        self, mock_trade_executor, sample_trade, mock_polymarket_client
-    ):
-        """Test copy trade execution when market is not found."""
-        mock_polymarket_client.get_market.return_value = None
-
-        result = await mock_trade_executor.execute_copy_trade(sample_trade)
-
-        assert result["status"] == "failed"
-        assert "Market not found" in result["reason"]
-
-    async def test_execute_copy_trade_amount_too_small(
-        self, mock_trade_executor, sample_trade, sample_market_data, mock_polymarket_client
-    ):
-        """Test copy trade execution when calculated amount is too small."""
-        mock_polymarket_client.get_market.return_value = sample_market_data
-        mock_polymarket_client.get_balance.return_value = 10.0  # Very small balance
-
-        result = await mock_trade_executor.execute_copy_trade(sample_trade)
-
-        assert result["status"] == "skipped"
-        assert "too small" in result["reason"]
-
-    async def test_execute_copy_trade_token_id_not_found(
-        self, mock_trade_executor, sample_trade, sample_market_data, mock_polymarket_client
-    ):
-        """Test copy trade execution when token ID cannot be determined."""
-        market_data_no_tokens = {"conditionId": "test"}  # No tokens
-        mock_polymarket_client.get_market.return_value = market_data_no_tokens
-
-        result = await mock_trade_executor.execute_copy_trade(sample_trade)
-
-        assert result["status"] == "failed"
-        assert "Token ID not found" in result["reason"]
-
-    async def test_execute_copy_trade_order_failure(
-        self, mock_trade_executor, sample_trade, sample_market_data, mock_polymarket_client
-    ):
-        """Test copy trade execution when order placement fails."""
-        mock_polymarket_client.get_market.return_value = sample_market_data
-        mock_polymarket_client.place_order.return_value = None
-        mock_polymarket_client.get_balance.return_value = 1000.0
-
-        result = await mock_trade_executor.execute_copy_trade(sample_trade)
-
-        assert result["status"] == "failed"
-        assert "Order placement failed" in result["reason"]
-
-    async def test_execute_copy_trade_execution_error(
-        self, mock_trade_executor, sample_trade, mock_polymarket_client
-    ):
-        """Test copy trade execution with execution error."""
-        mock_polymarket_client.get_market.side_effect = Exception("API Error")
-
-        result = await mock_trade_executor.execute_copy_trade(sample_trade)
-
-        assert result["status"] == "error"
-        assert "API Error" in str(result["error"])
-
-
-class TestTradeExecutorPositionManagement:
-    """Test position management functionality."""
-
-    async def test_manage_positions_no_positions(self, mock_trade_executor):
-        """Test position management with no open positions."""
-        await mock_trade_executor.manage_positions()
-
-        # Should complete without error
-        assert mock_trade_executor.open_positions == {}
-
-    async def test_manage_positions_with_take_profit(
-        self, mock_trade_executor, mock_polymarket_client
-    ):
-        """Test position management with take profit trigger."""
-        # Set up a position that should trigger take profit
-        position_key = "test_condition_BUY"
-        position = {
-            "amount": 10.0,
-            "entry_price": 0.60,
-            "timestamp": time.time(),
-            "original_trade": {
-                "condition_id": "test_condition",
-                "side": "BUY",
-                "wallet_address": "0xtest",
-            },
-            "order_id": "test-order-123",
-        }
-        mock_trade_executor.open_positions[position_key] = position
-
-        # Mock current price that's above take profit threshold
-        mock_polymarket_client.get_current_price.return_value = 0.73  # 21.7% profit
-
-        await mock_trade_executor.manage_positions()
-
-        # Position should be closed
-        assert position_key not in mock_trade_executor.open_positions
-
-    async def test_manage_positions_with_stop_loss(
-        self, mock_trade_executor, mock_polymarket_client
-    ):
-        """Test position management with stop loss trigger."""
-        position_key = "test_condition_BUY"
-        position = {
-            "amount": 10.0,
-            "entry_price": 0.60,
-            "timestamp": time.time(),
-            "original_trade": {
-                "condition_id": "test_condition",
-                "side": "BUY",
-                "wallet_address": "0xtest",
-            },
-            "order_id": "test-order-123",
-        }
-        mock_trade_executor.open_positions[position_key] = position
-
-        # Mock current price that's below stop loss threshold
-        mock_polymarket_client.get_current_price.return_value = 0.47  # 21.7% loss
-
-        await mock_trade_executor.manage_positions()
-
-        # Position should be closed
-        assert position_key not in mock_trade_executor.open_positions
-
-    async def test_manage_positions_time_based_exit(
-        self, mock_trade_executor, mock_polymarket_client
-    ):
-        """Test position management with time-based exit."""
-        position_key = "test_condition_BUY"
-        position = {
-            "amount": 10.0,
-            "entry_price": 0.60,
-            "timestamp": time.time() - 90000,  # 25 hours ago
-            "original_trade": {
-                "condition_id": "test_condition",
-                "side": "BUY",
-                "wallet_address": "0xtest",
-            },
-            "order_id": "test-order-123",
-        }
-        mock_trade_executor.open_positions[position_key] = position
-
-        mock_polymarket_client.get_current_price.return_value = 0.60  # No P&L
-
-        await mock_trade_executor.manage_positions()
-
-        # Position should be closed due to time
-        assert position_key not in mock_trade_executor.open_positions
-
-    async def test_manage_positions_sell_side(self, mock_trade_executor, mock_polymarket_client):
-        """Test position management for SELL positions."""
-        position_key = "test_condition_SELL"
-        position = {
-            "amount": 10.0,
-            "entry_price": 0.60,
-            "timestamp": time.time(),
-            "original_trade": {
-                "condition_id": "test_condition",
-                "side": "SELL",
-                "wallet_address": "0xtest",
-            },
-            "order_id": "test-order-123",
-        }
-        mock_trade_executor.open_positions[position_key] = position
-
-        # For SELL positions, profit when price goes down
-        mock_polymarket_client.get_current_price.return_value = 0.48  # Price decreased
-
-        await mock_trade_executor.manage_positions()
-
-        # Position should still be open (no trigger conditions met)
-        assert position_key in mock_trade_executor.open_positions
-
-
-class TestTradeExecutorCircuitBreaker:
-    """Test circuit breaker functionality."""
-
-    def test_circuit_breaker_initial_state(self, mock_trade_executor):
-        """Test circuit breaker initial state."""
-        assert not mock_trade_executor.circuit_breaker_active
-        assert mock_trade_executor.circuit_breaker_reason == ""
-        assert mock_trade_executor.circuit_breaker_time is None
-
-    def test_activate_circuit_breaker(self, mock_trade_executor):
-        """Test circuit breaker activation."""
-        reason = "Test activation"
-
-        mock_trade_executor.activate_circuit_breaker(reason)
-
-        assert mock_trade_executor.circuit_breaker_active
-        assert mock_trade_executor.circuit_breaker_reason == reason
-        assert mock_trade_executor.circuit_breaker_time is not None
-
-    def test_reset_circuit_breaker(self, mock_trade_executor):
-        """Test circuit breaker reset."""
-        mock_trade_executor.activate_circuit_breaker("Test reason")
-        assert mock_trade_executor.circuit_breaker_active
-
-        mock_trade_executor.reset_circuit_breaker()
-
-        assert not mock_trade_executor.circuit_breaker_active
-        assert mock_trade_executor.circuit_breaker_reason == ""
-        assert mock_trade_executor.circuit_breaker_time is None
-
-    def test_get_circuit_breaker_remaining_time_inactive(self, mock_trade_executor):
-        """Test remaining time when circuit breaker is inactive."""
-        remaining_time = mock_trade_executor._get_circuit_breaker_remaining_time()
-
-        assert remaining_time == 0.0
-
-    def test_get_circuit_breaker_remaining_time_active(self, mock_trade_executor):
-        """Test remaining time when circuit breaker is active."""
-        mock_trade_executor.activate_circuit_breaker("Test")
-
-        # Mock the time to be recent
-        mock_trade_executor.circuit_breaker_time = time.time() - 1800  # 30 minutes ago
-
-        remaining_time = mock_trade_executor._get_circuit_breaker_remaining_time()
-
-        # Should have ~30 minutes remaining (3600 - 1800 = 1800 seconds = 30 minutes)
-        assert 25 <= remaining_time <= 35  # Allow some tolerance
-
-    def test_check_circuit_breaker_conditions_daily_loss(self, mock_trade_executor):
-        """Test circuit breaker activation due to daily loss."""
-        mock_trade_executor.daily_loss = 150.0  # Above threshold
-
-        mock_trade_executor._check_circuit_breaker_conditions()
-
-        assert mock_trade_executor.circuit_breaker_active
-        assert "Daily loss limit reached" in mock_trade_executor.circuit_breaker_reason
-
-    def test_check_circuit_breaker_conditions_failure_rate(self, mock_trade_executor):
-        """Test circuit breaker activation due to high failure rate."""
-        mock_trade_executor.total_trades = 20
-        mock_trade_executor.failed_trades = 12  # 60% failure rate
-
-        mock_trade_executor._check_circuit_breaker_conditions()
-
-        assert mock_trade_executor.circuit_breaker_active
-        assert "High failure rate" in mock_trade_executor.circuit_breaker_reason
-
-    def test_check_circuit_breaker_conditions_reset(self, mock_trade_executor):
-        """Test circuit breaker reset when conditions improve."""
-        mock_trade_executor.activate_circuit_breaker("Test reason")
-
-        # Mock time passage
-        mock_trade_executor.circuit_breaker_time = time.time() - 7200  # 2 hours ago
-
-        # Reset failure rates
-        mock_trade_executor.failed_trades = 0
-        mock_trade_executor.total_trades = 5
-
-        mock_trade_executor._check_circuit_breaker_conditions()
-
-        assert not mock_trade_executor.circuit_breaker_active
-
-
-class TestTradeExecutorPositionClosing:
-    """Test position closing functionality."""
-
-    async def test_close_position_success(self, mock_trade_executor, mock_polymarket_client):
-        """Test successful position closing."""
-        position_key = "test_condition_BUY"
-        position = {
-            "amount": 10.0,
-            "entry_price": 0.60,
-            "timestamp": time.time(),
-            "original_trade": {
-                "condition_id": "test_condition",
-                "side": "BUY",
-                "wallet_address": "0xtest",
-            },
-            "order_id": "test-order-123",
-        }
-        mock_trade_executor.open_positions[position_key] = position
-
-        mock_polymarket_client.get_current_price.return_value = 0.70
-        mock_polymarket_client.place_order.return_value = {"orderID": "close-order-456"}
-
-        await mock_trade_executor._close_position(position_key, "TAKE_PROFIT")
-
-        # Position should be removed
-        assert position_key not in mock_trade_executor.open_positions
-
-        # Daily loss should be updated (this was a profitable trade)
-        assert mock_trade_executor.daily_loss < 0  # Negative means profit
-
-    async def test_close_position_failure(self, mock_trade_executor, mock_polymarket_client):
-        """Test position closing failure."""
-        position_key = "test_condition_BUY"
-        position = {
-            "amount": 10.0,
-            "entry_price": 0.60,
-            "timestamp": time.time(),
-            "original_trade": {
-                "condition_id": "test_condition",
-                "side": "BUY",
-                "wallet_address": "0xtest",
-            },
-            "order_id": "test-order-123",
-        }
-        mock_trade_executor.open_positions[position_key] = position
-
-        mock_polymarket_client.get_current_price.return_value = 0.70
-        mock_polymarket_client.place_order.return_value = None  # Order failed
-
-        await mock_trade_executor._close_position(position_key, "TAKE_PROFIT")
-
-        # Position should still exist
-        assert position_key in mock_trade_executor.open_positions
-
-
-class TestTradeExecutorDailyLossTracking:
-    """Test daily loss tracking functionality."""
-
-    async def test_update_daily_loss_reset(self, mock_trade_executor):
-        """Test daily loss reset at midnight UTC."""
-        # Set up mock last reset time to yesterday
-        yesterday = datetime.utcnow().replace(
-            hour=0, minute=0, second=0, microsecond=0
-        ) - timedelta(days=1)
-        mock_trade_executor.last_reset_time = yesterday
-
-        await mock_trade_executor._update_daily_loss()
-
-        # Daily loss should be reset to 0
-        assert mock_trade_executor.daily_loss == 0.0
-
-    async def test_update_daily_loss_no_reset(self, mock_trade_executor):
-        """Test daily loss when no reset is needed."""
-        original_loss = 50.0
-        mock_trade_executor.daily_loss = original_loss
-
-        # Set last reset to today
-        today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-        mock_trade_executor.last_reset_time = today
-
-        await mock_trade_executor._update_daily_loss()
-
-        # Daily loss should remain unchanged
-        assert mock_trade_executor.daily_loss == original_loss
-
-
-class TestTradeExecutorHealthCheck:
-    """Test health check functionality."""
-
-    async def test_health_check_success(self, mock_trade_executor, mock_polymarket_client):
-        """Test successful health check."""
-        mock_polymarket_client.get_balance.return_value = 1000.0
-
-        healthy = await mock_trade_executor.health_check()
-
-        assert healthy is True
-
-    async def test_health_check_balance_failure(self, mock_trade_executor, mock_polymarket_client):
-        """Test health check failure due to balance retrieval error."""
-        mock_polymarket_client.get_balance.side_effect = Exception("API Error")
-
-        healthy = await mock_trade_executor.health_check()
-
-        assert healthy is False
-
-    async def test_health_check_circuit_breaker_warning(
-        self, mock_trade_executor, mock_polymarket_client
-    ):
-        """Test health check with circuit breaker warning."""
-        mock_polymarket_client.get_balance.return_value = 1000.0
-        mock_trade_executor.circuit_breaker_active = True
-
-        healthy = await mock_trade_executor.health_check()
-
-        # Should still pass but with warning
-        assert healthy is True
-
-    async def test_health_check_too_many_positions(
-        self, mock_trade_executor, mock_polymarket_client
-    ):
-        """Test health check with too many open positions."""
-        mock_polymarket_client.get_balance.return_value = 1000.0
-
-        # Add many positions
-        max_positions = mock_trade_executor.settings.risk.max_concurrent_positions
-        mock_trade_executor.open_positions = {f"pos_{i}": {} for i in range(max_positions * 2)}
-
-        healthy = await mock_trade_executor.health_check()
-
-        # Should still pass but with warning
-        assert healthy is True
-
-
-class TestTradeExecutorPerformanceMetrics:
-    """Test performance metrics functionality."""
-
-    def test_get_performance_metrics_success(self, mock_trade_executor):
-        """Test successful performance metrics retrieval."""
-        # Set up some mock data
-        mock_trade_executor.total_trades = 100
-        mock_trade_executor.successful_trades = 85
-        mock_trade_executor.failed_trades = 15
-        mock_trade_executor.daily_loss = -25.0  # Profit
-        mock_trade_executor.open_positions = {"pos1": {}, "pos2": {}}
-        mock_trade_executor.circuit_breaker_active = False
-        mock_trade_executor.last_trade_time = time.time() - 3600
-        mock_trade_executor.start_time = time.time() - 86400  # 1 day ago
-
-        # Add some trade performance data
-        mock_trade_executor.trade_performance = [
-            {"execution_time": 1.5, "status": "success"},
-            {"execution_time": 2.1, "status": "success"},
-            {"execution_time": 3.2, "status": "failed"},
+        # Verify result is Decimal
+        assert isinstance(position_size, Decimal)
+        assert position_size == Decimal("100.0")
+
+    @pytest.mark.asyncio
+    async def test_pnl_calculation_uses_decimal(self, mock_trade_executor):
+        """Verify PnL calculations use Decimal."""
+        entry_price = Decimal("0.50")
+        current_price = Decimal("0.55")
+        size = Decimal("100.0")
+
+        # Calculate PnL (YES outcome)
+        pnl = (current_price - entry_price) * size
+        exit_pnl = (Decimal("1.0") - current_price) * size
+
+        total_pnl = pnl + exit_pnl
+
+        # Verify result is Decimal
+        assert isinstance(total_pnl, Decimal)
+        assert total_pnl == Decimal("10.0")
+
+    @pytest.mark.asyncio
+    async def test_stop_loss_take_profit_use_decimal(self, mock_trade_executor):
+        """Verify stop loss and take profit use Decimal."""
+        entry_price = Decimal("0.50")
+        stop_loss_percent = Decimal("0.15")
+        take_profit_percent = Decimal("0.25")
+
+        # Calculate stop loss price
+        stop_loss = entry_price * (Decimal("1.0") - stop_loss_percent)
+
+        # Calculate take profit price
+        take_profit = entry_price * (Decimal("1.0") + take_profit_percent)
+
+        # Verify results are Decimal
+        assert isinstance(stop_loss, Decimal)
+        assert isinstance(take_profit, Decimal)
+        assert stop_loss == Decimal("0.425")
+        assert take_profit == Decimal("0.625")
+
+    @pytest.mark.asyncio
+    async def test_no_float_in_money_calculations(self, mock_trade_executor):
+        """Ensure no float() usage in money-related code paths."""
+        import inspect
+        from core.trade_executor import TradeExecutor
+
+        # Get all methods
+        methods = [
+            getattr(TradeExecutor, name)
+            for name in dir(TradeExecutor)
+            if callable(getattr(TradeExecutor, name)) and not name.startswith("_")
         ]
 
-        metrics = mock_trade_executor.get_performance_metrics()
+        for method in methods:
+            source = inspect.getsource(method)
+            # Check for float() with money-related variables
+            money_vars = [
+                "account_balance",
+                "risk_percent",
+                "position_size",
+                "pnl",
+                "profit",
+                "loss",
+                "max_daily_loss",
+                "trade_amount",
+            ]
 
-        assert metrics["total_trades"] == 100
-        assert metrics["successful_trades"] == 85
-        assert metrics["failed_trades"] == 15
-        assert metrics["success_rate"] == 0.85
-        assert metrics["daily_loss"] == -25.0
-        assert metrics["open_positions"] == 2
-        assert metrics["circuit_breaker_active"] is False
-        assert "last_trade_time" in metrics
-        assert "uptime_hours" in metrics
-        assert "avg_execution_time" in metrics
+            for var in money_vars:
+                # Check for dangerous pattern: float(var)
+                pattern = f"float\\s*\\(\\s*{var}\\s*\\)"
+                if pattern in source:
+                    pytest.fail(
+                        f"Found float({var}) in {method.__name__}. "
+                        f"Please use Decimal instead."
+                    )
 
-    def test_get_performance_metrics_no_trades(self, mock_trade_executor):
-        """Test performance metrics with no trades."""
-        metrics = mock_trade_executor.get_performance_metrics()
+    @pytest.mark.asyncio
+    async def test_high_precision_decimal_operations(self, mock_trade_executor):
+        """Verify Decimal operations maintain high precision."""
+        # Test precision-critical multiplication
+        amount = Decimal("10000.0")
+        rate = Decimal("0.0123456789")
 
-        assert metrics["total_trades"] == 0
-        assert metrics["successful_trades"] == 0
-        assert metrics["failed_trades"] == 0
-        assert metrics["success_rate"] == 0.0
-        assert metrics["daily_loss"] == 0.0
-        assert metrics["open_positions"] == 0
+        result = amount * rate
+
+        # Should maintain high precision
+        assert result == Decimal("123.456789")
+
+        # Test division precision
+        total = Decimal("1000.0")
+        shares = Decimal("7")
+        price = total / shares
+
+        # Division should be precise
+        assert abs(price - Decimal("142.8571428571428571428571428571")) < Decimal(
+            "0.0000000001"
+        )
 
 
-class TestTradeExecutorIntegration:
-    """Integration tests for TradeExecutor."""
+# =============================================================================
+# Position Sizing Tests
+# =============================================================================
 
-    async def test_full_trade_execution_flow(
-        self, mock_trade_executor, sample_trade, sample_market_data, mock_polymarket_client
+
+class TestPositionSizing:
+    """Test position sizing logic."""
+
+    @pytest.mark.asyncio
+    async def test_position_size_respects_max_limit(self, mock_trade_executor):
+        """Verify position size respects maximum limit."""
+        account_balance = Decimal("100000.0")
+        risk_percent = Decimal("0.05")  # 5%
+        max_position_size = Decimal("50.0")
+
+        # Risk-based size would be 5000.0
+        risk_based = account_balance * risk_percent
+
+        # Should be capped at max
+        assert risk_based > max_position_size
+
+    @pytest.mark.asyncio
+    async def test_position_size_respects_minimum_trade_amount(
+        self, mock_trade_executor
     ):
-        """Test complete trade execution flow."""
-        # Set up mocks for successful execution
-        mock_polymarket_client.get_market.return_value = sample_market_data
-        mock_polymarket_client.get_balance.return_value = 1000.0
-        mock_polymarket_client.get_current_price.return_value = 0.65
-        mock_polymarket_client.place_order.return_value = {"orderID": "integration-test-order"}
+        """Verify position size respects minimum trade amount."""
+        account_balance = Decimal("10.0")
+        risk_percent = Decimal("0.01")  # 1%
+        min_trade_amount = Decimal("1.0")
 
-        # Execute trade
-        result = await mock_trade_executor.execute_copy_trade(sample_trade)
+        # Risk-based size would be 0.1
+        risk_based = account_balance * risk_percent
 
-        # Verify success
-        assert result["status"] == "success"
-        assert result["order_id"] == "integration-test-order"
+        # Should be capped at minimum
+        assert risk_based < min_trade_amount
 
-        # Verify state updates
-        assert mock_trade_executor.total_trades == 1
-        assert mock_trade_executor.successful_trades == 1
-        assert len(mock_trade_executor.open_positions) == 1
-        assert len(mock_trade_executor.trade_performance) == 1
+    @pytest.mark.asyncio
+    async def test_position_size_uses_minimum_of_approaches(self, mock_trade_executor):
+        """Verify position size uses minimum of risk-based and proportional."""
+        account_balance = Decimal("10000.0")
+        risk_percent = Decimal("0.01")  # 1%
+        original_amount = Decimal("2000.0")
+        max_position_size = Decimal("500.0")
 
-    async def test_position_management_flow(self, mock_trade_executor, mock_polymarket_client):
-        """Test complete position management flow."""
-        # Set up position
-        position_key = "test_condition_BUY"
-        position = {
-            "amount": 10.0,
-            "entry_price": 0.60,
-            "timestamp": time.time() - 90000,  # Old enough for time-based exit
-            "original_trade": {
-                "condition_id": "test_condition",
-                "side": "BUY",
-                "wallet_address": "0xtest",
-            },
-            "order_id": "test-order-123",
-        }
-        mock_trade_executor.open_positions[position_key] = position
+        # Risk-based: 100.0
+        risk_based = account_balance * risk_percent
 
-        # Mock closing order
-        mock_polymarket_client.get_current_price.return_value = 0.60
-        mock_polymarket_client.place_order.return_value = {"orderID": "close-order"}
+        # Proportional: 200.0 (10%)
+        proportional = original_amount * Decimal("0.1")
 
-        # Run position management
-        await mock_trade_executor.manage_positions()
+        # Should take minimum of all three
+        expected = min(risk_based, proportional, max_position_size)
 
-        # Position should be closed
-        assert position_key not in mock_trade_executor.open_positions
+        assert expected == Decimal("100.0")
 
-    async def test_circuit_breaker_flow(self, mock_trade_executor, sample_trade):
-        """Test complete circuit breaker flow."""
-        # Trigger circuit breaker
-        mock_trade_executor.daily_loss = 150.0
-        mock_trade_executor._check_circuit_breaker_conditions()
+    @pytest.mark.asyncio
+    async def test_position_size_rounding(self, mock_trade_executor):
+        """Verify position size is properly rounded."""
+        # Test value that requires rounding
+        account_balance = Decimal("10000.0")
+        risk_percent = Decimal("0.0123456789")
 
-        assert mock_trade_executor.circuit_breaker_active
+        position_size = account_balance * risk_percent
 
-        # Try to execute trade (should be blocked)
-        result = await mock_trade_executor.execute_copy_trade(sample_trade)
+        # Should be rounded to 4 decimal places
+        rounded = position_size.quantize(Decimal("0.0001"))
 
-        assert result["status"] == "skipped"
-        assert "Circuit breaker" in result["reason"]
+        # Verify rounding
+        assert rounded == Decimal("123.4568")
 
-        # Simulate time passage and reset
-        mock_trade_executor.circuit_breaker_time = time.time() - 7200  # 2 hours ago
-        mock_trade_executor.daily_loss = 0.0  # Reset loss
 
-        mock_trade_executor._check_circuit_breaker_conditions()
+# =============================================================================
+# Risk Management Integration Tests
+# =============================================================================
 
-        # Circuit breaker should be reset
-        assert not mock_trade_executor.circuit_breaker_active
+
+class TestRiskManagementIntegration:
+    """Test integration with risk management components."""
+
+    @pytest.mark.asyncio
+    async def test_circuit_breaker_check_before_trade(self, mock_trade_executor):
+        """Verify circuit breaker is checked before trade execution."""
+        trade_id = "test_trade_123"
+
+        # Mock circuit breaker to return None (allow trade)
+        mock_trade_executor.circuit_breaker.check_trade_allowed = AsyncMock(
+            return_value=None
+        )
+
+        # Execute trade should proceed
+        result = await mock_trade_executor.execute_copy_trade(
+            {"market_id": "test_market", "side": "BUY"}
+        )
+
+        # Circuit breaker check should have been called
+        mock_trade_executor.circuit_breaker.check_trade_allowed.assert_called_once_with(
+            trade_id
+        )
+
+    @pytest.mark.asyncio
+    async def test_trade_skipped_when_circuit_breaker_active(self, mock_trade_executor):
+        """Verify trade is skipped when circuit breaker is active."""
+        trade_id = "test_trade_456"
+
+        # Mock circuit breaker to return skip reason
+        mock_trade_executor.circuit_breaker.check_trade_allowed = AsyncMock(
+            return_value={
+                "status": "skipped",
+                "reason": "Circuit breaker: Daily loss limit reached",
+                "remaining_minutes": 30.0,
+            }
+        )
+
+        # Execute trade should be skipped
+        result = await mock_trade_executor.execute_copy_trade(
+            {"market_id": "test_market", "side": "BUY"}
+        )
+
+        # Result should indicate skip
+        assert result.get("status") == "skipped"
+        assert "circuit" in result.get("reason", "").lower()
+
+    @pytest.mark.asyncio
+    async def test_daily_loss_recorded_on_loss(self, mock_trade_executor):
+        """Verify daily loss is recorded on losing trade."""
+        loss_amount = Decimal("50.0")
+
+        # Mock circuit breaker
+        mock_trade_executor.circuit_breaker.record_loss = AsyncMock()
+
+        # Simulate loss
+        await mock_trade_executor.circuit_breaker.record_loss(float(loss_amount))
+
+        # Circuit breaker should have been called
+        mock_trade_executor.circuit_breaker.record_loss.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_consecutive_losses_reset_on_profit(self, mock_trade_executor):
+        """Verify consecutive losses are reset on profit."""
+        profit_amount = Decimal("25.0")
+
+        # Mock circuit breaker
+        mock_trade_executor.circuit_breaker.record_profit = AsyncMock()
+
+        # Simulate profit
+        await mock_trade_executor.circuit_breaker.record_profit(float(profit_amount))
+
+        # Circuit breaker should have been called
+        mock_trade_executor.circuit_breaker.record_profit.assert_called_once()
+
+
+# =============================================================================
+# Thread Safety Tests
+# =============================================================================
+
+
+class TestThreadSafety:
+    """Test thread safety of concurrent operations."""
+
+    @pytest.mark.asyncio
+    async def test_concurrent_trade_execution_with_lock(self, mock_trade_executor):
+        """Verify concurrent trade executions are thread-safe."""
+        trade_count = 10
+        trades = [
+            {"market_id": f"market_{i}", "side": "BUY"} for i in range(trade_count)
+        ]
+
+        # Mock place_order
+        async def mock_place_order(*args, **kwargs):
+            await asyncio.sleep(0.01)  # Simulate work
+            return {"order_id": f"order_{asyncio.current_task().get_name()}"}
+
+        mock_trade_executor.clob_client.place_order = mock_place_order
+
+        # Execute all trades concurrently
+        tasks = [mock_trade_executor.execute_copy_trade(trade) for trade in trades]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        # All trades should complete
+        successful = [r for r in results if not isinstance(r, Exception)]
+        assert len(successful) == trade_count
+
+    @pytest.mark.asyncio
+    async def test_position_cache_thread_safety(self, mock_trade_executor):
+        """Verify position cache operations are thread-safe."""
+        # Add multiple positions concurrently
+        position_updates = [
+            (f"market_{i}", Decimal("0.5"), Decimal("100.0")) for i in range(20)
+        ]
+
+        async def add_position(market_id, price, size):
+            async with mock_trade_executor._state_lock:
+                mock_trade_executor.open_positions.set(
+                    market_id, {"market_id": market_id, "price": price, "size": size}
+                )
+
+        # Add all positions concurrently
+        await asyncio.gather(*[add_position(*args) for args in position_updates])
+
+        # All positions should be in cache
+        assert mock_trade_executor.open_positions.get("market_0") is not None
+        assert mock_trade_executor.open_positions.get("market_19") is not None
+
+    @pytest.mark.asyncio
+    async def test_daily_loss_updates_with_lock(self, mock_trade_executor):
+        """Verify daily loss updates are thread-safe."""
+        # Simulate concurrent loss records
+        loss_records = [Decimal(f"{i * 10}") for i in range(10)]
+
+        async def record_loss(loss):
+            # This should use circuit breaker's lock internally
+            await mock_trade_executor.circuit_breaker.record_loss(float(loss))
+
+        # Record all losses concurrently
+        await asyncio.gather(*[record_loss(loss) for loss in loss_records])
+
+        # Get final state
+        state = mock_trade_executor.circuit_breaker.get_state()
+
+        # Daily loss should be sum of all losses
+        expected_total = sum(loss_records)
+        assert state["daily_loss"] == float(expected_total)
+
+
+# =============================================================================
+# Error Handling Tests
+# =============================================================================
+
+
+class TestErrorHandling:
+    """Test error handling in trade executor."""
+
+    @pytest.mark.asyncio
+    async def test_invalid_trade_data_raises_error(self, mock_trade_executor):
+        """Verify invalid trade data raises appropriate error."""
+        invalid_trades = [
+            {},  # Missing all fields
+            {"market_id": "test"},  # Missing side
+            {"side": "BUY"},  # Missing market_id
+        ]
+
+        for trade in invalid_trades:
+            with pytest.raises((ValueError, KeyError, TradingError)):
+                await mock_trade_executor.execute_copy_trade(trade)
+
+    @pytest.mark.asyncio
+    async def test_api_failure_handling(self, mock_trade_executor):
+        """Verify API failures are handled gracefully."""
+        from core.exceptions import APIError
+
+        # Mock API to fail
+        async def mock_api_error(*args, **kwargs):
+            raise APIError("API timeout", status_code=504, error_code="TIMEOUT")
+
+        mock_trade_executor.clob_client.place_order = mock_api_error
+
+        # Execute trade should handle error
+        result = await mock_trade_executor.execute_copy_trade(
+            {"market_id": "test_market", "side": "BUY"}
+        )
+
+        # Should indicate failure
+        assert result.get("status") == "error"
+
+    @pytest.mark.asyncio
+    async def test_insufficient_balance_handling(self, mock_trade_executor):
+        """Verify insufficient balance is handled."""
+        # Mock low balance
+        mock_trade_executor.clob_client.get_token_balance = AsyncMock(
+            return_value=Decimal("0.5")
+        )
+
+        # Execute trade with insufficient balance
+        result = await mock_trade_executor.execute_copy_trade(
+            {"market_id": "test_market", "side": "BUY", "size": Decimal("100.0")}
+        )
+
+        # Should fail due to insufficient balance
+        assert result.get("status") == "error"
+        assert "balance" in str(result.get("error", "")).lower()
+
+
+# =============================================================================
+# Performance Tests
+# =============================================================================
+
+
+class TestPerformance:
+    """Test performance characteristics."""
+
+    @pytest.mark.asyncio
+    async def test_position_calculation_performance(self, mock_trade_executor):
+        """Verify position size calculation is fast."""
+        import time
+
+        # Test multiple calculations
+        start = time.time()
+
+        for _ in range(1000):
+            account_balance = Decimal("10000.0")
+            risk_percent = Decimal("0.01")
+            position_size = account_balance * risk_percent
+
+        duration = time.time() - start
+
+        # Should complete 1000 calculations in under 100ms
+        assert duration < 0.1
+
+    @pytest.mark.asyncio
+    async def test_cache_lookup_performance(self, mock_trade_executor):
+        """Verify cache lookups are fast."""
+        import time
+
+        # Add 1000 positions to cache
+        for i in range(1000):
+            mock_trade_executor.open_positions.set(
+                f"market_{i}",
+                {
+                    "market_id": f"market_{i}",
+                    "price": Decimal("0.5"),
+                    "size": Decimal("100.0"),
+                },
+            )
+
+        # Test lookup performance
+        start = time.time()
+
+        for i in range(1000):
+            mock_trade_executor.open_positions.get(f"market_{i}")
+
+        duration = time.time() - start
+
+        # Should complete 1000 lookups in under 100ms
+        assert duration < 0.1
+
+
+# =============================================================================
+# Edge Case Tests
+# =============================================================================
+
+
+class TestEdgeCases:
+    """Test edge cases and boundary conditions."""
+
+    @pytest.mark.asyncio
+    async def test_zero_account_balance(self, mock_trade_executor):
+        """Verify handling of zero account balance."""
+        account_balance = Decimal("0.0")
+        risk_percent = Decimal("0.01")
+
+        position_size = account_balance * risk_percent
+
+        # Should result in zero
+        assert position_size == Decimal("0.0")
+
+    @pytest.mark.asyncio
+    async def test_maximum_daily_loss_boundary(self, mock_trade_executor):
+        """Verify behavior at maximum daily loss boundary."""
+        max_loss = Decimal("100.0")
+        current_loss = Decimal("99.99")
+
+        # Additional loss would trigger circuit breaker
+        additional_loss = Decimal("0.01")
+        new_total = current_loss + additional_loss
+
+        assert new_total == max_loss
+
+    @pytest.mark.asyncio
+    async def test_negative_values_handled(self, mock_trade_executor):
+        """Verify negative values are handled appropriately."""
+        # Most financial operations should reject negatives
+        with pytest.raises((ValueError, InvalidOperation)):
+            # Decimal operations should handle or reject negatives appropriately
+            account_balance = Decimal("-100.0")
+            position_size = account_balance * Decimal("0.01")

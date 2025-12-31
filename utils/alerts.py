@@ -12,7 +12,8 @@ try:
     from config.settings_staging import staging_settings
 
     STAGING_MODE = True
-except ImportError:
+except (ImportError, Exception):
+    # Handle both ImportError and ValidationError (when STAGING_PRIVATE_KEY is missing)
     STAGING_MODE = False
     staging_settings = None
 
@@ -20,13 +21,15 @@ logger = logging.getLogger(__name__)
 
 
 class TelegramAlertManager:
-    def __init__(self, staging_mode: bool = False):
+    def __init__(self, staging_mode: bool = False) -> None:
         if staging_mode and STAGING_MODE and staging_settings:
             # Use staging configuration
             self.bot_token = staging_settings.alerts.telegram_bot_token
             self.chat_id = staging_settings.alerts.telegram_chat_id
             self.enabled = bool(
-                self.bot_token and self.chat_id and staging_settings.alerts.alert_on_trade
+                self.bot_token
+                and self.chat_id
+                and staging_settings.alerts.alert_on_trade
             )
             self.staging_mode = True
             self.alert_prefix = staging_settings.alerts.staging_alert_prefix
@@ -35,7 +38,9 @@ class TelegramAlertManager:
             # Use production configuration
             self.bot_token = settings.alerts.telegram_bot_token
             self.chat_id = settings.alerts.telegram_chat_id
-            self.enabled = bool(self.bot_token and self.chat_id and settings.alerts.alert_on_trade)
+            self.enabled = bool(
+                self.bot_token and self.chat_id and settings.alerts.alert_on_trade
+            )
             self.staging_mode = False
             self.alert_prefix = ""
 
@@ -54,14 +59,19 @@ class TelegramAlertManager:
                 )
                 self.enabled = False
             except (ConnectionError, TimeoutError, aiohttp.ClientError) as e:
-                logger.error(f"❌ Network error initializing Telegram bot: {str(e)[:100]}")
+                logger.error(
+                    f"❌ Network error initializing Telegram bot: {str(e)[:100]}"
+                )
                 self.enabled = False
             except (ValueError, KeyError, ImportError) as e:
-                logger.error(f"❌ Configuration error initializing Telegram bot: {str(e)[:100]}")
+                logger.error(
+                    f"❌ Configuration error initializing Telegram bot: {str(e)[:100]}"
+                )
                 self.enabled = False
             except Exception as e:
                 logger.critical(
-                    f"❌ Unexpected error initializing Telegram bot: {str(e)}", exc_info=True
+                    f"❌ Unexpected error initializing Telegram bot: {str(e)}",
+                    exc_info=True,
                 )
                 self.enabled = False
         else:
@@ -81,22 +91,30 @@ class TelegramAlertManager:
         # Cooldown protection
         now = time.time()
         if now - self.last_alert_time < self.alert_cooldown and not force:
-            logger.debug(f"Skipping Telegram alert due to cooldown ({self.alert_cooldown}s)")
+            logger.debug(
+                f"Skipping Telegram alert due to cooldown ({self.alert_cooldown}s)"
+            )
             return False
 
         try:
-            await self.bot.send_message(chat_id=self.chat_id, text=message, parse_mode=parse_mode)
+            await self.bot.send_message(
+                chat_id=self.chat_id, text=message, parse_mode=parse_mode
+            )
             self.last_alert_time = now
             env_indicator = "[STAGING] " if self.staging_mode else ""
             logger.info(f"✅ {env_indicator}Telegram alert sent successfully")
             return True
         except (ConnectionError, TimeoutError, aiohttp.ClientError) as e:
             env_indicator = "[STAGING] " if self.staging_mode else ""
-            logger.error(f"❌ {env_indicator}Network error sending Telegram alert: {str(e)[:100]}")
+            logger.error(
+                f"❌ {env_indicator}Network error sending Telegram alert: {str(e)[:100]}"
+            )
             return False
         except (ValueError, TypeError, KeyError) as e:
             env_indicator = "[STAGING] " if self.staging_mode else ""
-            logger.error(f"❌ {env_indicator}Data error sending Telegram alert: {str(e)[:100]}")
+            logger.error(
+                f"❌ {env_indicator}Data error sending Telegram alert: {str(e)[:100]}"
+            )
             return False
         except Exception as e:
             env_indicator = "[STAGING] " if self.staging_mode else ""
@@ -106,7 +124,9 @@ class TelegramAlertManager:
             )
             return False
 
-    async def send_error_alert(self, error: str, context: Optional[Dict[str, Any]] = None):
+    async def send_error_alert(
+        self, error: str, context: Optional[Dict[str, Any]] = None
+    ):
         """Send error alert with context"""
         if not settings.alerts.alert_on_error:
             return
@@ -115,13 +135,17 @@ class TelegramAlertManager:
 
         if context:
             context_str = "\n".join(
-                [f"{k}: {v}" for k, v in context.items() if k not in ["private_key", "secret"]]
+                [
+                    f"{k}: {v}"
+                    for k, v in context.items()
+                    if k not in ["private_key", "secret"]
+                ]
             )
             error_message += f"\n\n**Context:**\n{context_str}"
 
         await self.send_alert(error_message)
 
-    async def send_trade_alert(self, trade_details: Dict[str, Any]):
+    async def send_trade_alert(self, trade_details: Dict[str, Any]) -> None:
         """Send trade execution alert"""
         if not settings.alerts.alert_on_trade:
             return
@@ -138,7 +162,7 @@ class TelegramAlertManager:
 
         await self.send_alert(message)
 
-    async def send_performance_report(self, metrics: Dict[str, Any]):
+    async def send_performance_report(self, metrics: Dict[str, Any]) -> None:
         """Send daily performance report"""
         if (
             not hasattr(self, "last_report_time")
@@ -160,7 +184,9 @@ class TelegramAlertManager:
 
 # Global alert manager instances
 alert_manager = TelegramAlertManager(staging_mode=False)  # Production alerts
-staging_alert_manager = TelegramAlertManager(staging_mode=True) if STAGING_MODE else None
+staging_alert_manager = (
+    TelegramAlertManager(staging_mode=True) if STAGING_MODE else None
+)
 
 
 # Convenience functions
@@ -170,7 +196,9 @@ async def send_telegram_alert(
     return await alert_manager.send_alert(message, parse_mode, force)
 
 
-async def send_error_alert(error: str, context: Optional[Dict[str, Any]] = None) -> None:
+async def send_error_alert(
+    error: str, context: Optional[Dict[str, Any]] = None
+) -> None:
     """Send error alert with secure logging"""
     from utils.logging_security import SecureLogger
 
@@ -200,7 +228,9 @@ async def send_staging_alert(
         return False
 
 
-async def send_staging_error_alert(error: str, context: Optional[Dict[str, Any]] = None) -> None:
+async def send_staging_error_alert(
+    error: str, context: Optional[Dict[str, Any]] = None
+) -> None:
     """Send staging-specific error alert"""
     if staging_alert_manager:
         await staging_alert_manager.send_error_alert(error, context)

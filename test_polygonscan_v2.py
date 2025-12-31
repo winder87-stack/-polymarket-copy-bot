@@ -10,6 +10,8 @@ import sys
 # Add the core directory to path for imports
 sys.path.insert(0, "core")
 
+from core.wallet_monitor import WalletMonitor
+
 
 # Simple mock settings for testing
 class MockSettings:
@@ -77,7 +79,9 @@ async def test_polygonscan_v2_api():
     # Check if API key is configured
     api_key = os.getenv("POLYGONSCAN_API_KEY")
     if not api_key:
-        print("\n⚠️  No Polygonscan API key found. Set POLYGONSCAN_API_KEY environment variable.")
+        print(
+            "\n⚠️  No Polygonscan API key found. Set POLYGONSCAN_API_KEY environment variable."
+        )
         print("   v2 API methods are configured but cannot test live API calls.")
         return success
 
@@ -123,7 +127,9 @@ async def main():
     if success:
         print("🎉 Polygonscan v2 API integration test PASSED!")
         print("\n📝 Next steps:")
-        print("   1. Set your Polygonscan API key: export POLYGONSCAN_API_KEY=your_key_here")
+        print(
+            "   1. Set your Polygonscan API key: export POLYGONSCAN_API_KEY=your_key_here"
+        )
         print("   2. Update settings.py to include the API key")
         print("   3. Test with real wallet addresses")
         print("   4. Monitor rate limits and adjust api_call_delay if needed")

@@ -1,0 +1,61 @@
+[Unit]
+Description=Polymarket Copy Bot - Production Monitoring Server
+Documentation=https://github.com/polymarket/polymarket-copy-bot
+After=network.target polymarket-bot.service
+Wants=polymarket-bot.service
+
+[Service]
+Type=simple
+User=polymarket
+Group=polymarket
+WorkingDirectory=/home/ink/polymarket-copy-bot
+Environment="PATH=/home/ink/polymarket-copy-bot/venv/bin:/usr/local/bin:/usr/bin:/bin"
+EnvironmentFile=-/home/ink/polymarket-copy-bot/.env
+EnvironmentFile=-/home/ink/polymarket-copy-bot/.env.production
+
+# Main command - run enhanced monitoring server
+ExecStart=/home/ink/polymarket-copy-bot/venv/bin/python -m mcp.monitoring_server_enhanced
+
+# Restart policy
+Restart=always
+RestartSec=10
+StartLimitInterval=300
+StartLimitBurst=5
+
+# Resource limits for monitoring (CRITICAL: Must not impact trading)
+# Max 1% CPU and 100MB memory as per constraints
+CPUQuota=1%
+MemoryMax=100M
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/home/ink/polymarket-copy-bot/logs /home/ink/polymarket-copy-bot/monitoring/data
+ReadWritePaths=/home/ink/polymarket-copy-bot/data
+
+# Logging
+StandardOutput=append:/home/ink/polymarket-copy-bot/logs/monitoring.log
+StandardError=append:/home/ink/polymarket-copy-bot/logs/monitoring_error.log
+SyslogIdentifier=polymarket-monitoring
+
+# Health checks
+# Check if dashboard is responsive
+ExecStartPost=/bin/sh -c 'sleep 5 && curl -f http://localhost:8080/health || exit 1'
+# Check if metrics endpoint is responsive
+ExecStartPost=/bin/sh -c 'sleep 5 && curl -f http://localhost:9090/metrics || exit 1'
+# Periodic health check (every 30 seconds)
+ExecStartPost=/bin/sh -c 'while true; do sleep 30; curl -f http://localhost:8080/health || systemctl restart polymarket-bot-monitoring; done'
+
+# Graceful shutdown
+TimeoutStopSec=30
+KillMode=mixed
+KillSignal=SIGTERM
+
+# Nice level (lower priority than trading process)
+Nice=10
+IOSchedulingClass=idle
+
+[Install]
+WantedBy=multi-user.target

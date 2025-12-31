@@ -9,7 +9,9 @@ class MockTradeExecutor:
         self.circuit_breaker_active = False
         self.circuit_breaker_reason = ""
         self.settings = type(
-            "obj", (object,), {"risk": type("obj", (object,), {"max_daily_loss": 100.0})()}
+            "obj",
+            (object,),
+            {"risk": type("obj", (object,), {"max_daily_loss": 100.0})()},
         )()
 
     def activate_circuit_breaker(self, reason):
@@ -18,7 +20,9 @@ class MockTradeExecutor:
 
     def _check_circuit_breaker_conditions(self):
         if self.daily_loss >= self.settings.risk.max_daily_loss:
-            self.activate_circuit_breaker(f"Daily loss limit reached (${self.daily_loss:.2f})")
+            self.activate_circuit_breaker(
+                f"Daily loss limit reached (${self.daily_loss:.2f})"
+            )
 
 
 # Test the logic
@@ -27,7 +31,7 @@ executor.daily_loss = 150.0
 executor._check_circuit_breaker_conditions()
 
 assert executor.circuit_breaker_active, "Circuit breaker should activate on high loss"
-assert (
-    "Daily loss limit reached" in executor.circuit_breaker_reason
-), "Reason should be set correctly"
+assert "Daily loss limit reached" in executor.circuit_breaker_reason, (
+    "Reason should be set correctly"
+)
 print("✅ Circuit breaker logic test passed")

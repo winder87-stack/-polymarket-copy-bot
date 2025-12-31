@@ -43,16 +43,21 @@ class TestTradingConfigValidation:
         for invalid_key in invalid_keys:
             with patch.dict(os.environ, {"PRIVATE_KEY": invalid_key}):
                 with pytest.raises(
-                    ValueError, match="Private key must start with '0x' and be 66 characters long"
+                    ValueError,
+                    match="Private key must start with '0x' and be 66 characters long",
                 ):
                     TradingConfig()
 
     def test_wallet_address_from_env(self):
         """Test loading wallet address from environment"""
-        private_key = "0x1234567890123456789012345678901234567890123456789012345678901234"
+        private_key = (
+            "0x1234567890123456789012345678901234567890123456789012345678901234"
+        )
         wallet_address = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
 
-        with patch.dict(os.environ, {"PRIVATE_KEY": private_key, "WALLET_ADDRESS": wallet_address}):
+        with patch.dict(
+            os.environ, {"PRIVATE_KEY": private_key, "WALLET_ADDRESS": wallet_address}
+        ):
             config = TradingConfig()
             assert config.wallet_address == wallet_address
 
@@ -71,7 +76,10 @@ class TestMonitoringConfigValidation:
 
     def test_load_wallets_from_file(self):
         """Test loading wallets from JSON file"""
-        wallets_data = {"target_wallets": ["0x123", "0x456", "0x789"], "min_confidence_score": 0.8}
+        wallets_data = {
+            "target_wallets": ["0x123", "0x456", "0x789"],
+            "min_confidence_score": 0.8,
+        }
 
         # Create temporary wallets file
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
@@ -82,7 +90,9 @@ class TestMonitoringConfigValidation:
             with patch("config.settings.MonitoringConfig.wallets_file", temp_file):
                 config = MonitoringConfig(wallets_file=temp_file)
                 assert config.target_wallets == wallets_data["target_wallets"]
-                assert config.min_confidence_score == wallets_data["min_confidence_score"]
+                assert (
+                    config.min_confidence_score == wallets_data["min_confidence_score"]
+                )
         finally:
             os.unlink(temp_file)
 
@@ -227,25 +237,35 @@ class TestSettingsValidation:
 
         with patch.dict(os.environ, {"PRIVATE_KEY": valid_key, "MAX_DAILY_LOSS": "0"}):
             config = Settings()
-            with pytest.raises(ValueError, match="MAX_DAILY_LOSS must be greater than 0"):
+            with pytest.raises(
+                ValueError, match="MAX_DAILY_LOSS must be greater than 0"
+            ):
                 config.validate_critical_settings()
 
     def test_validate_critical_settings_zero_max_position_size(self):
         """Test validation failure with zero max position size"""
         valid_key = "0x1234567890123456789012345678901234567890123456789012345678901234"
 
-        with patch.dict(os.environ, {"PRIVATE_KEY": valid_key, "MAX_POSITION_SIZE": "0"}):
+        with patch.dict(
+            os.environ, {"PRIVATE_KEY": valid_key, "MAX_POSITION_SIZE": "0"}
+        ):
             config = Settings()
-            with pytest.raises(ValueError, match="MAX_POSITION_SIZE must be greater than 0"):
+            with pytest.raises(
+                ValueError, match="MAX_POSITION_SIZE must be greater than 0"
+            ):
                 config.validate_critical_settings()
 
     def test_validate_critical_settings_invalid_rpc_url(self):
         """Test validation failure with invalid RPC URL"""
         valid_key = "0x1234567890123456789012345678901234567890123456789012345678901234"
 
-        with patch.dict(os.environ, {"PRIVATE_KEY": valid_key, "POLYGON_RPC_URL": "invalid_url"}):
+        with patch.dict(
+            os.environ, {"PRIVATE_KEY": valid_key, "POLYGON_RPC_URL": "invalid_url"}
+        ):
             config = Settings()
-            with pytest.raises(ValueError, match="POLYGON_RPC_URL must be a valid HTTP/HTTPS URL"):
+            with pytest.raises(
+                ValueError, match="POLYGON_RPC_URL must be a valid HTTP/HTTPS URL"
+            ):
                 config.validate_critical_settings()
 
 
@@ -271,9 +291,9 @@ class TestValidatorSignatures:
         """Test that validators have the correct Pydantic v2 decorators"""
 
         # Check that the decorators are applied
-        assert hasattr(Settings.validate_trading_config, "__validator_config__") or hasattr(
-            Settings, "__pydantic_validator__"
-        )
+        assert hasattr(
+            Settings.validate_trading_config, "__validator_config__"
+        ) or hasattr(Settings, "__pydantic_validator__")
 
         # The actual decorator attributes may vary, but the methods should exist
         assert hasattr(Settings, "validate_trading_config")

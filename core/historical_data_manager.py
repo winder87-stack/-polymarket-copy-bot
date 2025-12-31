@@ -24,6 +24,9 @@ from scipy import stats
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 
+from utils.helpers import BoundedCache, mask_wallet_address
+from utils.time_utils import get_current_time_utc
+
 logger = logging.getLogger(__name__)
 
 
@@ -35,7 +38,7 @@ class HistoricalDataManager:
     for thorough backtesting of copy trading strategies.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Data sources configuration
         self.data_sources = {
             "polygonscan": {
@@ -77,8 +80,13 @@ class HistoricalDataManager:
             "min_regime_duration_hours": 12,
         }
 
-        # Data storage
-        self.data_cache: Dict[str, Any] = {}
+        # Data storage - bounded cache with proper cleanup
+        self.data_cache = BoundedCache(
+            max_size=5000,
+            ttl_seconds=3600,  # 1 hour TTL
+            memory_threshold_mb=50.0,
+            cleanup_interval_seconds=300,  # Cleanup every 5 minutes
+        )
         self.validation_reports: List[Dict[str, Any]] = []
 
         # Synthetic data generation parameters
@@ -119,14 +127,19 @@ class HistoricalDataManager:
         """
 
         if data_types is None:
-            data_types = ["trade_history", "market_data", "gas_prices", "market_regimes"]
+            data_types = [
+                "trade_history",
+                "market_data",
+                "gas_prices",
+                "market_regimes",
+            ]
 
         dataset = {
             "collection_metadata": {
                 "wallet_count": len(wallet_addresses),
                 "date_range": f"{start_date.isoformat()} to {end_date.isoformat()}",
                 "data_types": data_types,
-                "collection_timestamp": datetime.now().isoformat(),
+                "collection_timestamp": get_current_time_utc().isoformat(),
             },
             "wallet_data": {},
             "market_data": {},
@@ -139,7 +152,9 @@ class HistoricalDataManager:
         try:
             # Collect trade history for all wallets
             if "trade_history" in data_types:
-                logger.info(f"📈 Collecting trade history for {len(wallet_addresses)} wallets")
+                logger.info(
+                    f"📈 Collecting trade history for {len(wallet_addresses)} wallets"
+                )
                 wallet_trade_data = await self._collect_wallet_trade_history(
                     wallet_addresses, start_date, end_date
                 )
@@ -180,14 +195,16 @@ class HistoricalDataManager:
                 dataset = await self._generate_synthetic_data(dataset)
 
             # Generate data quality summary
-            dataset["data_quality_summary"] = self._generate_data_quality_summary(dataset)
+            dataset["data_quality_summary"] = self._generate_data_quality_summary(
+                dataset
+            )
 
             logger.info(
                 f"✅ Comprehensive dataset collected: {len(wallet_addresses)} wallets, {len(data_types)} data types"
             )
 
         except Exception as e:
-            logger.error(f"Error collecting comprehensive dataset: {e}")
+            logger.error(f"Error collecting comprehensive dataset: {e}", exc_info=True)
             dataset["error"] = str(e)
 
         return dataset
@@ -217,13 +234,20 @@ class HistoricalDataManager:
                     "trade_count": len(enriched_trades),
                     "date_range": f"{start_date.isoformat()} to {end_date.isoformat()}",
                     "trades": enriched_trades,
-                    "summary_stats": self._calculate_wallet_summary_stats(enriched_trades),
+                    "summary_stats": self._calculate_wallet_summary_stats(
+                        enriched_trades
+                    ),
                 }
 
-                logger.debug(f"Collected {len(enriched_trades)} trades for {wallet_address[:8]}...")
+                logger.debug(
+                    f"Collected {len(enriched_trades)} trades for {mask_wallet_address(wallet_address[:8])}...{wallet_address[-6:]}"
+                )
 
             except Exception as e:
-                logger.error(f"Error collecting trade history for {wallet_address}: {e}")
+                logger.error(
+                    f"Error collecting trade history for {mask_wallet_address(wallet_address[:8])}...{wallet_address[-6:]}: {e}",
+                    exc_info=True,
+                )
                 wallet_data[wallet_address] = {
                     "address": wallet_address,
                     "error": str(e),
@@ -264,14 +288,17 @@ class HistoricalDataManager:
         for tx in transactions:
             # Check if transaction interacts with Polymarket contracts
             if any(
-                contract in str(tx.get("to", "")) or contract in str(tx.get("input", ""))
+                contract in str(tx.get("to", ""))
+                or contract in str(tx.get("input", ""))
                 for contract in polymarket_contracts
             ):
                 polymarket_trades.append(tx)
 
         return polymarket_trades
 
-    async def _enrich_trade_data(self, trades: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    async def _enrich_trade_data(
+        self, trades: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """Enrich trade data with additional calculations and market context."""
 
         enriched_trades = []
@@ -289,7 +316,9 @@ class HistoricalDataManager:
             enriched_trade["market_context"] = await self._add_market_context(trade)
 
             # Add execution quality metrics
-            enriched_trade["execution_quality"] = await self._calculate_execution_quality(trade)
+            enriched_trade[
+                "execution_quality"
+            ] = await self._calculate_execution_quality(trade)
 
             enriched_trades.append(enriched_trade)
 
@@ -308,7 +337,7 @@ class HistoricalDataManager:
             "market_id": "0x123...",  # Market identifier
             "condition_id": "0x456...",  # Condition identifier
             "outcome_index": 0,  # Outcome index
-            "timestamp": trade.get("timestamp", datetime.now().isoformat()),
+            "timestamp": trade.get("timestamp", get_current_time_utc().isoformat()),
         }
 
     async def _calculate_trade_pnl(self, trade: Dict[str, Any]) -> Dict[str, Any]:
@@ -342,7 +371,9 @@ class HistoricalDataManager:
             "spread_bps": 50,
         }
 
-    async def _calculate_execution_quality(self, trade: Dict[str, Any]) -> Dict[str, Any]:
+    async def _calculate_execution_quality(
+        self, trade: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Calculate execution quality metrics."""
 
         return {
@@ -353,7 +384,9 @@ class HistoricalDataManager:
             "fill_rate": 1.0,
         }
 
-    def _calculate_wallet_summary_stats(self, trades: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _calculate_wallet_summary_stats(
+        self, trades: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Calculate summary statistics for a wallet's trading activity."""
 
         if not trades:
@@ -364,7 +397,10 @@ class HistoricalDataManager:
         trade_sizes = [t.get("parsed_trade", {}).get("amount", 0) for t in trades]
 
         timestamps = [
-            datetime.fromisoformat(t.get("timestamp", datetime.now().isoformat())) for t in trades
+            datetime.fromisoformat(
+                t.get("timestamp", get_current_time_utc().isoformat())
+            )
+            for t in trades
         ]
 
         summary = {
@@ -410,7 +446,9 @@ class HistoricalDataManager:
         market_ids = ["0x123", "0x456", "0x789"]  # Example market IDs
 
         for market_id in market_ids:
-            price_series = await self._fetch_market_price_series(market_id, start_date, end_date)
+            price_series = await self._fetch_market_price_series(
+                market_id, start_date, end_date
+            )
             market_data["price_data"][market_id] = price_series
 
             # Calculate volatility
@@ -508,11 +546,17 @@ class HistoricalDataManager:
                 snapshot = {
                     "timestamp": current_time.isoformat(),
                     "bids": [
-                        {"price": 0.48 - i * 0.01, "size": 100 + np.random.normal() * 20}
+                        {
+                            "price": 0.48 - i * 0.01,
+                            "size": 100 + np.random.normal() * 20,
+                        }
                         for i in range(5)
                     ],
                     "asks": [
-                        {"price": 0.52 + i * 0.01, "size": 100 + np.random.normal() * 20}
+                        {
+                            "price": 0.52 + i * 0.01,
+                            "size": 100 + np.random.normal() * 20,
+                        }
                         for i in range(5)
                     ],
                     "spread_bps": 80,
@@ -659,7 +703,9 @@ class HistoricalDataManager:
             )
 
         # Analyze regime transitions
-        regime_data["regime_transitions"] = self._analyze_regime_transitions(regime_labels)
+        regime_data["regime_transitions"] = self._analyze_regime_transitions(
+            regime_labels
+        )
 
         # Calculate regime statistics
         regime_data["regime_statistics"] = self._calculate_regime_statistics(
@@ -667,7 +713,9 @@ class HistoricalDataManager:
         )
 
         # Analyze regime duration patterns
-        regime_data["regime_duration_analysis"] = self._analyze_regime_durations(regime_labels)
+        regime_data["regime_duration_analysis"] = self._analyze_regime_durations(
+            regime_labels
+        )
 
         return regime_data
 
@@ -686,7 +734,9 @@ class HistoricalDataManager:
                 p["price"]
                 for p in market_prices
                 if datetime.fromisoformat(p["timestamp"]) <= current_time
-                and (current_time - datetime.fromisoformat(p["timestamp"])).total_seconds()
+                and (
+                    current_time - datetime.fromisoformat(p["timestamp"])
+                ).total_seconds()
                 <= lookback_hours * 3600
             ]
 
@@ -711,7 +761,9 @@ class HistoricalDataManager:
                 p
                 for p in market_prices
                 if datetime.fromisoformat(p["timestamp"]) <= current_time
-                and (current_time - datetime.fromisoformat(p["timestamp"])).total_seconds()
+                and (
+                    current_time - datetime.fromisoformat(p["timestamp"])
+                ).total_seconds()
                 <= lookback_hours * 3600
             ]
 
@@ -720,7 +772,9 @@ class HistoricalDataManager:
                 # Calculate linear trend
                 x = np.arange(len(prices))
                 slope, _, _, _, _ = stats.linregress(x, prices)
-                trend_strength = abs(slope) / np.std(prices) if np.std(prices) > 0 else 0
+                trend_strength = (
+                    abs(slope) / np.std(prices) if np.std(prices) > 0 else 0
+                )
                 trends.append(trend_strength)
 
         return np.mean(trends) if trends else 0
@@ -760,7 +814,9 @@ class HistoricalDataManager:
 
         return np.mean(liquidity_scores) if liquidity_scores else 0.5
 
-    def _cluster_market_regimes(self, regime_indicators: List[Dict[str, Any]]) -> List[str]:
+    def _cluster_market_regimes(
+        self, regime_indicators: List[Dict[str, Any]]
+    ) -> List[str]:
         """Cluster regime indicators to identify distinct market regimes."""
 
         if len(regime_indicators) < 10:
@@ -770,7 +826,11 @@ class HistoricalDataManager:
         features = []
         for indicator in regime_indicators:
             features.append(
-                [indicator["volatility"], indicator["trend_strength"], indicator["liquidity_score"]]
+                [
+                    indicator["volatility"],
+                    indicator["trend_strength"],
+                    indicator["liquidity_score"],
+                ]
             )
 
         # Standardize features
@@ -796,7 +856,9 @@ class HistoricalDataManager:
 
         return regime_names
 
-    def _analyze_regime_transitions(self, regime_labels: List[str]) -> List[Dict[str, Any]]:
+    def _analyze_regime_transitions(
+        self, regime_labels: List[str]
+    ) -> List[Dict[str, Any]]:
         """Analyze transitions between market regimes."""
 
         transitions = []
@@ -848,7 +910,9 @@ class HistoricalDataManager:
                 "count": len(regime_indices),
                 "percentage": len(regime_indices) / len(regime_labels),
                 "avg_volatility": np.mean([d["volatility"] for d in regime_data]),
-                "avg_trend_strength": np.mean([d["trend_strength"] for d in regime_data]),
+                "avg_trend_strength": np.mean(
+                    [d["trend_strength"] for d in regime_data]
+                ),
                 "avg_liquidity": np.mean([d["liquidity_score"] for d in regime_data]),
                 "volatility_range": [
                     min([d["volatility"] for d in regime_data]),
@@ -872,7 +936,9 @@ class HistoricalDataManager:
             if regime == current_regime:
                 current_duration += 1
             else:
-                durations.append({"regime": current_regime, "duration_hours": current_duration})
+                durations.append(
+                    {"regime": current_regime, "duration_hours": current_duration}
+                )
                 current_regime = regime
                 current_duration = 1
 
@@ -881,7 +947,9 @@ class HistoricalDataManager:
 
         # Analyze by regime
         for regime in set(regime_labels):
-            regime_durations = [d["duration_hours"] for d in durations if d["regime"] == regime]
+            regime_durations = [
+                d["duration_hours"] for d in durations if d["regime"] == regime
+            ]
 
             if regime_durations:
                 duration_analysis[regime] = {
@@ -894,7 +962,9 @@ class HistoricalDataManager:
 
         return duration_analysis
 
-    async def _validate_dataset_quality(self, dataset: Dict[str, Any]) -> Dict[str, Any]:
+    async def _validate_dataset_quality(
+        self, dataset: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Validate quality of collected dataset."""
 
         validation_reports = {
@@ -905,11 +975,15 @@ class HistoricalDataManager:
         }
 
         # Validate wallet data
-        wallet_validation = self._validate_wallet_data_quality(dataset.get("wallet_data", {}))
+        wallet_validation = self._validate_wallet_data_quality(
+            dataset.get("wallet_data", {})
+        )
         validation_reports["component_reports"]["wallet_data"] = wallet_validation
 
         # Validate market data
-        market_validation = self._validate_market_data_quality(dataset.get("market_data", {}))
+        market_validation = self._validate_market_data_quality(
+            dataset.get("market_data", {})
+        )
         validation_reports["component_reports"]["market_data"] = market_validation
 
         # Validate gas data
@@ -927,7 +1001,9 @@ class HistoricalDataManager:
             validation_reports["overall_quality_score"] = np.mean(component_scores)
 
         # Identify quality issues
-        validation_reports["quality_issues"] = self._identify_quality_issues(validation_reports)
+        validation_reports["quality_issues"] = self._identify_quality_issues(
+            validation_reports
+        )
 
         # Generate recommendations
         validation_reports["recommendations"] = self._generate_quality_recommendations(
@@ -936,7 +1012,9 @@ class HistoricalDataManager:
 
         return validation_reports
 
-    def _validate_wallet_data_quality(self, wallet_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_wallet_data_quality(
+        self, wallet_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Validate quality of wallet trade data."""
 
         validation = {
@@ -958,7 +1036,9 @@ class HistoricalDataManager:
                 wallets_with_data += 1
                 total_trades += trade_count
             else:
-                validation["issues"].append(f"Wallet {wallet_addr[:8]}... has no trade data")
+                validation["issues"].append(
+                    f"Wallet {wallet_addr[:8]}... has no trade data"
+                )
 
         validation["wallets_with_data"] = wallets_with_data
 
@@ -975,14 +1055,17 @@ class HistoricalDataManager:
         completeness_score = validation["data_completeness"]
         coverage_score = min(
             1.0,
-            total_trades / (expected_wallets * self.quality_params["min_data_points_per_wallet"]),
+            total_trades
+            / (expected_wallets * self.quality_params["min_data_points_per_wallet"]),
         )
 
         validation["quality_score"] = (completeness_score + coverage_score) / 2
 
         return validation
 
-    def _validate_market_data_quality(self, market_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_market_data_quality(
+        self, market_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Validate quality of market data."""
 
         validation = {
@@ -1003,7 +1086,9 @@ class HistoricalDataManager:
         validation["total_price_points"] = total_points
 
         if validation["markets_with_data"] > 0:
-            validation["average_data_density"] = total_points / validation["markets_with_data"]
+            validation["average_data_density"] = (
+                total_points / validation["markets_with_data"]
+            )
 
         # Quality score based on data density and completeness
         density_score = min(1.0, total_points / 10000)  # Expect 10K data points
@@ -1030,7 +1115,9 @@ class HistoricalDataManager:
             validation["time_coverage_hours"] = time_span.total_seconds() / 3600
 
         # Quality score based on coverage and density
-        coverage_score = min(1.0, validation["time_coverage_hours"] / 720)  # Expect 30 days
+        coverage_score = min(
+            1.0, validation["time_coverage_hours"] / 720
+        )  # Expect 30 days
         density_score = min(
             1.0, validation["data_points"] / 2880
         )  # Expect 15-min intervals for 30 days
@@ -1066,7 +1153,9 @@ class HistoricalDataManager:
 
         return issues
 
-    def _generate_quality_recommendations(self, validation_reports: Dict[str, Any]) -> List[str]:
+    def _generate_quality_recommendations(
+        self, validation_reports: Dict[str, Any]
+    ) -> List[str]:
         """Generate recommendations for improving data quality."""
 
         recommendations = []
@@ -1074,7 +1163,9 @@ class HistoricalDataManager:
         overall_score = validation_reports.get("overall_quality_score", 1.0)
 
         if overall_score < 0.8:
-            recommendations.append("Consider extending data collection period for better coverage")
+            recommendations.append(
+                "Consider extending data collection period for better coverage"
+            )
 
         # Component-specific recommendations
         wallet_report = validation_reports["component_reports"].get("wallet_data", {})
@@ -1212,11 +1303,15 @@ class HistoricalDataManager:
             if start_idx >= 0 and end_idx < len(prices):
                 start_price = prices[start_idx]["price"]
                 end_price = prices[end_idx]["price"]
-                gap_steps = int(gap["gap_duration_seconds"] / 3600)  # Hourly interpolation
+                gap_steps = int(
+                    gap["gap_duration_seconds"] / 3600
+                )  # Hourly interpolation
 
                 if gap_steps > 1:
                     # Linear interpolation
-                    price_interpolation = np.linspace(start_price, end_price, gap_steps + 1)
+                    price_interpolation = np.linspace(
+                        start_price, end_price, gap_steps + 1
+                    )
 
                     # Add interpolated points
                     start_time = datetime.fromisoformat(prices[start_idx]["timestamp"])
@@ -1230,7 +1325,10 @@ class HistoricalDataManager:
                                 "timestamp": interp_time.isoformat(),
                                 "price": interp_price,
                                 "volume": np.mean(
-                                    [prices[start_idx]["volume"], prices[end_idx]["volume"]]
+                                    [
+                                        prices[start_idx]["volume"],
+                                        prices[end_idx]["volume"],
+                                    ]
                                 ),
                                 "market_id": prices[start_idx]["market_id"],
                                 "interpolated": True,
@@ -1255,11 +1353,15 @@ class HistoricalDataManager:
             if start_idx >= 0 and end_idx < len(gas_series):
                 start_gas = gas_series[start_idx]["gas_price_gwei"]
                 end_gas = gas_series[end_idx]["gas_price_gwei"]
-                gap_steps = int(gap["gap_duration_seconds"] / 900)  # 15-minute interpolation
+                gap_steps = int(
+                    gap["gap_duration_seconds"] / 900
+                )  # 15-minute interpolation
 
                 if gap_steps > 1:
                     gas_interpolation = np.linspace(start_gas, end_gas, gap_steps + 1)
-                    start_time = datetime.fromisoformat(gas_series[start_idx]["timestamp"])
+                    start_time = datetime.fromisoformat(
+                        gas_series[start_idx]["timestamp"]
+                    )
 
                     for i in range(1, gap_steps):
                         interp_time = start_time + timedelta(minutes=15 * i)
@@ -1269,7 +1371,9 @@ class HistoricalDataManager:
                             {
                                 "timestamp": interp_time.isoformat(),
                                 "gas_price_gwei": interp_gas,
-                                "gas_limit": gas_series[start_idx]["gas_limit"],  # Assume constant
+                                "gas_limit": gas_series[start_idx][
+                                    "gas_limit"
+                                ],  # Assume constant
                                 "interpolated": True,
                             }
                         )
@@ -1304,13 +1408,19 @@ class HistoricalDataManager:
             if scenario == "flash_crash":
                 synthetic_data[scenario] = self._generate_flash_crash_scenario(dataset)
             elif scenario == "high_volatility":
-                synthetic_data[scenario] = self._generate_high_volatility_scenario(dataset)
+                synthetic_data[scenario] = self._generate_high_volatility_scenario(
+                    dataset
+                )
             elif scenario == "low_liquidity":
-                synthetic_data[scenario] = self._generate_low_liquidity_scenario(dataset)
+                synthetic_data[scenario] = self._generate_low_liquidity_scenario(
+                    dataset
+                )
             elif scenario == "gas_spike":
                 synthetic_data[scenario] = self._generate_gas_spike_scenario(dataset)
             elif scenario == "extreme_drawdown":
-                synthetic_data[scenario] = self._generate_extreme_drawdown_scenario(dataset)
+                synthetic_data[scenario] = self._generate_extreme_drawdown_scenario(
+                    dataset
+                )
 
         return synthetic_data
 
@@ -1348,7 +1458,9 @@ class HistoricalDataManager:
             "recovery_time_minutes": 30,
         }
 
-    def _generate_high_volatility_scenario(self, dataset: Dict[str, Any]) -> Dict[str, Any]:
+    def _generate_high_volatility_scenario(
+        self, dataset: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Generate high volatility market scenario."""
 
         # Create price series with high volatility
@@ -1371,10 +1483,14 @@ class HistoricalDataManager:
             "return_series": returns,
             "volatility": np.std(returns) * np.sqrt(252),  # Annualized
             "duration_days": len(prices) / 24,  # Assuming hourly data
-            "max_drawdown": self._calculate_max_drawdown([{"price": p} for p in prices]),
+            "max_drawdown": self._calculate_max_drawdown(
+                [{"price": p} for p in prices]
+            ),
         }
 
-    def _generate_low_liquidity_scenario(self, dataset: Dict[str, Any]) -> Dict[str, Any]:
+    def _generate_low_liquidity_scenario(
+        self, dataset: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Generate low liquidity market scenario."""
 
         # Wide spreads, low volume, price gaps
@@ -1384,7 +1500,9 @@ class HistoricalDataManager:
         for i in range(1000):
             # Base trend with gaps
             trend = 0.001 * i  # Slow upward trend
-            gap_effect = np.random.choice([0, 0.02, -0.02], p=[0.8, 0.1, 0.1])  # Occasional gaps
+            gap_effect = np.random.choice(
+                [0, 0.02, -0.02], p=[0.8, 0.1, 0.1]
+            )  # Occasional gaps
             noise = np.random.normal(0, 0.005)
 
             price = base_price + trend + gap_effect + noise
@@ -1422,11 +1540,14 @@ class HistoricalDataManager:
             "gas_price_series": gas_prices,
             "average_gas_price": np.mean(gas_prices),
             "max_gas_price": max(gas_prices),
-            "spike_frequency": sum(1 for g in gas_prices if g > base_gas * 2) / len(gas_prices),
+            "spike_frequency": sum(1 for g in gas_prices if g > base_gas * 2)
+            / len(gas_prices),
             "network_congestion_events": sum(1 for g in gas_prices if g > base_gas * 3),
         }
 
-    def _generate_extreme_drawdown_scenario(self, dataset: Dict[str, Any]) -> Dict[str, Any]:
+    def _generate_extreme_drawdown_scenario(
+        self, dataset: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Generate extreme drawdown market scenario."""
 
         # Prolonged bear market with extreme losses
@@ -1466,7 +1587,9 @@ class HistoricalDataManager:
             "price_series": prices,
             "return_series": returns,
             "total_return": prices[-1] / prices[0] - 1,
-            "max_drawdown": self._calculate_max_drawdown([{"price": p} for p in prices]),
+            "max_drawdown": self._calculate_max_drawdown(
+                [{"price": p} for p in prices]
+            ),
             "decline_duration_days": decline_periods / 24,
             "recovery_duration_days": recovery_periods / 24,
             "volatility_during_decline": np.std(returns[:decline_periods]),
@@ -1493,7 +1616,8 @@ class HistoricalDataManager:
         # Data completeness by component
         wallet_data = dataset.get("wallet_data", {})
         summary["data_completeness"]["wallets"] = (
-            sum(1 for w in wallet_data.values() if w.get("trade_count", 0) > 0) / len(wallet_data)
+            sum(1 for w in wallet_data.values() if w.get("trade_count", 0) > 0)
+            / len(wallet_data)
             if wallet_data
             else 0
         )
@@ -1543,7 +1667,7 @@ class HistoricalDataManager:
 
         return gap_summary
 
-    def save_dataset(self, dataset: Dict[str, Any], filename: str):
+    def save_dataset(self, dataset: Dict[str, Any], filename: str) -> None:
         """Save collected dataset to disk."""
 
         try:

@@ -58,7 +58,9 @@ class WebDashboard:
         self._setup_routes()
 
         # Start background data collection
-        self.data_thread = threading.Thread(target=self._data_collection_loop, daemon=True)
+        self.data_thread = threading.Thread(
+            target=self._data_collection_loop, daemon=True
+        )
         self.data_thread.start()
 
     def _setup_routes(self) -> None:
@@ -196,7 +198,9 @@ class WebDashboard:
                 "timestamps": timestamps.strftime("%Y-%m-%d %H:%M:%S").tolist(),
                 "cpu_percent": [45 + (i % 10) for i in range(len(timestamps))],
                 "memory_percent": [65 + (i % 15) for i in range(len(timestamps))],
-                "trade_success_rate": [95 + (i % 5) - 2 for i in range(len(timestamps))],
+                "trade_success_rate": [
+                    95 + (i % 5) - 2 for i in range(len(timestamps))
+                ],
                 "api_latency": [2000 + (i % 1000) for i in range(len(timestamps))],
             }
 
@@ -236,7 +240,9 @@ class WebDashboard:
             return {
                 "alerts": alerts,
                 "total_count": len(alerts),
-                "critical_count": len([a for a in alerts if a["severity"] == "CRITICAL"]),
+                "critical_count": len(
+                    [a for a in alerts if a["severity"] == "CRITICAL"]
+                ),
                 "warning_count": len([a for a in alerts if a["severity"] == "WARNING"]),
             }
         except Exception as e:
@@ -274,7 +280,9 @@ class WebDashboard:
                     break
 
             return {
-                "logs": list(reversed(filtered_lines)),  # Put back in chronological order
+                "logs": list(
+                    reversed(filtered_lines)
+                ),  # Put back in chronological order
                 "total_lines": len(all_lines),
                 "filtered_lines": len(filtered_lines),
             }
@@ -462,10 +470,16 @@ class WebDashboard:
 
         # Add threshold lines
         fig.add_hline(
-            y=75, line_dash="dash", line_color="orange", annotation_text="Warning Threshold"
+            y=75,
+            line_dash="dash",
+            line_color="orange",
+            annotation_text="Warning Threshold",
         )
         fig.add_hline(
-            y=90, line_dash="dash", line_color="red", annotation_text="Critical Threshold"
+            y=90,
+            line_dash="dash",
+            line_color="red",
+            annotation_text="Critical Threshold",
         )
 
         fig.update_layout(
@@ -490,7 +504,9 @@ class WebDashboard:
 
         fig = go.Figure()
 
-        fig.add_trace(go.Bar(x=alert_times, y=alert_counts, name="Alerts", marker_color="red"))
+        fig.add_trace(
+            go.Bar(x=alert_times, y=alert_counts, name="Alerts", marker_color="red")
+        )
 
         fig.update_layout(
             title="Alerts Timeline (Last 24 Hours)",
@@ -523,7 +539,11 @@ class WebDashboard:
                 "version": "1.0.0",
                 "active_alerts": alerts_data.get("total_count", 0),
                 "last_backup": (datetime.now() - timedelta(hours=6)).isoformat(),
-                "services": {"bot": "running", "monitoring": "running", "database": "healthy"},
+                "services": {
+                    "bot": "running",
+                    "monitoring": "running",
+                    "database": "healthy",
+                },
             }
         except Exception as e:
             logger.error(f"Error getting system status: {e}")
@@ -855,8 +875,12 @@ def main():
     """Main function"""
     import argparse
 
-    parser = argparse.ArgumentParser(description="Web Dashboard for Polymarket Copy Bot")
-    parser.add_argument("--port", type=int, default=8080, help="Port to run dashboard on")
+    parser = argparse.ArgumentParser(
+        description="Web Dashboard for Polymarket Copy Bot"
+    )
+    parser.add_argument(
+        "--port", type=int, default=8080, help="Port to run dashboard on"
+    )
     parser.add_argument("--debug", action="store_true", help="Run in debug mode")
     parser.add_argument(
         "--create-templates", action="store_true", help="Create template files and exit"

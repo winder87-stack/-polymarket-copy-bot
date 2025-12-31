@@ -46,16 +46,23 @@ class SensitiveDataMasker:
         ),
         # JSON Web Tokens
         (
-            re.compile(r"eyJ[a-zA-Z0-9\-_]+\.eyJ[a-zA-Z0-9\-_]+\.?[a-zA-Z0-9\-_]+", re.IGNORECASE),
+            re.compile(
+                r"eyJ[a-zA-Z0-9\-_]+\.eyJ[a-zA-Z0-9\-_]+\.?[a-zA-Z0-9\-_]+",
+                re.IGNORECASE,
+            ),
             lambda m: "[JWT_TOKEN_REDACTED]",
         ),
         # API keys and tokens (more general patterns)
         (
             re.compile(
-                r'(?:api_key|token|secret|password)["\s]*[:=]["\s]*[a-z0-9_\-]{20,}', re.IGNORECASE
+                r'(?:api_key|token|secret|password)["\s]*[:=]["\s]*[a-z0-9_\-]{20,}',
+                re.IGNORECASE,
             ),
             lambda m: re.sub(
-                r"[a-z0-9_\-]{5,}$", "..." + "[REDACTED]", m.group(0), flags=re.IGNORECASE
+                r"[a-z0-9_\-]{5,}$",
+                "..." + "[REDACTED]",
+                m.group(0),
+                flags=re.IGNORECASE,
             ),
         ),
         # Credit card numbers
@@ -83,8 +90,10 @@ class SensitiveDataMasker:
         "passphrase",
     ]
 
-    def __init__(self):
-        self._masking_cache = BoundedCache(max_size=10000, ttl_seconds=3600)  # 1 hour TTL
+    def __init__(self) -> None:
+        self._masking_cache = BoundedCache(
+            max_size=10000, ttl_seconds=3600
+        )  # 1 hour TTL
         self._compiled_patterns = [
             (pattern, replacer) for pattern, replacer in self._SENSITIVE_PATTERNS
         ]
@@ -120,12 +129,16 @@ class SensitiveDataMasker:
         elif isinstance(data, list):
             return [self._mask_recursive(item, f"{context}[list]") for item in data]
         elif isinstance(data, tuple):
-            return tuple(self._mask_recursive(item, f"{context}[tuple]") for item in data)
+            return tuple(
+                self._mask_recursive(item, f"{context}[tuple]") for item in data
+            )
         elif hasattr(data, "__dict__"):
             # Handle objects by converting to dict
             obj_dict = vars(data)
             masked_dict = self._mask_dict(obj_dict, f"{context}[object]")
-            return type(data)(**masked_dict) if hasattr(data, "__init__") else masked_dict
+            return (
+                type(data)(**masked_dict) if hasattr(data, "__init__") else masked_dict
+            )
         else:
             # Fallback for unknown types - convert to string and mask
             return self._mask_string(str(data), context)
@@ -168,7 +181,9 @@ class SensitiveDataMasker:
             key_lower = str(key).lower()
 
             # Check if key contains sensitive terms
-            is_sensitive_key = any(sensitive in key_lower for sensitive in self._SENSITIVE_KEYS)
+            is_sensitive_key = any(
+                sensitive in key_lower for sensitive in self._SENSITIVE_KEYS
+            )
 
             if is_sensitive_key:
                 # Mask the entire value for sensitive keys
@@ -237,9 +252,15 @@ class SecureLogger:
         try:
             # Mask sensitive data
             masked_data = (
-                cls._masker.mask_sensitive_data(data, context="log_data") if data else None
+                cls._masker.mask_sensitive_data(data, context="log_data")
+                if data
+                else None
             )
-            (cls._masker.mask_sensitive_data(context, context="log_context") if context else None)
+            (
+                cls._masker.mask_sensitive_data(context, context="log_context")
+                if context
+                else None
+            )
 
             # Get the appropriate logger method
             log_method = getattr(logger, level.lower())
@@ -247,7 +268,8 @@ class SecureLogger:
             # Log with appropriate parameters
             if masked_data:
                 log_method(
-                    f"{message} | data={json.dumps(masked_data, default=str)}", exc_info=exc_info
+                    f"{message} | data={json.dumps(masked_data, default=str)}",
+                    exc_info=exc_info,
                 )
             else:
                 log_method(message, exc_info=exc_info)
@@ -255,15 +277,19 @@ class SecureLogger:
         except Exception as e:
             # Fallback to basic logging if secure logging fails
             try:
-                logger.error(f"Secure logging failed: {e} | Original message: {message}")
-            except:
+                logger.error(
+                    f"Secure logging failed: {e} | Original message: {message}"
+                )
+            except (IOError, OSError, UnicodeEncodeError) as e2:
                 # Ultimate fallback - print to stderr
                 import sys
 
-                print(f"SECURE LOGGING FAILURE: {e}", file=sys.stderr)
+                print(f"SECURE LOGGING FAILURE: {e2}", file=sys.stderr)
 
     @classmethod
-    def audit_log(cls, action: str, details: Dict[str, Any], user: str = "system"):
+    def audit_log(
+        cls, action: str, details: Dict[str, Any], user: str = "system"
+    ) -> None:
         """
         Log security audit events
 
@@ -291,7 +317,7 @@ class SecureLogger:
         cls.log(level, f"Audit: {action}", masked_details)
 
     @classmethod
-    def audit_security_event(cls, event_type: str, details: Dict[str, Any]):
+    def audit_security_event(cls, event_type: str, details: Dict[str, Any]) -> None:
         """Log security-related events with high priority"""
         details["event_type"] = event_type
         details["security_event"] = True
@@ -307,15 +333,21 @@ class SecureLogger:
             "configuration_change",
             {
                 "component": component,
-                "old_value": cls._masker.mask_sensitive_data(old_value, context="config_audit"),
-                "new_value": cls._masker.mask_sensitive_data(new_value, context="config_audit"),
+                "old_value": cls._masker.mask_sensitive_data(
+                    old_value, context="config_audit"
+                ),
+                "new_value": cls._masker.mask_sensitive_data(
+                    new_value, context="config_audit"
+                ),
                 "change_type": "modification",
             },
             user=user,
         )
 
     @classmethod
-    def audit_file_access(cls, file_path: str, operation: str, user: str = "system"):
+    def audit_file_access(
+        cls, file_path: str, operation: str, user: str = "system"
+    ) -> None:
         """Audit file access operations"""
         cls.audit_log(
             "file_access",
@@ -328,9 +360,13 @@ class SecureLogger:
         )
 
     @classmethod
-    def audit_authentication_event(cls, event_type: str, details: Dict[str, Any]):
+    def audit_authentication_event(
+        cls, event_type: str, details: Dict[str, Any]
+    ) -> None:
         """Audit authentication-related events"""
-        cls.audit_log(f"auth_{event_type}", details, user=details.get("username", "unknown"))
+        cls.audit_log(
+            f"auth_{event_type}", details, user=details.get("username", "unknown")
+        )
 
     @classmethod
     def _get_audit_severity(cls, action: str) -> str:
@@ -350,13 +386,15 @@ class SecureLogger:
 
         medium_severity_actions = ["file_access", "log_rotation", "permission_change"]
 
-        if any(severity_action in action for severity_action in medium_severity_actions):
+        if any(
+            severity_action in action for severity_action in medium_severity_actions
+        ):
             return "medium"
 
         return "low"
 
     @classmethod
-    def _write_audit_log(cls, entry: Dict[str, Any]):
+    def _write_audit_log(cls, entry: Dict[str, Any]) -> None:
         """Write audit log to secure file"""
         try:
             audit_log_path = "logs/audit.log"
@@ -378,7 +416,9 @@ class SecureLogger:
 
 
 # Enhanced secure_log function
-def secure_log(logger: logging.Logger, action: str, data: Dict[str, Any], level: str = "info"):
+def secure_log(
+    logger: logging.Logger, action: str, data: Dict[str, Any], level: str = "info"
+):
     """Enhanced secure logging with comprehensive masking"""
     try:
         # Use the secure logger
@@ -396,7 +436,7 @@ def secure_log(logger: logging.Logger, action: str, data: Dict[str, Any], level:
 class LogFileSecurity:
     """Secure log file management with access controls and audit logging"""
 
-    def __init__(self, log_file_path: str):
+    def __init__(self, log_file_path: str) -> None:
         self.log_file_path = log_file_path
         self.audit_enabled = True
 
@@ -543,6 +583,9 @@ _log_security_manager = None
 def get_log_security_manager(log_file_path: str) -> LogFileSecurity:
     """Get or create log security manager instance"""
     global _log_security_manager
-    if _log_security_manager is None or _log_security_manager.log_file_path != log_file_path:
+    if (
+        _log_security_manager is None
+        or _log_security_manager.log_file_path != log_file_path
+    ):
         _log_security_manager = LogFileSecurity(log_file_path)
     return _log_security_manager

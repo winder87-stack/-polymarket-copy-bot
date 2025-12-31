@@ -49,10 +49,22 @@ class WalletQualityRanker:
                 "weight": 0.15,
                 "description": "Volume and frequency of trading activity",
             },
-            "balance_efficiency": {"weight": 0.20, "description": "Buy/sell balance optimization"},
-            "market_diversity": {"weight": 0.15, "description": "Cross-market trading diversity"},
-            "consistency_score": {"weight": 0.20, "description": "Trading pattern consistency"},
-            "behavioral_stability": {"weight": 0.15, "description": "Behavioral pattern stability"},
+            "balance_efficiency": {
+                "weight": 0.20,
+                "description": "Buy/sell balance optimization",
+            },
+            "market_diversity": {
+                "weight": 0.15,
+                "description": "Cross-market trading diversity",
+            },
+            "consistency_score": {
+                "weight": 0.20,
+                "description": "Trading pattern consistency",
+            },
+            "behavioral_stability": {
+                "weight": 0.15,
+                "description": "Behavioral pattern stability",
+            },
             "market_maker_potential": {
                 "weight": 0.15,
                 "description": "Market maker probability score",
@@ -159,15 +171,21 @@ class WalletQualityRanker:
         quality_scores = {}
 
         # 1. Trading Activity Score
-        activity_score = self._calculate_trading_activity_score(trades_per_hour, category)
+        activity_score = self._calculate_trading_activity_score(
+            trades_per_hour, category
+        )
         quality_scores["trading_activity"] = activity_score
 
         # 2. Balance Efficiency Score
-        balance_efficiency = self._calculate_balance_efficiency_score(balance_score, category)
+        balance_efficiency = self._calculate_balance_efficiency_score(
+            balance_score, category
+        )
         quality_scores["balance_efficiency"] = balance_efficiency
 
         # 3. Market Diversity Score
-        diversity_score = self._calculate_market_diversity_score(markets_traded, category)
+        diversity_score = self._calculate_market_diversity_score(
+            markets_traded, category
+        )
         quality_scores["market_diversity"] = diversity_score
 
         # 4. Consistency Score
@@ -185,7 +203,9 @@ class WalletQualityRanker:
         quality_scores["market_maker_potential"] = potential_score
 
         # Calculate weighted overall score
-        weights = self.category_weights.get(category, self.category_weights["mixed_trader"])
+        weights = self.category_weights.get(
+            category, self.category_weights["mixed_trader"]
+        )
         overall_score = 0.0
 
         for metric, score in quality_scores.items():
@@ -210,7 +230,9 @@ class WalletQualityRanker:
             "analysis_timestamp": datetime.now().isoformat(),
         }
 
-    def _calculate_trading_activity_score(self, trades_per_hour: float, category: str) -> float:
+    def _calculate_trading_activity_score(
+        self, trades_per_hour: float, category: str
+    ) -> float:
         """Calculate trading activity quality score"""
 
         if category == "market_maker":
@@ -257,7 +279,9 @@ class WalletQualityRanker:
             else:
                 return max(0, trades_per_hour * 200)
 
-    def _calculate_balance_efficiency_score(self, balance_score: float, category: str) -> float:
+    def _calculate_balance_efficiency_score(
+        self, balance_score: float, category: str
+    ) -> float:
         """Calculate balance efficiency quality score"""
 
         if category == "market_maker":
@@ -290,7 +314,9 @@ class WalletQualityRanker:
             # Balance less important for directional strategies
             return balance_score * 100  # Direct mapping
 
-    def _calculate_market_diversity_score(self, markets_traded: int, category: str) -> float:
+    def _calculate_market_diversity_score(
+        self, markets_traded: int, category: str
+    ) -> float:
         """Calculate market diversity quality score"""
 
         if category == "market_maker":
@@ -375,9 +401,13 @@ class WalletQualityRanker:
 
         # Normalize streak (lower streak = more stability for balanced traders)
         if category == "market_maker":
-            streak_penalty = min(avg_streak / 2, 1.0)  # Penalize long directional streaks
+            streak_penalty = min(
+                avg_streak / 2, 1.0
+            )  # Penalize long directional streaks
         else:
-            streak_penalty = min(avg_streak / 5, 1.0)  # Less penalty for directional traders
+            streak_penalty = min(
+                avg_streak / 5, 1.0
+            )  # Less penalty for directional traders
 
         # Combine factors
         stability_factors = [uniformity_score, balance_score, 1 - streak_penalty]
@@ -425,11 +455,15 @@ class WalletQualityRanker:
             metrics_complete += 0.2
 
         # Combine confidences
-        overall_confidence = sample_confidence * 0.6 + confidence * 0.3 + metrics_complete * 0.1
+        overall_confidence = (
+            sample_confidence * 0.6 + confidence * 0.3 + metrics_complete * 0.1
+        )
 
         return overall_confidence * 100
 
-    def _determine_quality_tier(self, overall_score: float, confidence_score: float) -> str:
+    def _determine_quality_tier(
+        self, overall_score: float, confidence_score: float
+    ) -> str:
         """Determine quality tier based on score and confidence"""
 
         combined_score = overall_score * 0.7 + confidence_score * 0.3
@@ -447,7 +481,9 @@ class WalletQualityRanker:
         else:
             return "Poor"
 
-    def rank_wallets_by_category(self, market_maker_results: Dict[str, Any]) -> Dict[str, Any]:
+    def rank_wallets_by_category(
+        self, market_maker_results: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Rank all wallets by quality within each category.
 
@@ -499,11 +535,15 @@ class WalletQualityRanker:
                     if ranked_wallets
                     else 0
                 ),
-                "quality_distribution": self._analyze_quality_distribution(ranked_wallets),
+                "quality_distribution": self._analyze_quality_distribution(
+                    ranked_wallets
+                ),
             }
 
         # Generate summary statistics
-        summary = self._generate_ranking_summary(category_rankings, market_maker_results)
+        summary = self._generate_ranking_summary(
+            category_rankings, market_maker_results
+        )
 
         return {
             "ranking_timestamp": datetime.now().isoformat(),
@@ -514,7 +554,9 @@ class WalletQualityRanker:
             ),
         }
 
-    def _analyze_quality_distribution(self, ranked_wallets: List[Dict[str, Any]]) -> Dict[str, int]:
+    def _analyze_quality_distribution(
+        self, ranked_wallets: List[Dict[str, Any]]
+    ) -> Dict[str, int]:
         """Analyze quality tier distribution within a category"""
 
         distribution = defaultdict(int)
@@ -542,7 +584,9 @@ class WalletQualityRanker:
         # Collect elite performers (top 3 overall)
         all_elite = []
         for category_data in category_rankings.values():
-            for wallet in category_data["ranked_wallets"][:3]:  # Top 3 from each category
+            for wallet in category_data["ranked_wallets"][
+                :3
+            ]:  # Top 3 from each category
                 if wallet["quality_tier"] in ["Elite", "Premium"]:
                     all_elite.append(wallet)
 
@@ -563,7 +607,9 @@ class WalletQualityRanker:
 
         # Average scores by category
         for category, data in category_rankings.items():
-            summary["average_scores_by_category"][category] = round(data["average_score"], 2)
+            summary["average_scores_by_category"][category] = round(
+                data["average_score"], 2
+            )
 
         # Generate recommendations
         summary["recommendations"] = self._generate_investment_recommendations(
@@ -580,7 +626,9 @@ class WalletQualityRanker:
         recommendations = []
 
         # Elite performer recommendations
-        elite_count = len([p for p in summary["elite_performers"] if p["quality_tier"] == "Elite"])
+        elite_count = len(
+            [p for p in summary["elite_performers"] if p["quality_tier"] == "Elite"]
+        )
         if elite_count > 0:
             recommendations.append(
                 f"🎯 PRIORITY: {elite_count} Elite-quality wallets identified for immediate copy trading"
@@ -596,7 +644,11 @@ class WalletQualityRanker:
 
         # Risk diversification recommendations
         category_count = len(
-            [c for c in category_rankings.keys() if category_rankings[c]["wallet_count"] >= 3]
+            [
+                c
+                for c in category_rankings.keys()
+                if category_rankings[c]["wallet_count"] >= 3
+            ]
         )
         if category_count >= 3:
             recommendations.append(
@@ -624,9 +676,7 @@ def generate_wallet_quality_report(ranking_results: Dict[str, Any]) -> str:
 
     content += "📊 EXECUTIVE SUMMARY\n"
     content += "-" * 30 + "\n"
-    content += (
-        f"Analysis Timestamp: {ranking_results['ranking_timestamp'][:19].replace('T', ' ')}\n"
-    )
+    content += f"Analysis Timestamp: {ranking_results['ranking_timestamp'][:19].replace('T', ' ')}\n"
     content += f"Total Wallets Ranked: {ranking_results['total_wallets_ranked']}\n"
     content += f"Categories Analyzed: {len(ranking_results['category_rankings'])}\n\n"
 
@@ -666,7 +716,9 @@ def generate_wallet_quality_report(ranking_results: Dict[str, Any]) -> str:
         # Quality distribution
         distribution = data.get("quality_distribution", {})
         if distribution:
-            dist_str = ", ".join([f"{tier}: {count}" for tier, count in distribution.items()])
+            dist_str = ", ".join(
+                [f"{tier}: {count}" for tier, count in distribution.items()]
+            )
             content += f"Quality Distribution: {dist_str}\n"
 
         # Top 3 performers
@@ -740,7 +792,9 @@ def main():
 
     # Show top performers
     print("\n🏆 Top Performers by Category:")
-    for category, leader in ranking_results["summary_statistics"]["category_leaders"].items():
+    for category, leader in ranking_results["summary_statistics"][
+        "category_leaders"
+    ].items():
         if leader:
             print(
                 f"   {category.replace('_', ' ').title()}: {leader['wallet_address'][:12]}... ({leader['overall_quality_score']:.1f})"

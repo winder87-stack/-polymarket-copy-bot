@@ -19,7 +19,7 @@ import logging
 import pickle
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -28,7 +28,10 @@ from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.model_selection import TimeSeriesSplit, cross_val_score
 from sklearn.preprocessing import StandardScaler
 
-from core.performance_analyzer import PerformanceAnalyzer
+if TYPE_CHECKING:
+    pass
+
+from utils.time_utils import get_current_time_utc
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +44,7 @@ class WalletOptimizer:
     allocate capital across different wallet types for optimal returns.
     """
 
-    def __init__(self, performance_analyzer: PerformanceAnalyzer):
+    def __init__(self, performance_analyzer: Any) -> None:
         self.analyzer = performance_analyzer
 
         # Optimization configuration
@@ -85,7 +88,9 @@ class WalletOptimizer:
         logger.info("🎯 Wallet optimizer initialized")
 
     async def optimize_portfolio_allocation(
-        self, target_date: Optional[datetime] = None, optimization_method: str = "ml_optimization"
+        self,
+        target_date: Optional[datetime] = None,
+        optimization_method: str = "ml_optimization",
     ) -> Dict[str, Any]:
         """
         Optimize portfolio allocation across wallet types.
@@ -99,7 +104,7 @@ class WalletOptimizer:
         """
 
         if target_date is None:
-            target_date = datetime.now()
+            target_date = get_current_time_utc()
 
         logger.info(
             f"🎯 Optimizing portfolio allocation for {target_date.date()} using {optimization_method}"
@@ -129,7 +134,7 @@ class WalletOptimizer:
 
         # Store optimization result
         optimization_result = {
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": get_current_time_utc().isoformat(),
             "target_date": target_date.isoformat(),
             "method": optimization_method,
             "allocation": validated_allocation,
@@ -137,7 +142,9 @@ class WalletOptimizer:
             "expected_return": self._calculate_expected_return(
                 validated_allocation, historical_data
             ),
-            "expected_risk": self._calculate_expected_risk(validated_allocation, historical_data),
+            "expected_risk": self._calculate_expected_risk(
+                validated_allocation, historical_data
+            ),
             "sharpe_ratio": self._calculate_allocation_sharpe(
                 validated_allocation, historical_data
             ),
@@ -146,11 +153,15 @@ class WalletOptimizer:
         self.optimization_history.append(optimization_result)
         self.current_allocations = validated_allocation
 
-        logger.info(f"✅ Optimization complete. Best allocation: {validated_allocation}")
+        logger.info(
+            f"✅ Optimization complete. Best allocation: {validated_allocation}"
+        )
 
         return validated_allocation
 
-    def _get_historical_performance_data(self, target_date: datetime) -> List[Dict[str, Any]]:
+    def _get_historical_performance_data(
+        self, target_date: datetime
+    ) -> List[Dict[str, Any]]:
         """Get historical performance data for optimization."""
 
         # Look back 90 days for training data
@@ -179,18 +190,24 @@ class WalletOptimizer:
         wallet_type_predictions = {}
 
         # Get unique wallet types
-        wallet_types = set(record.get("wallet_type", "unknown") for record in historical_data)
+        wallet_types = set(
+            record.get("wallet_type", "unknown") for record in historical_data
+        )
         wallet_types.discard("unknown")
 
         for wallet_type in wallet_types:
             # Get recent performance metrics for this wallet type
-            type_data = [r for r in historical_data if r.get("wallet_type") == wallet_type]
+            type_data = [
+                r for r in historical_data if r.get("wallet_type") == wallet_type
+            ]
 
             if len(type_data) < 5:  # Need minimum data for prediction
                 continue
 
             # Calculate current metrics
-            recent_metrics = self._calculate_wallet_type_metrics(type_data[-30:])  # Last 30 records
+            recent_metrics = self._calculate_wallet_type_metrics(
+                type_data[-30:]
+            )  # Last 30 records
 
             # Prepare features for prediction
             features = self._prepare_prediction_features(recent_metrics)
@@ -204,7 +221,9 @@ class WalletOptimizer:
                 "predicted_return": predicted_return,
                 "predicted_risk": predicted_risk,
                 "predicted_quality": predicted_quality,
-                "sharpe_ratio": predicted_return / predicted_risk if predicted_risk > 0 else 0,
+                "sharpe_ratio": predicted_return / predicted_risk
+                if predicted_risk > 0
+                else 0,
             }
 
         if not wallet_type_predictions:
@@ -282,9 +301,15 @@ class WalletOptimizer:
                 n_estimators=100, random_state=42
             )
         else:
-            self.return_prediction_model = RandomForestRegressor(n_estimators=100, random_state=42)
-            self.risk_prediction_model = RandomForestRegressor(n_estimators=100, random_state=42)
-            self.quality_prediction_model = RandomForestRegressor(n_estimators=100, random_state=42)
+            self.return_prediction_model = RandomForestRegressor(
+                n_estimators=100, random_state=42
+            )
+            self.risk_prediction_model = RandomForestRegressor(
+                n_estimators=100, random_state=42
+            )
+            self.quality_prediction_model = RandomForestRegressor(
+                n_estimators=100, random_state=42
+            )
 
         # Train models
         self.return_prediction_model.fit(X_scaled, y_return)
@@ -378,7 +403,9 @@ class WalletOptimizer:
         else:
             return features
 
-    def _optimize_ml_allocation(self, predictions: Dict[str, Dict[str, Any]]) -> Dict[str, float]:
+    def _optimize_ml_allocation(
+        self, predictions: Dict[str, Dict[str, Any]]
+    ) -> Dict[str, float]:
         """
         Optimize allocation using ML predictions and risk constraints.
         """
@@ -432,7 +459,9 @@ class WalletOptimizer:
         df["date"] = pd.to_datetime(df["timestamp"]).dt.date
 
         # Aggregate by date and wallet type
-        returns_matrix = df.groupby(["date", "wallet_type"])["pnl_usd"].sum().unstack().fillna(0)
+        returns_matrix = (
+            df.groupby(["date", "wallet_type"])["pnl_usd"].sum().unstack().fillna(0)
+        )
 
         if returns_matrix.shape[1] < 2:
             return self._get_default_allocation()
@@ -451,12 +480,15 @@ class WalletOptimizer:
 
         # Bounds for each asset
         bounds = [
-            (self.optimization_config["min_allocation"], self.optimization_config["max_allocation"])
+            (
+                self.optimization_config["min_allocation"],
+                self.optimization_config["max_allocation"],
+            )
             for _ in range(n_assets)
         ]
 
         # Objective: Minimize portfolio variance (for given return target)
-        def portfolio_variance(weights):
+        def portfolio_variance(weights: Any) -> Any:
             return np.dot(weights.T, np.dot(cov_matrix, weights))
 
         # Target return constraint
@@ -489,7 +521,9 @@ class WalletOptimizer:
             logger.error(f"Mean-variance optimization error: {e}")
             return self._equal_weight_allocation(historical_data)
 
-    def _risk_parity_optimization(self, historical_data: List[Dict[str, Any]]) -> Dict[str, float]:
+    def _risk_parity_optimization(
+        self, historical_data: List[Dict[str, Any]]
+    ) -> Dict[str, float]:
         """
         Risk parity optimization (equal risk contribution from each asset).
         """
@@ -497,7 +531,9 @@ class WalletOptimizer:
         df = pd.DataFrame(historical_data)
         df["date"] = pd.to_datetime(df["timestamp"]).dt.date
 
-        returns_matrix = df.groupby(["date", "wallet_type"])["pnl_usd"].sum().unstack().fillna(0)
+        returns_matrix = (
+            df.groupby(["date", "wallet_type"])["pnl_usd"].sum().unstack().fillna(0)
+        )
 
         if returns_matrix.shape[1] < 2:
             return self._get_default_allocation()
@@ -528,7 +564,9 @@ class WalletOptimizer:
         allocation = dict(zip(returns_matrix.columns, weights))
         return allocation
 
-    def _equal_weight_allocation(self, historical_data: List[Dict[str, Any]]) -> Dict[str, float]:
+    def _equal_weight_allocation(
+        self, historical_data: List[Dict[str, Any]]
+    ) -> Dict[str, float]:
         """Simple equal weight allocation across all wallet types."""
 
         df = pd.DataFrame(historical_data)
@@ -553,7 +591,9 @@ class WalletOptimizer:
             "mixed_trader": 0.1,
         }
 
-    def _validate_and_constrain_allocation(self, allocation: Dict[str, float]) -> Dict[str, float]:
+    def _validate_and_constrain_allocation(
+        self, allocation: Dict[str, float]
+    ) -> Dict[str, float]:
         """Validate and constrain portfolio allocation."""
 
         # Remove zero or negative allocations
@@ -563,7 +603,9 @@ class WalletOptimizer:
         for wallet_type in allocation:
             allocation[wallet_type] = max(
                 self.optimization_config["min_allocation"],
-                min(self.optimization_config["max_allocation"], allocation[wallet_type]),
+                min(
+                    self.optimization_config["max_allocation"], allocation[wallet_type]
+                ),
             )
 
         # Renormalize to sum to 1
@@ -607,7 +649,9 @@ class WalletOptimizer:
         for date in dates:
             daily_return = 0
             for wallet_type, weight in allocation.items():
-                type_data = df[(df["date"] == date) & (df["wallet_type"] == wallet_type)]
+                type_data = df[
+                    (df["date"] == date) & (df["wallet_type"] == wallet_type)
+                ]
                 if not type_data.empty:
                     type_return = type_data["pnl_usd"].sum()
                     daily_return += weight * type_return
@@ -626,9 +670,15 @@ class WalletOptimizer:
 
         risk_free_rate = self.optimization_config["risk_free_rate"] / 365  # Daily
 
-        return (expected_return - risk_free_rate) / expected_risk if expected_risk > 0 else 0
+        return (
+            (expected_return - risk_free_rate) / expected_risk
+            if expected_risk > 0
+            else 0
+        )
 
-    def _calculate_wallet_type_metrics(self, type_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _calculate_wallet_type_metrics(
+        self, type_data: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Calculate metrics for a wallet type (simplified version)."""
 
         if not type_data:
@@ -643,7 +693,10 @@ class WalletOptimizer:
             },
             "profit_loss_metrics": {
                 "profit_factor": (
-                    (sum(p for p in pnl_values if p > 0) / abs(sum(p for p in pnl_values if p < 0)))
+                    (
+                        sum(p for p in pnl_values if p > 0)
+                        / abs(sum(p for p in pnl_values if p < 0))
+                    )
                     if any(p < 0 for p in pnl_values)
                     else float("inf")
                 ),
@@ -706,7 +759,9 @@ class WalletOptimizer:
             older_avg = np.mean(sharpe_ratios[:-3])
 
             decay_threshold = 0.2  # 20% decline
-            decay_ratio = (older_avg - recent_avg) / abs(older_avg) if older_avg != 0 else 0
+            decay_ratio = (
+                (older_avg - recent_avg) / abs(older_avg) if older_avg != 0 else 0
+            )
 
             if decay_ratio > decay_threshold:
                 return {
@@ -714,10 +769,15 @@ class WalletOptimizer:
                     "decay_ratio": decay_ratio,
                     "reason": f"Sharpe ratio declined by {decay_ratio:.1%} over recent periods",
                     "recommendation": "Reduce allocation to this wallet type",
-                    "suggested_weight_reduction": min(0.5, decay_ratio * 2),  # Reduce by up to 50%
+                    "suggested_weight_reduction": min(
+                        0.5, decay_ratio * 2
+                    ),  # Reduce by up to 50%
                 }
 
-        return {"decay_detected": False, "reason": "No significant performance decay detected"}
+        return {
+            "decay_detected": False,
+            "reason": "No significant performance decay detected",
+        }
 
     async def run_walk_forward_optimization(
         self, total_period_days: int = 90, walk_forward_windows: int = 5
@@ -735,7 +795,9 @@ class WalletOptimizer:
 
         for i in range(walk_forward_windows):
             # Define training and testing periods
-            test_start = datetime.now() - timedelta(days=total_period_days - i * window_size)
+            test_start = get_current_time_utc() - timedelta(
+                days=total_period_days - i * window_size
+            )
             test_end = test_start + timedelta(days=window_size)
 
             # Optimize using data up to test_start
@@ -751,7 +813,10 @@ class WalletOptimizer:
             results.append(
                 {
                     "window": i + 1,
-                    "test_period": {"start": test_start.isoformat(), "end": test_end.isoformat()},
+                    "test_period": {
+                        "start": test_start.isoformat(),
+                        "end": test_end.isoformat(),
+                    },
                     "allocation": allocation,
                     "performance": test_performance,
                 }
@@ -789,7 +854,9 @@ class WalletOptimizer:
         for date in df["date"].unique():
             daily_return = 0
             for wallet_type, weight in allocation.items():
-                type_data = df[(df["date"] == date) & (df["wallet_type"] == wallet_type)]
+                type_data = df[
+                    (df["date"] == date) & (df["wallet_type"] == wallet_type)
+                ]
                 if not type_data.empty:
                     type_return = type_data["pnl_usd"].sum()
                     daily_return += weight * type_return
@@ -808,7 +875,9 @@ class WalletOptimizer:
             "daily_returns": portfolio_returns,
         }
 
-    def _analyze_walk_forward_results(self, results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _analyze_walk_forward_results(
+        self, results: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Analyze walk-forward optimization results."""
 
         if not results:
@@ -853,7 +922,9 @@ class WalletOptimizer:
             },
         }
 
-    def _generate_walk_forward_recommendations(self, analysis: Dict[str, Any]) -> List[str]:
+    def _generate_walk_forward_recommendations(
+        self, analysis: Dict[str, Any]
+    ) -> List[str]:
         """Generate recommendations based on walk-forward analysis."""
 
         recommendations = []
@@ -887,7 +958,10 @@ class WalletOptimizer:
         return recommendations
 
     async def run_monte_carlo_simulation(
-        self, allocation: Dict[str, float], simulation_days: int = 30, num_simulations: int = 1000
+        self,
+        allocation: Dict[str, float],
+        simulation_days: int = 30,
+        num_simulations: int = 1000,
     ) -> Dict[str, Any]:
         """
         Run Monte Carlo simulation to assess allocation robustness.
@@ -916,7 +990,9 @@ class WalletOptimizer:
                         daily_return += weight * sampled_return
                     else:
                         # Use default if no historical data
-                        daily_return += weight * np.random.normal(0, 0.01)  # Small random return
+                        daily_return += weight * np.random.normal(
+                            0, 0.01
+                        )  # Small random return
 
                 portfolio_returns.append(daily_return)
 
@@ -981,7 +1057,7 @@ class WalletOptimizer:
 
         return distributions
 
-    def save_optimizer_state(self):
+    def save_optimizer_state(self) -> None:
         """Save optimizer state and models."""
 
         try:
@@ -994,7 +1070,9 @@ class WalletOptimizer:
 
             # Save optimization history
             with open(state_dir / "optimization_history.json", "w") as f:
-                json.dump(self.optimization_history[-100:], f, indent=2)  # Last 100 records
+                json.dump(
+                    self.optimization_history[-100:], f, indent=2
+                )  # Last 100 records
 
             # Save ML models if they exist
             if self.return_prediction_model:
@@ -1014,7 +1092,7 @@ class WalletOptimizer:
         except Exception as e:
             logger.error(f"Error saving optimizer state: {e}")
 
-    def load_optimizer_state(self):
+    def load_optimizer_state(self) -> None:
         """Load optimizer state and models."""
 
         try:
@@ -1053,7 +1131,9 @@ class WalletOptimizer:
         except Exception as e:
             logger.error(f"Error loading optimizer state: {e}")
 
-    def _evaluate_ml_models(self, X, y_return, y_risk, y_quality):
+    def _evaluate_ml_models(
+        self, X: Any, y_return: Any, y_risk: Any, y_quality: Any
+    ) -> None:
         """Evaluate performance of trained ML models."""
 
         # Cross-validation scores

@@ -54,13 +54,15 @@ class TestLinterConfiguration:
         )
 
         # Pylint should not fail due to configuration errors
-        assert result.returncode in [0, 2, 4, 8, 16, 32], f"Pylint config error: {result.stderr}"
+        assert result.returncode in [0, 2, 4, 8, 16, 32], (
+            f"Pylint config error: {result.stderr}"
+        )
 
         # Should not contain config-related error messages
         error_output = result.stderr.lower()
-        assert (
-            "config" not in error_output or "error" not in error_output
-        ), f"Config errors detected: {result.stderr}"
+        assert "config" not in error_output or "error" not in error_output, (
+            f"Config errors detected: {result.stderr}"
+        )
 
     def test_pre_commit_config_structure(self):
         """Test that .pre-commit-config.yaml has expected structure."""
@@ -89,9 +91,9 @@ class TestLinterConfiguration:
         # Check pyproject.toml
         with open("pyproject.toml", "r") as f:
             content = f.read()
-            assert (
-                "line-length = 100" in content
-            ), "Black line length should be 100 in pyproject.toml"
+            assert "line-length = 100" in content, (
+                "Black line length should be 100 in pyproject.toml"
+            )
 
         # Check .pre-commit-config.yaml for black args
         with open(".pre-commit-config.yaml", "r") as f:
@@ -120,9 +122,9 @@ class TestLinterConfiguration:
                 break
 
         assert flake8_hook is not None, "Flake8 hook should be configured"
-        assert (
-            "additional_dependencies" in flake8_hook
-        ), "Flake8 should have additional dependencies"
+        assert "additional_dependencies" in flake8_hook, (
+            "Flake8 should have additional dependencies"
+        )
         deps = flake8_hook["additional_dependencies"]
         assert "flake8-bugbear" in deps, "Should include flake8-bugbear"
         assert "flake8-comprehensions" in deps, "Should include flake8-comprehensions"
@@ -143,9 +145,9 @@ class TestLinterConfiguration:
         assert mypy_hook is not None, "Mypy hook should be configured"
         assert "files" in mypy_hook, "Mypy should have file filtering"
         files_pattern = mypy_hook["files"]
-        assert (
-            files_pattern == "^core/|^utils/|^config/|^main\\.py$"
-        ), "Mypy file pattern should match expected"
+        assert files_pattern == "^core/|^utils/|^config/|^main\\.py$", (
+            "Mypy file pattern should match expected"
+        )
 
 
 if __name__ == "__main__":

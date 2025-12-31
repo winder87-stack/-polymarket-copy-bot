@@ -9,9 +9,12 @@ from typing import Optional
 
 try:
     from logging.handlers import RotatingFileHandler
+
+    _rotating_handler_available = True
 except ImportError:
     # Fallback for systems without RotatingFileHandler
     RotatingFileHandler = None
+    _rotating_handler_available = False
 
 
 class JSONFormatter(logging.Formatter):
@@ -77,7 +80,8 @@ class HumanFormatter(logging.Formatter):
 
     def __init__(self) -> None:
         super().__init__(
-            fmt="%(asctime)s | %(levelname)-8s | %(name)-20s | %(message)s", datefmt="%H:%M:%S"
+            fmt="%(asctime)s | %(levelname)-8s | %(name)-20s | %(message)s",
+            datefmt="%H:%M:%S",
         )
 
     def format(self, record: logging.LogRecord) -> str:
@@ -122,7 +126,7 @@ def setup_logging(
     root.addHandler(console_handler)
 
     # File handler - JSON format for structured logging
-    if json_logging and RotatingFileHandler:
+    if json_logging and _rotating_handler_available:
         file_handler = RotatingFileHandler(
             log_path / "bot.log",
             maxBytes=10_000_000,  # 10MB per file
@@ -233,7 +237,11 @@ def log_api_call(
     error: Optional[str] = None,
 ) -> None:
     """Log API call details."""
-    level = logging.ERROR if error or (status_code and status_code >= 400) else logging.DEBUG
+    level = (
+        logging.ERROR
+        if error or (status_code and status_code >= 400)
+        else logging.DEBUG
+    )
 
     message = f"API call: {method} {endpoint}"
     if latency_ms:
@@ -270,5 +278,10 @@ def log_transaction_found(
 
     logger.info(
         message,
-        extra={"wallet": wallet, "tx_hash": tx_hash, "block_number": block_number, "value": value},
+        extra={
+            "wallet": wallet,
+            "tx_hash": tx_hash,
+            "block_number": block_number,
+            "value": value,
+        },
     )

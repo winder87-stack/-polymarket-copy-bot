@@ -21,13 +21,19 @@ class TestWalletMonitorInitialization:
             monitor = WalletMonitor()
 
             assert monitor.web3 == mock_web3
-            assert len(monitor.target_wallets) == len(test_settings.monitoring.target_wallets)
-            assert monitor.polygonscan_api_key == test_settings.network.polygonscan_api_key
+            assert len(monitor.target_wallets) == len(
+                test_settings.monitoring.target_wallets
+            )
+            assert (
+                monitor.polygonscan_api_key == test_settings.network.polygonscan_api_key
+            )
             assert isinstance(monitor.processed_transactions, set)
             assert isinstance(monitor.wallet_trade_history, dict)
             assert monitor.api_call_delay == 0.2
 
-    def test_monitor_initialization_with_web3_block_number(self, mock_web3, test_settings):
+    def test_monitor_initialization_with_web3_block_number(
+        self, mock_web3, test_settings
+    ):
         """Test initialization with Web3 block number."""
         mock_web3.eth.block_number = 50000000
         mock_web3.is_connected.return_value = True
@@ -117,12 +123,16 @@ class TestWalletMonitorTransactionFetching:
         mock_web3.is_connected.return_value = True
         mock_web3.eth.get_block.return_value = {"transactions": [sample_transaction]}
 
-        transactions = await mock_wallet_monitor._get_basic_transactions("0xtest", 49900000)
+        transactions = await mock_wallet_monitor._get_basic_transactions(
+            "0xtest", 49900000
+        )
 
         assert len(transactions) == 1
         assert transactions[0]["hash"] == sample_transaction["hash"]
 
-    async def test_get_basic_transactions_web3_disconnected(self, mock_wallet_monitor, mock_web3):
+    async def test_get_basic_transactions_web3_disconnected(
+        self, mock_wallet_monitor, mock_web3
+    ):
         """Test basic transaction fetching when Web3 is disconnected."""
         mock_web3.is_connected.return_value = False
 
@@ -150,7 +160,9 @@ class TestWalletMonitorTransactionFetching:
 class TestWalletMonitorTradeDetection:
     """Test trade detection functionality."""
 
-    def test_detect_polymarket_trades_success(self, mock_wallet_monitor, sample_transaction):
+    def test_detect_polymarket_trades_success(
+        self, mock_wallet_monitor, sample_transaction
+    ):
         """Test successful Polymarket trade detection."""
         # Set up transaction to be detected as Polymarket trade
         sample_transaction["to"] = mock_wallet_monitor.polymarket_contracts[0]
@@ -181,7 +193,9 @@ class TestWalletMonitorTradeDetection:
         self, mock_wallet_monitor, sample_transaction
     ):
         """Test that non-Polymarket contract transactions are ignored."""
-        sample_transaction["to"] = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"  # Random address
+        sample_transaction["to"] = (
+            "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"  # Random address
+        )
 
         trades = mock_wallet_monitor.detect_polymarket_trades([sample_transaction])
 
@@ -199,11 +213,15 @@ class TestWalletMonitorTradeDetection:
 
         assert len(trades) == 0
 
-    def test_detect_polymarket_trades_low_confidence(self, mock_wallet_monitor, sample_transaction):
+    def test_detect_polymarket_trades_low_confidence(
+        self, mock_wallet_monitor, sample_transaction
+    ):
         """Test that low confidence trades are skipped."""
         sample_transaction["to"] = mock_wallet_monitor.polymarket_contracts[0]
         # Set very old timestamp to pass recency check
-        sample_transaction["timeStamp"] = str(int((datetime.now() - timedelta(days=1)).timestamp()))
+        sample_transaction["timeStamp"] = str(
+            int((datetime.now() - timedelta(days=1)).timestamp())
+        )
         # Set empty input to get low confidence score
         sample_transaction["input"] = "0x"
 
@@ -217,7 +235,9 @@ class TestWalletMonitorTradeDetection:
 class TestWalletMonitorTradeParsing:
     """Test trade parsing functionality."""
 
-    def test_parse_polymarket_trade_success(self, mock_wallet_monitor, sample_transaction):
+    def test_parse_polymarket_trade_success(
+        self, mock_wallet_monitor, sample_transaction
+    ):
         """Test successful trade parsing."""
         sample_transaction["to"] = mock_wallet_monitor.polymarket_contracts[0]
         sample_transaction["timeStamp"] = str(
@@ -233,7 +253,9 @@ class TestWalletMonitorTradeParsing:
             assert isinstance(trade["timestamp"], datetime)
             assert trade["confidence_score"] == 0.8
 
-    def test_parse_polymarket_trade_parsing_error(self, mock_wallet_monitor, sample_transaction):
+    def test_parse_polymarket_trade_parsing_error(
+        self, mock_wallet_monitor, sample_transaction
+    ):
         """Test trade parsing with parsing errors."""
         # Remove required fields to cause parsing error
         del sample_transaction["hash"]
@@ -292,7 +314,9 @@ class TestWalletMonitorRateLimiting:
         """Test wallet monitoring decision for normal case."""
         wallet = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
         # Set last trade to be old enough
-        mock_wallet_monitor.wallet_last_trade_time[wallet] = datetime.now() - timedelta(hours=2)
+        mock_wallet_monitor.wallet_last_trade_time[wallet] = datetime.now() - timedelta(
+            hours=2
+        )
 
         should_monitor = await mock_wallet_monitor.should_monitor_wallet(wallet)
 
@@ -302,7 +326,9 @@ class TestWalletMonitorRateLimiting:
         """Test wallet monitoring decision when trades are too frequent."""
         wallet = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
         # Set last trade to be very recent
-        mock_wallet_monitor.wallet_last_trade_time[wallet] = datetime.now() - timedelta(minutes=10)
+        mock_wallet_monitor.wallet_last_trade_time[wallet] = datetime.now() - timedelta(
+            minutes=10
+        )
 
         should_monitor = await mock_wallet_monitor.should_monitor_wallet(wallet)
 
@@ -367,13 +393,16 @@ class TestWalletMonitorMainMonitoring:
 
         with (
             patch.object(
-                mock_wallet_monitor, "get_wallet_transactions", return_value=[sample_transaction]
+                mock_wallet_monitor,
+                "get_wallet_transactions",
+                return_value=[sample_transaction],
             ),
             patch.object(
-                mock_wallet_monitor, "detect_polymarket_trades", return_value=[sample_trade]
+                mock_wallet_monitor,
+                "detect_polymarket_trades",
+                return_value=[sample_trade],
             ),
         ):
-
             detected_trades = await mock_wallet_monitor.monitor_wallets()
 
             assert len(detected_trades) == 1
@@ -384,7 +413,9 @@ class TestWalletMonitorMainMonitoring:
         mock_wallet_monitor.polygonscan_api_key = "test-api-key"
 
         with patch.object(
-            mock_wallet_monitor, "get_wallet_transactions", side_effect=Exception("API Error")
+            mock_wallet_monitor,
+            "get_wallet_transactions",
+            side_effect=Exception("API Error"),
         ):
             detected_trades = await mock_wallet_monitor.monitor_wallets()
 
@@ -458,11 +489,17 @@ class TestWalletMonitorHealthCheck:
     """Test health check functionality."""
 
     async def test_health_check_success(
-        self, mock_wallet_monitor, mock_web3, mock_aiohttp_session, mock_polygonscan_response
+        self,
+        mock_wallet_monitor,
+        mock_web3,
+        mock_aiohttp_session,
+        mock_polygonscan_response,
     ):
         """Test successful health check."""
         mock_web3.is_connected.return_value = True
-        mock_wallet_monitor.target_wallets = ["0x742d35Cc6634C0532925a3b844Bc454e4438f44e"]
+        mock_wallet_monitor.target_wallets = [
+            "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+        ]
 
         healthy = await mock_wallet_monitor.health_check()
 
@@ -480,7 +517,9 @@ class TestWalletMonitorHealthCheck:
         self, mock_wallet_monitor, mock_aiohttp_session
     ):
         """Test health check with transaction fetch error."""
-        mock_wallet_monitor.target_wallets = ["0x742d35Cc6634C0532925a3b844Bc454e4438f44e"]
+        mock_wallet_monitor.target_wallets = [
+            "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+        ]
         mock_aiohttp_session.get.side_effect = Exception("API Error")
 
         healthy = await mock_wallet_monitor.health_check()
@@ -505,13 +544,16 @@ class TestWalletMonitorIntegration:
 
         with (
             patch.object(
-                mock_wallet_monitor, "get_wallet_transactions", return_value=[sample_transaction]
+                mock_wallet_monitor,
+                "get_wallet_transactions",
+                return_value=[sample_transaction],
             ),
             patch.object(
-                mock_wallet_monitor, "detect_polymarket_trades", return_value=[sample_trade]
+                mock_wallet_monitor,
+                "detect_polymarket_trades",
+                return_value=[sample_trade],
             ),
         ):
-
             # Run monitoring cycle
             detected_trades = await mock_wallet_monitor.monitor_wallets()
 
@@ -520,8 +562,13 @@ class TestWalletMonitorIntegration:
             assert detected_trades[0]["tx_hash"] == sample_trade["tx_hash"]
 
             # Verify state updates
-            assert sample_transaction["hash"] in mock_wallet_monitor.processed_transactions
-            assert sample_trade["wallet_address"] in mock_wallet_monitor.wallet_trade_history
+            assert (
+                sample_transaction["hash"] in mock_wallet_monitor.processed_transactions
+            )
+            assert (
+                sample_trade["wallet_address"]
+                in mock_wallet_monitor.wallet_trade_history
+            )
 
     async def test_monitoring_with_multiple_wallets(self, mock_wallet_monitor):
         """Test monitoring multiple wallets."""
@@ -531,10 +578,13 @@ class TestWalletMonitorIntegration:
         mock_wallet_monitor.target_wallets = [wallet1, wallet2]
 
         with (
-            patch.object(mock_wallet_monitor, "get_wallet_transactions", return_value=[]),
-            patch.object(mock_wallet_monitor, "should_monitor_wallet", return_value=True),
+            patch.object(
+                mock_wallet_monitor, "get_wallet_transactions", return_value=[]
+            ),
+            patch.object(
+                mock_wallet_monitor, "should_monitor_wallet", return_value=True
+            ),
         ):
-
             await mock_wallet_monitor.monitor_wallets()
 
             # Should have called get_wallet_transactions for both wallets
@@ -542,7 +592,9 @@ class TestWalletMonitorIntegration:
 
     async def test_error_recovery_in_monitoring(self, mock_wallet_monitor):
         """Test error recovery during monitoring."""
-        mock_wallet_monitor.target_wallets = ["0x742d35Cc6634C0532925a3b844Bc454e4438f44e"]
+        mock_wallet_monitor.target_wallets = [
+            "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+        ]
 
         with (
             patch.object(
@@ -550,9 +602,10 @@ class TestWalletMonitorIntegration:
                 "get_wallet_transactions",
                 side_effect=Exception("Network error"),
             ),
-            patch.object(mock_wallet_monitor, "should_monitor_wallet", return_value=True),
+            patch.object(
+                mock_wallet_monitor, "should_monitor_wallet", return_value=True
+            ),
         ):
-
             # Should not raise exception
             detected_trades = await mock_wallet_monitor.monitor_wallets()
 

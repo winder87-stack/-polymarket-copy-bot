@@ -1,174 +1,609 @@
-Cursor IDE Rules for Polymarket Copy Bot
-# Language: Python
-# Framework: Web3.py + Polymarket CLOB
+# Polymarket Copy Trading Bot - Cursor Rules (UPDATED)
 
-rule "security_sensitive_data" {
-  description = "Flag private keys, secrets, and sensitive data"
-  pattern = '''
-  (private_key|PRIVATE_KEY|secret|SECRET|password|PASSWORD|token|TOKEN|key|KEY)
-  '''
-  severity = "error"
-  fix = "REPLACE_WITH_ENV_VAR"
-}
+## Project Overview
 
-rule "gas_optimization" {
-  description = "Check for gas optimization opportunities"
-  pattern = '''
-  (gas_price|GAS_PRICE|gas_limit|GAS_LIMIT)
-  '''
-  severity = "warning"
-  fix = "ADD_DYNAMIC_GAS_PRICING"
-}
+This is a production-ready Polymarket copy trading bot that monitors wallet addresses on the Polygon blockchain and automatically replicates trades. Built with Python 3.12+ on Ubuntu using **MCP Server Architecture** for maximum reliability.
 
-rule "error_handling" {
-  description = "Ensure proper error handling in critical paths"
-  pattern = '''
-  (try:|except|try-catch)
-  '''
-  severity = "info"
-  fix = "ADD_COMPREHENSIVE_ERROR_HANDLING"
-}
+## 🔑 Key Architecture Update: MCP Servers
 
-rule "type_hints" {
-  description = "Enforce type hints for better code quality"
-  pattern = '''
-  def ([a-zA-Z_][a-zA-Z0-9_]*)\\(.*\\):
-  '''
-  severity = "info"
-  fix = "ADD_TYPE_HINTS"
-}
+The project now uses **Mission Critical Production (MCP) Servers** for core functionality:
 
-rule "logging_best_practices" {
-  description = "Ensure proper logging with context"
-  pattern = '''
-  (logger\\.info|logger\\.error|logger\\.warning)
-  '''
-  severity = "info"
-  fix = "ADD_STRUCTURED_LOGGING"
-}
+- **`mcp.codebase_search`**: Real-time codebase navigation and pattern detection
+- **`mcp.testing_server`**: Automated test coverage and regression prevention
+- **`mcp.monitoring_server`**: Real-time system health and memory usage monitoring
+- **`mcp.risk_integration`**: MCP servers integrated with risk management systems
 
-rule "async_await_patterns" {
-  description = "Enforce proper async/await patterns in trading operations"
-  pattern = '''
-  (def [a-zA-Z_][a-zA-Z0-9_]*\\(.*\\):[^{]*$)
-  '''
-  severity = "warning"
-  fix = "ADD_ASYNC_IF_BLOCKING_IO"
-}
+## Code Style & Standards (UPDATED)
 
-rule "web3_address_validation" {
-  description = "Ensure proper Web3 address validation and checksum"
-  pattern = '''
-  (0x[a-fA-F0-9]{40})
-  '''
-  severity = "warning"
-  fix = "ADD_WEB3_CHECKSUM_VALIDATION"
-}
+### Python Standards
 
-rule "decimal_precision" {
-  description = "Flag potential floating point precision issues in financial calculations"
-  pattern = '''
-  ([0-9]+\\.[0-9]+.*[*/+\\-].*[0-9]+\\.[0-9]+)
-  '''
-  severity = "warning"
-  fix = "USE_DECIMAL_FOR_FINANCIAL_CALCS"
-}
+- Python 3.12+ with type hints on ALL functions
+- Use `Decimal` for all money/price calculations, never `float`
+- Use timezone-aware datetimes: `datetime.now(timezone.utc)`
+- Async/await for all I/O operations
+- Maximum line length: 100 characters
+- Use `ruff` for linting and formatting
+- **NEW: Always use MCP servers for critical operations** - never manual searches or monitoring
 
-rule "api_rate_limiting" {
-  description = "Ensure rate limiting for external API calls"
-  pattern = '''
-  (requests\\.get|requests\\.post|client\\.[a-zA-Z_]*\\(\\))
-  '''
-  severity = "warning"
-  fix = "ADD_RATE_LIMITING_DECORATOR"
-}
+### Type Hints Required (UPDATED)
 
-rule "caching_patterns" {
-  description = "Implement caching for expensive operations"
-  pattern = '''
-  (get_market|get_balance|get_order_book)
-  '''
-  severity = "info"
-  fix = "ADD_CACHE_DECORATOR"
-}
+```python
+# Always include return types
+def function_name(param: Type) -> ReturnType:
+    ...
 
-rule "blockchain_retry_logic" {
-  description = "Add retry logic for blockchain operations"
-  pattern = '''
-  (web3\\.eth\\.|contract\\.functions\\.)
-  '''
-  severity = "warning"
-  fix = "ADD_TENACITY_RETRY_DECORATOR"
-}
+# Use Optional for nullable values
+def get_data(id: str) -> Optional[Dict[str, Any]]:
+    ...
 
-rule "input_validation" {
-  description = "Validate inputs for financial operations"
-  pattern = '''
-  (amount.*=|price.*=|condition_id.*=)
-  '''
-  severity = "warning"
-  fix = "ADD_INPUT_VALIDATION"
-}
+# MCP Server types are required
+from mcp.types import MCPResponse, SearchPattern
 
-rule "secure_logging" {
-  description = "Use secure logging for sensitive operations"
-  pattern = '''
-  (logger\\.(info|error|warning).*private_key|logger\\.(info|error|warning).*wallet)
-  '''
-  severity = "error"
-  fix = "USE_SECURE_LOG_FUNCTION"
-}
+def search_pattern(pattern: SearchPattern) -> MCPResponse:
+    ...
+```
 
-rule "position_risk_management" {
-  description = "Ensure position sizing respects risk limits"
-  pattern = '''
-  (max_position|max_daily_loss|stop_loss)
-  '''
-  severity = "warning"
-  fix = "ADD_POSITION_SIZE_VALIDATION"
-}
+### Memory Management (CRITICAL UPDATE)
 
-rule "contract_interaction_safety" {
-  description = "Safe contract interaction patterns"
-  pattern = '''
-  (contract\\..*call|contract\\..*transact)
-  '''
-  severity = "warning"
-  fix = "ADD_CONTRACT_SAFETY_CHECKS"
-}
+- **ALWAYS use `BoundedCache` with component names** for memory tracking:
 
-rule "environment_config_validation" {
-  description = "Validate environment configuration on startup"
-  pattern = '''
-  (os\\.getenv|environ\\.get)
-  '''
-  severity = "info"
-  fix = "ADD_CONFIG_VALIDATION"
-}
+```python
+# GOOD - memory-aware bounded cache
+from utils.bounded_cache import BoundedCache
 
-rule "health_check_patterns" {
-  description = "Implement health checks for critical components"
-  pattern = '''
-  (class.*Client|class.*Monitor|class.*Executor)
-  '''
-  severity = "info"
-  fix = "ADD_HEALTH_CHECK_METHOD"
-}
+self.transaction_cache = BoundedCache(
+    max_size=5000,
+    ttl_seconds=86400,
+    component_name="wallet_monitor.transaction_cache"  # Required for monitoring
+)
 
-rule "graceful_shutdown" {
-  description = "Ensure graceful shutdown handling"
-  pattern = '''
-  (signal\\.signal|KeyboardInterrupt)
-  '''
-  severity = "info"
-  fix = "ADD_GRACEFUL_SHUTDOWN_HANDLER"
-}
+# BAD - unbounded growth (causes daily restarts)
+self.transaction_cache = {}  # Will crash after 24 hours
+```
 
-rule "memory_management" {
-  description = "Monitor and manage memory usage in long-running processes"
-  pattern = '''
-  (asyncio\\.create_task|while.*True|for.*in.*range)
-  '''
-  severity = "info"
-  fix = "ADD_MEMORY_MONITORING"
-}
+- **Memory thresholds are enforced** in `config/mcp_config.py`
+- **Automatic cleanup** triggers at 80% of threshold
+- **Never deploy** without memory monitoring enabled
+
+### MCP Server Patterns (NEW)
+
+```python
+# ALWAYS integrate MCP servers with risk management
+from mcp.risk_integration import integrate_mcp_with_risk
+
+class TradeExecutor:
+    def __init__(self, risk_manager):
+        integrate_mcp_with_risk(risk_manager)  # Required safety integration
+
+    async def execute_trade(self, trade):
+        # MCP monitoring checks BEFORE execution
+        if await self.mcp_monitor.check_memory_threshold("trade_executor"):
+            await self.risk_manager.activate_circuit_breaker("MEMORY_CRITICAL")
+            return None
+```
+
+### Undefined Name Prevention (CRITICAL)
+
+```python
+# NEVER use variables that conflict with stdlib modules
+# BAD - conflicts with time module
+for time in timestamps:  # ❌ Causes undefined name errors
+
+# GOOD - use descriptive names
+for timestamp_utc in timestamps:  # ✅ Safe and clear
+
+# ALWAYS define constants at class level
+class MarketAnalyzer:
+    # Required constants (prevents 70+ linter errors)
+    HIGH_CORRELATION_THRESHOLD = 0.9
+    MIN_CORRELATION_THRESHOLD = 0.7
+    MAX_CORRELATION_THRESHOLD = 1.0
+    MIN_LIQUIDITY_USD = Decimal("10000")
+```
+
+### Exception Handling (UPDATED)
+
+- Use specific exception types, not bare `except Exception`
+- **ALWAYS include MCP server circuit breakers** for safety:
+
+```python
+try:
+    results = await mcp_search_server.search_pattern(pattern)
+except MCPServerOverloadError as e:
+    # MCP circuit breaker activated - safe fallback
+    logger.warning(f"MCP server overloaded: {e}. Using cached results.")
+    results = await self.get_cached_results(pattern)
+except Exception as e:
+    logger.exception(f"Unexpected MCP error: {e}")
+    raise
+```
+
+### Logging Standards
+
+- Use structured logging with `extra={}` for context
+- Use appropriate log levels: DEBUG, INFO, WARNING, ERROR, CRITICAL
+- Never log sensitive data (private keys, full addresses)
+
+```python
+logger.info(
+    "Trade executed successfully",
+    extra={
+        "trade_id": trade_id,
+        "wallet": wallet[-6:],  # Only last 6 chars
+        "amount": amount,
+    }
+)
+```
+
+### Thread Safety
+
+- Use `asyncio.Lock()` for shared state
+- Use `asyncio.Semaphore()` for rate limiting concurrent operations
+
+```python
+self._state_lock = asyncio.Lock()
+
+async def update_state(self):
+    async with self._state_lock:
+        self.state = new_value
+```
+
+## File Structure (UPDATED)
+
+```
+├── core/                 # Core business logic
+│   ├── clob_client.py   # Polymarket API client
+│   ├── trade_executor.py # Trade execution & risk management
+│   ├── wallet_monitor.py # Blockchain transaction monitoring
+│   └── exceptions.py     # Custom exceptions
+├── config/              # Configuration
+│   ├── settings.py      # Settings management
+│   └── mcp_config.py    # MCP server configuration (NEW)
+├── mcp/                 # Mission Critical Production servers (NEW)
+│   ├── codebase_search.py  # Code pattern search
+│   ├── testing_server.py   # Test coverage and execution
+│   ├── monitoring_server.py # Real-time health monitoring
+│   └── risk_integration.py  # Risk management integration
+├── utils/               # Utilities
+│   ├── helpers.py       # BoundedCache, helpers
+│   ├── memory_tracker.py # Memory usage tracking (NEW)
+│   ├── validation.py    # InputValidator
+│   ├── alerts.py        # Telegram alerts
+│   └── rate_limited_client.py  # Rate-limited API clients
+├── scripts/             # Deployment and monitoring scripts (UPDATED)
+│   ├── deploy_mcp_servers.sh  # Zero-downtime MCP deployment
+│   ├── monitor_memory.py      # Memory usage monitoring
+│   └── validate_health.sh     # Health validation
+├── monitoring/          # Monitoring & health checks
+├── tests/               # Test files
+└── main.py             # Application entry point
+```
+
+## Key MCP Server Classes (NEW)
+
+### CodebaseSearchServer
+
+- **Purpose**: Find code patterns and prevent undefined names
+- **Critical patterns**: Money calculations, risk controls, variable conflicts
+- **Safety features**: Circuit breakers, rate limiting, memory limits
+- **Usage**: `python scripts/search_code.py --pattern "your_pattern"`
+
+### TestingServer
+
+- **Purpose**: Prevent regression bugs and ensure code quality
+- **Critical coverage**: Risk management, money calculations, API integrations
+- **Safety features**: Test execution circuit breakers, resource limits
+- **Usage**: Automatically runs on every commit via pre-commit hooks
+
+### MonitoringServer
+
+- **Purpose**: Real-time system health and memory leak prevention
+- **Critical metrics**: Memory usage, API success rates, circuit breaker status
+- **Safety features**: Predictive cleanup, automatic recovery, alert deduplication
+- **Usage**: Runs as background task in `main.py`
+
+## Common MCP Patterns (NEW)
+
+### Safe MCP Integration
+
+```python
+from mcp.codebase_search import CodebaseSearchServer
+from config.mcp_config import MCPSettings
+
+# ALWAYS initialize with settings
+settings = MCPSettings()
+search_server = CodebaseSearchServer(settings)
+
+# ALWAYS use async context managers
+async with search_server as searcher:
+    results = await searcher.search_pattern("HIGH_CORRELATION_THRESHOLD")
+```
+
+### Memory-Aware Operations
+
+```python
+from utils.memory_tracker import MemoryMonitor
+
+monitor = MemoryMonitor({
+    "wallet_monitor": 500,  # 500MB threshold
+    "scanner": 300,
+    "trade_executor": 200
+})
+
+async def process_transactions():
+    if monitor.check_memory_usage()["wallet_monitor"]["status"] == "CRITICAL":
+        await self.risk_manager.reduce_position_sizes(50)  # Automatic risk reduction
+        await self.transaction_cache.cleanup()  # Trigger cleanup
+```
+
+### MCP-Aware Error Handling
+
+```python
+try:
+    trade_result = await self.trade_executor.execute_trade(trade)
+except MCPServerUnavailableError as e:
+    # MCP servers down - use safe fallback
+    logger.warning(f"MCP servers unavailable: {e}. Using conservative execution.")
+    trade_result = await self.trade_executor.execute_trade_safe(trade)
+except Exception as e:
+    logger.exception(f"Critical trading error: {e}")
+    await self.risk_manager.activate_circuit_breaker("CRITICAL_ERROR")
+```
+
+## Traditional Patterns (MAINTAINED)
+
+### Async Rate Limiting
+
+```python
+from utils.rate_limited_client import RateLimitedPolygonscanClient
+
+client = RateLimitedPolygonscanClient(api_key)
+result = await client.get_transactions(address)  # Automatically rate limited
+```
+
+### Input Validation
+
+```python
+from utils.validation import InputValidator, ValidationError
+
+try:
+    InputValidator.validate_wallet_address(address)
+    InputValidator.validate_price(price)
+except ValidationError as e:
+    logger.error(f"Validation failed: {e}")
+    return None
+```
+
+### Safe Decimal Calculations
+
+```python
+from decimal import Decimal, getcontext
+
+getcontext().prec = 28  # High precision
+
+amount = Decimal(str(value))  # Always convert from string
+result = amount * Decimal("0.01")
+```
+
+## Testing Requirements (UPDATED)
+
+### MCP Test Coverage (MANDATORY)
+
+```bash
+# ALL critical modules must have 85%+ test coverage
+pytest tests/unit/core/ --cov=core --cov-fail-under=85
+pytest tests/unit/mcp/ --cov=mcp --cov-fail-under=90
+
+# Memory leak tests are required
+pytest tests/unit/test_memory_leaks.py
+
+# Undefined name prevention tests
+pytest tests/unit/scanners/test_market_analyzer_fixes.py
+```
+
+### MCP Pre-Commit Hooks (REQUIRED)
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.6.0
+  hooks:
+  - id: ruff
+    args: [--fix, --select, F821]  # Catch undefined names
+  - id: ruff-format
+- repo: local
+  hooks:
+  - id: run-critical-tests
+    name: Run critical tests
+    entry: pytest tests/unit/scanners/test_market_analyzer_fixes.py
+    language: system
+    pass_filenames: false
+```
+
+## Traditional Testing (MAINTAINED)
+
+```bash
+# Run all tests
+pytest tests/ -v
+
+# Type checking
+mypy core/ utils/ --ignore-missing-imports
+
+# Linting
+ruff check . --fix
+ruff format .
+```
+
+## Known Issues Being Fixed (UPDATED)
+
+- ✅ **Memory leaks**: Solved with MCP monitoring and bounded caches
+- ✅ **Undefined names**: Solved with codebase_search and test coverage
+- ✅ **Daily restarts**: Eliminated with memory monitoring and automatic cleanup
+- 🔄 **API endpoint reliability**: MCP monitoring detects and switches endpoints
+- 🔄 **Risk parameter validation**: MCP integration provides real-time validation
+
+## MCP Deployment Workflow (NEW)
+
+### Development
+
+```bash
+# ALWAYS activate venv first
+source venv/bin/activate
+
+# Run MCP-aware commands
+python scripts/search_code.py --pattern "your_pattern"
+python scripts/monitor_memory.py --duration 60
+pytest tests/unit/mcp/ -v
+```
+
+### Staging Deployment
+
+```bash
+# Zero-downtime staging deployment
+env DRY_RUN=true python scripts/deploy_mcp_servers.sh
+
+# Monitor for 24 hours
+python scripts/monitor_memory.py --duration 86400
+```
+
+### Production Deployment
+
+```bash
+# Verify staging passed all checks
+python scripts/mcp/validate_health.sh --staging --post-deploy
+
+# Deploy to production
+python scripts/deploy_mcp_servers.sh
+
+# Continuous monitoring
+systemctl status polymarket-mcp
+journalctl -u polymarket-mcp -f
+```
+
+## Security Considerations (UPDATED)
+
+### MCP Server Security
+
+- **Never expose MCP endpoints** to public internet
+- **Use separate credentials** for MCP servers vs trading bot
+- **Monitor MCP resource usage** to prevent denial-of-service
+- **Isolate MCP processes** with systemd resource limits:
+
+```ini
+# systemd/polymarket-mcp.service
+[Service]
+MemoryMax=1G
+CPUQuota=15%
+```
+
+### Data Safety
+
+- **Never log MCP server internals** in production logs
+- **Mask sensitive patterns** in codebase search results
+- **Isolate test data** from production data
+- **Encrypt MCP configuration** at rest
+
+## Don't Do (UPDATED)
+
+❌ **Never run without MCP servers in production** - they provide critical safety nets
+❌ **Never disable memory monitoring** - daily restarts will return
+❌ **Never commit code that fails MCP tests** - undefined names will cause losses
+❌ **Never override MCP circuit breakers** - they exist to prevent catastrophic losses
+❌ **Never use float for money calculations** - MCP testing will catch this
+❌ **Never use unbounded dicts for caching** - MCP monitoring will detect memory growth
+❌ **Never deploy during market hours** (08:00-16:00 UTC) - use MCP deployment scheduler
+❌ **Don't use bare `except Exception`** - use specific types
+❌ **Don't use timezone-naive datetimes**
+❌ **Don't log full wallet addresses or private keys**
+❌ **Don't use `asyncio.gather()` for rate-limited API calls without semaphores**
+
+## MCP Monitoring Commands (NEW)
+
+```bash
+# Check real-time memory usage
+python scripts/monitor_memory.py --duration 300
+
+# Search for critical patterns
+python scripts/search_code.py --pattern "max_position_size"
+
+# Validate system health
+python scripts/mcp/validate_health.sh --production
+
+# Check MCP server status
+systemctl status polymarket-mcp
+```
+
+## Emergency Procedures (CRITICAL)
+
+```bash
+# IMMEDIATE MCP shutdown (if causing issues)
+sudo systemctl stop polymarket-mcp
+
+# Rollback to last stable state
+python scripts/mcp/rollback_mcp.sh
+
+# Re-enable basic monitoring
+python scripts/monitor_memory.py --emergency-mode
+```
+
+## Cursor IDE Requirements (UPDATED)
+
+### MCP-Aware Patterns
+
+- Cursor must recognize MCP server patterns and provide context-aware suggestions
+- Flag any code that bypasses MCP safety features
+- Highlight memory-unsafe patterns that MCP monitoring would catch
+- Warn about undefined names that MCP codebase_search would detect
+- Suggest MCP integration points for new features
+
+### Security Scanning
+
+- Cursor must flag any MCP configuration that exposes sensitive endpoints
+- Detect missing MCP circuit breaker integrations
+- Identify MCP resource limit violations
+- Warn about MCP deployment during market hours
+
+## Frontend Development Guidelines (WHEN APPLICABLE)
+
+> **Note:** This is primarily a backend project. Frontend rules apply when frontend work is requested.
+
+### Developer Context
+
+**Primary Focus:** Backend Development (Node.js, TypeScript, Python, Solidity, Rust)
+**Frontend Stack:** When frontend work is needed, use React/Vue/Svelte with Tailwind CSS
+
+### Operational Directives
+
+- **Follow Instructions:** Execute the request immediately. Do not deviate.
+- **Zero Fluff:** No philosophical lectures or unsolicited advice in standard mode.
+- **Stay Focused:** Concise answers only. No wandering.
+- **Output First:** Prioritize code and visual solutions.
+
+### The "ULTRATHINK" Protocol
+
+**TRIGGER:** When the user prompts **"ULTRATHINK"**:
+
+- **Override Brevity:** Immediately suspend the "Zero Fluff" rule.
+- **Maximum Depth:** Engage in exhaustive, deep-level reasoning.
+- **Multi-Dimensional Analysis:** Analyze through every lens:
+  - *Psychological:* User sentiment and cognitive load.
+  - *Technical:* Rendering performance, repaint/reflow costs, state complexity.
+  - *Accessibility:* WCAG AAA strictness.
+  - *Scalability:* Long-term maintenance and modularity.
+
+### Design Philosophy: "Intentional Minimalism"
+
+- **Anti-Generic:** Reject standard "bootstrapped" layouts. If it looks like a template, it is wrong.
+- **Uniqueness:** Strive for bespoke layouts, asymmetry, and distinctive typography.
+- **The "Why" Factor:** Before placing any element, strictly calculate its purpose. If it has no purpose, delete it.
+- **Minimalism:** Reduction is the ultimate sophistication.
+
+### Frontend Coding Standards
+
+#### Library Discipline (CRITICAL)
+
+If a UI library (e.g., Shadcn UI, Radix, MUI) is detected or active in the project, **YOU MUST USE IT**.
+
+- **Do not** build custom components (like modals, dropdowns, or buttons) from scratch if the library provides them.
+- **Do not** pollute the codebase with redundant CSS.
+- *Exception:* You may wrap or style library components to achieve the "Avant-Garde" look, but the underlying primitive must come from the library.
+
+#### Stack
+
+- Modern frameworks: React / Vue / Svelte
+- Styling: Tailwind CSS / Custom CSS
+- Markup: Semantic HTML5
+
+#### Visuals
+
+Focus on micro-interactions, perfect spacing, and "invisible" UX.
+
+### Response Format
+
+#### IF NORMAL
+
+1. **Rationale:** (1 sentence on why the elements were placed there)
+2. **The Code**
+
+#### IF "ULTRATHINK" IS ACTIVE
+
+1. **Deep Reasoning Chain:** (Detailed breakdown of the architectural and design decisions)
+2. **Edge Case Analysis:** (What could go wrong and how we prevented it)
+3. **The Code:** (Optimized, bespoke, production-ready, utilizing existing libraries)
+
+### Design Thinking Process
+
+Before coding, understand the context and commit to a **BOLD** aesthetic direction:
+
+| Dimension | Question |
+|-----------|----------|
+| **Purpose** | What problem does this interface solve? Who uses it? |
+| **Tone** | Pick an extreme: brutally minimal, maximalist chaos, retro-futuristic, organic/natural, luxury/refined, playful/toy-like, editorial/magazine, brutalist/raw, art deco/geometric, soft/pastel, industrial/utilitarian |
+| **Constraints** | Technical requirements (framework, performance, accessibility) |
+| **Differentiation** | What makes this UNFORGETTABLE? What's the one thing someone will remember? |
+
+> **CRITICAL:** Choose a clear conceptual direction and execute it with precision. Bold maximalism and refined minimalism both work—the key is intentionality, not intensity.
+
+### Frontend Aesthetics Guidelines
+
+#### Typography
+
+Choose fonts that are beautiful, unique, and interesting. Avoid generic fonts like Arial and Inter; opt instead for distinctive choices that elevate the frontend's aesthetics. Pair a distinctive display font with a refined body font.
+
+#### Color & Theme
+
+Commit to a cohesive aesthetic. Use CSS variables for consistency. Dominant colors with sharp accents outperform timid, evenly-distributed palettes.
+
+#### Motion
+
+Use animations for effects and micro-interactions. Prioritize CSS-only solutions for HTML. Use Motion library for React when available. Focus on high-impact moments: one well-orchestrated page load with staggered reveals (`animation-delay`) creates more delight than scattered micro-interactions.
+
+#### Spatial Composition
+
+- Unexpected layouts
+- Asymmetry
+- Overlap
+- Diagonal flow
+- Grid-breaking elements
+- Generous negative space OR controlled density
+
+#### Backgrounds & Visual Details
+
+Create atmosphere and depth rather than defaulting to solid colors. Apply creative forms like:
+
+- Gradient meshes
+- Noise textures
+- Geometric patterns
+- Layered transparencies
+- Dramatic shadows
+- Decorative borders
+- Custom cursors
+- Grain overlays
+
+### Frontend Anti-Patterns (Never Use)
+
+> ⚠️ **FORBIDDEN:** Generic AI-generated aesthetics
+
+- Overused font families: Inter, Roboto, Arial, system fonts
+- Clichéd color schemes: purple gradients on white backgrounds
+- Predictable layouts and component patterns
+- Cookie-cutter design lacking context-specific character
+- Converging on common choices (e.g., Space Grotesk) across generations
+
+### Implementation Complexity
+
+Match implementation complexity to the aesthetic vision:
+
+| Vision | Execution |
+|--------|-----------|
+| **Maximalist** | Elaborate code with extensive animations and effects |
+| **Minimalist** | Restraint, precision, careful attention to spacing, typography, and subtle details |
+
+> Elegance comes from executing the vision well.
+
+## Final Reminder
+
+**The MCP servers are not optional add-ons - they are critical safety systems that prevent financial losses and system crashes. Every line of code must respect MCP boundaries and integrate with safety features.**
+
+Your trading bot's survival depends on these systems working correctly. Never compromise on MCP safety requirements for the sake of development speed.

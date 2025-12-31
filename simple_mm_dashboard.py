@@ -37,14 +37,22 @@ def create_simple_dashboard():
                 "mm_probability": analysis["market_maker_probability"],
                 "confidence": analysis["confidence_score"],
                 "trade_count": analysis["trade_count"],
-                "trades_per_hour": analysis["metrics"]["temporal_metrics"]["trades_per_hour"],
-                "balance_score": analysis["metrics"]["directional_metrics"]["balance_score"],
-                "markets_traded": analysis["metrics"]["market_metrics"]["markets_traded_count"],
+                "trades_per_hour": analysis["metrics"]["temporal_metrics"][
+                    "trades_per_hour"
+                ],
+                "balance_score": analysis["metrics"]["directional_metrics"][
+                    "balance_score"
+                ],
+                "markets_traded": analysis["metrics"]["market_metrics"][
+                    "markets_traded_count"
+                ],
             }
         )
 
     # Generate dashboard content
-    dashboard_content = generate_dashboard_content(summary, classifications, wallet_data)
+    dashboard_content = generate_dashboard_content(
+        summary, classifications, wallet_data
+    )
 
     # Save dashboard
     dashboard_file = dashboard_dir / "market_maker_dashboard.txt"
@@ -68,10 +76,10 @@ def generate_dashboard_content(summary, classifications, wallet_data):
     content += "📊 EXECUTIVE SUMMARY\n"
     content += "-" * 30 + "\n"
     content += f"Total Wallets Analyzed: {summary['total_wallets']}\n"
-    content += f"Analysis Timestamp: {summary['analysis_timestamp'][:19].replace('T', ' ')}\n"
     content += (
-        f"Market Maker Percentage: {summary['results_summary']['market_maker_percentage']:.1f}%\n"
+        f"Analysis Timestamp: {summary['analysis_timestamp'][:19].replace('T', ' ')}\n"
     )
+    content += f"Market Maker Percentage: {summary['results_summary']['market_maker_percentage']:.1f}%\n"
     content += f"Average Confidence Score: {summary['results_summary']['average_confidence']:.3f}\n"
     content += f"High Confidence Classifications: {summary['results_summary']['high_confidence_classifications']}\n"
 
@@ -80,7 +88,9 @@ def generate_dashboard_content(summary, classifications, wallet_data):
     content += "-" * 35 + "\n"
 
     total = sum(classifications.values())
-    sorted_classifications = sorted(classifications.items(), key=lambda x: x[1], reverse=True)
+    sorted_classifications = sorted(
+        classifications.items(), key=lambda x: x[1], reverse=True
+    )
 
     for classification, count in sorted_classifications:
         (count / total) * 100
@@ -92,14 +102,16 @@ def generate_dashboard_content(summary, classifications, wallet_data):
     content += "\n🏆 TOP MARKET MAKER CANDIDATES\n"
     content += "-" * 35 + "\n"
 
-    sorted_wallets = sorted(wallet_data, key=lambda x: x["mm_probability"], reverse=True)
+    sorted_wallets = sorted(
+        wallet_data, key=lambda x: x["mm_probability"], reverse=True
+    )
     top_10 = sorted_wallets[:10]
 
     content += f"{'Rank':<5} {'Wallet':<15} {'Classification':<18} {'MM Prob':<8} {'Conf':<6} {'Trades/Day':<11} {'Markets':<8}\n"
     content += "-" * 85 + "\n"
 
     for i, wallet in enumerate(top_10, 1):
-        content += f"{i:<5} {wallet['address'][:14]:<15} {wallet['classification'].replace('_', ' ')[:17]:<18} {wallet['mm_probability']:<8.3f} {wallet['confidence']:<6.3f} {wallet['trades_per_hour']*24:<11.1f} {wallet['markets_traded']:<8}\n"
+        content += f"{i:<5} {wallet['address'][:14]:<15} {wallet['classification'].replace('_', ' ')[:17]:<18} {wallet['mm_probability']:<8.3f} {wallet['confidence']:<6.3f} {wallet['trades_per_hour'] * 24:<11.1f} {wallet['markets_traded']:<8}\n"
 
     # Market Maker Details
     market_makers = [w for w in wallet_data if w["classification"] == "market_maker"]
@@ -111,7 +123,7 @@ def generate_dashboard_content(summary, classifications, wallet_data):
             content += f"\n🏆 WALLET: {mm['address'][:16]}...\n"
             content += f"   • Market Maker Probability: {mm['mm_probability']:.3f}\n"
             content += f"   • Confidence Score: {mm['confidence']:.3f}\n"
-            content += f"   • Daily Trades: {mm['trades_per_hour']*24:.1f}\n"
+            content += f"   • Daily Trades: {mm['trades_per_hour'] * 24:.1f}\n"
             content += f"   • Markets Traded: {mm['markets_traded']}\n"
             content += f"   • Balance Score: {mm['balance_score']:.3f}\n"
 
@@ -139,10 +151,10 @@ def generate_dashboard_content(summary, classifications, wallet_data):
     # Recommendations
     content += "\n💡 RECOMMENDATIONS\n"
     content += "-" * 18 + "\n"
+    content += "1. 🎯 Prioritize wallets with MM probability > 0.7 for market making opportunities\n"
     content += (
-        "1. 🎯 Prioritize wallets with MM probability > 0.7 for market making opportunities\n"
+        "2. ⚡ Monitor arbitrage traders (MM probability 0.6-0.7) for spread trading\n"
     )
-    content += "2. ⚡ Monitor arbitrage traders (MM probability 0.6-0.7) for spread trading\n"
     content += "3. 📊 Consider mixed traders for balanced portfolio exposure\n"
     content += "4. 📈 Track low activity wallets for pattern development\n"
     content += "5. 🔄 Re-run analysis periodically to identify emerging market makers\n"

@@ -19,6 +19,7 @@ import json
 import logging
 from collections import defaultdict
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -159,7 +160,9 @@ class BacktestingEngine:
 
             while current_date <= end_date:
                 # Get market conditions for current date
-                market_conditions = self._get_market_conditions_at_date(dataset, current_date)
+                market_conditions = self._get_market_conditions_at_date(
+                    dataset, current_date
+                )
 
                 # Get wallet activities for current date
                 wallet_activities = self._get_wallet_activities_at_date(
@@ -169,7 +172,10 @@ class BacktestingEngine:
                 # Execute strategy decisions
                 if wallet_activities:
                     execution_results = await self._execute_strategy_decisions(
-                        wallet_activities, market_conditions, portfolio_value, current_date
+                        wallet_activities,
+                        market_conditions,
+                        portfolio_value,
+                        current_date,
                     )
 
                     # Update portfolio value and log trades
@@ -185,19 +191,25 @@ class BacktestingEngine:
             backtest_results["trade_log"] = trade_log
 
             # Calculate performance metrics
-            backtest_results["performance_metrics"] = self._calculate_performance_metrics(
-                trade_log, capital, portfolio_value, dataset
+            backtest_results["performance_metrics"] = (
+                self._calculate_performance_metrics(
+                    trade_log, capital, portfolio_value, dataset
+                )
             )
 
             # Calculate risk metrics
-            backtest_results["risk_metrics"] = self._calculate_risk_metrics(trade_log, dataset)
+            backtest_results["risk_metrics"] = self._calculate_risk_metrics(
+                trade_log, dataset
+            )
 
             # Analyze execution quality
-            backtest_results["execution_quality"] = self._analyze_execution_quality(trade_log)
+            backtest_results["execution_quality"] = self._analyze_execution_quality(
+                trade_log
+            )
 
             # Analyze market condition impact
-            backtest_results["market_conditions"] = self._analyze_market_condition_impact(
-                trade_log, dataset
+            backtest_results["market_conditions"] = (
+                self._analyze_market_condition_impact(trade_log, dataset)
             )
 
             logger.info(
@@ -263,10 +275,13 @@ class BacktestingEngine:
 
             if len(all_prices) >= 2:
                 returns = [
-                    all_prices[i + 1] / all_prices[i] - 1 for i in range(len(all_prices) - 1)
+                    all_prices[i + 1] / all_prices[i] - 1
+                    for i in range(len(all_prices) - 1)
                 ]
                 if returns:
-                    market_conditions["volatility_index"] = np.std(returns) * np.sqrt(365)
+                    market_conditions["volatility_index"] = np.std(returns) * np.sqrt(
+                        365
+                    )
 
         # Get gas price
         gas_series = gas_data.get("gas_price_series", [])
@@ -287,7 +302,10 @@ class BacktestingEngine:
         return market_conditions
 
     def _get_wallet_activities_at_date(
-        self, dataset: Dict[str, Any], target_date: datetime, strategy_config: Dict[str, Any]
+        self,
+        dataset: Dict[str, Any],
+        target_date: datetime,
+        strategy_config: Dict[str, Any],
     ) -> List[Dict[str, Any]]:
         """Get wallet activities for a specific date."""
 
@@ -365,7 +383,9 @@ class BacktestingEngine:
 
                     # Record costs
                     execution_results["total_gas_cost"] += execution_result["gas_cost"]
-                    execution_results["total_slippage_cost"] += execution_result["slippage_cost"]
+                    execution_results["total_slippage_cost"] += execution_result[
+                        "slippage_cost"
+                    ]
                     execution_results["execution_delays"].append(
                         execution_result["execution_delay_ms"]
                     )
@@ -384,7 +404,10 @@ class BacktestingEngine:
         return execution_results
 
     async def _simulate_trade_execution(
-        self, trade: Dict[str, Any], market_conditions: Dict[str, Any], execution_date: datetime
+        self,
+        trade: Dict[str, Any],
+        market_conditions: Dict[str, Any],
+        execution_date: datetime,
     ) -> Dict[str, Any]:
         """
         Simulate realistic trade execution with all costs and delays.
@@ -407,8 +430,12 @@ class BacktestingEngine:
             execution_result["execution_delay_ms"] = execution_delay
 
             # 2. Model slippage
-            slippage_bps = self._model_slippage(trade, market_conditions, execution_delay)
-            execution_result["slippage_cost"] = self._calculate_slippage_cost(trade, slippage_bps)
+            slippage_bps = self._model_slippage(
+                trade, market_conditions, execution_delay
+            )
+            execution_result["slippage_cost"] = self._calculate_slippage_cost(
+                trade, slippage_bps
+            )
 
             # 3. Model market impact
             market_impact_bps = self._model_market_impact(trade, market_conditions)
@@ -426,9 +453,13 @@ class BacktestingEngine:
             # For buy orders, slippage increases price; for sell orders, decreases
             trade_side = trade.get("parsed_trade", {}).get("side", "BUY")
             if trade_side == "BUY":
-                actual_price = expected_price * (1 + slippage_adjustment + impact_adjustment)
+                actual_price = expected_price * (
+                    1 + slippage_adjustment + impact_adjustment
+                )
             else:
-                actual_price = expected_price * (1 - slippage_adjustment - impact_adjustment)
+                actual_price = expected_price * (
+                    1 - slippage_adjustment - impact_adjustment
+                )
 
             execution_result["actual_price"] = actual_price
 
@@ -486,14 +517,18 @@ class BacktestingEngine:
             queue_time = 0
 
         total_latency = (
-            base_latency * congestion_factor * volatility_factor * random_factor + queue_time
+            base_latency * congestion_factor * volatility_factor * random_factor
+            + queue_time
         )
 
         # Cap at maximum delay
         return min(total_latency, self.simulation_params["max_execution_delay_ms"])
 
     def _model_slippage(
-        self, trade: Dict[str, Any], market_conditions: Dict[str, Any], execution_delay_ms: float
+        self,
+        trade: Dict[str, Any],
+        market_conditions: Dict[str, Any],
+        execution_delay_ms: float,
     ) -> float:
         """Model price slippage for trade execution."""
 
@@ -522,13 +557,19 @@ class BacktestingEngine:
         random_slippage = np.random.normal(0, base_slippage * 0.5)
 
         total_slippage_bps = (
-            base_slippage * size_factor * volatility_factor * liquidity_factor * time_factor
+            base_slippage
+            * size_factor
+            * volatility_factor
+            * liquidity_factor
+            * time_factor
             + random_slippage
         )
 
         return max(0, total_slippage_bps)
 
-    def _calculate_slippage_cost(self, trade: Dict[str, Any], slippage_bps: float) -> float:
+    def _calculate_slippage_cost(
+        self, trade: Dict[str, Any], slippage_bps: float
+    ) -> float:
         """Calculate dollar cost of slippage."""
 
         trade_amount = trade.get("parsed_trade", {}).get("amount", 0)
@@ -551,7 +592,9 @@ class BacktestingEngine:
         avg_volume = market_conditions.get("average_volume", 1000)
 
         # Impact threshold
-        impact_threshold = self.simulation_params["market_impact_threshold"] * avg_volume
+        impact_threshold = (
+            self.simulation_params["market_impact_threshold"] * avg_volume
+        )
 
         if trade_size < impact_threshold:
             return 0  # No significant impact
@@ -573,7 +616,10 @@ class BacktestingEngine:
         return total_impact_bps
 
     def _model_gas_cost(
-        self, trade: Dict[str, Any], market_conditions: Dict[str, Any], execution_delay: float
+        self,
+        trade: Dict[str, Any],
+        market_conditions: Dict[str, Any],
+        execution_delay: float,
     ) -> float:
         """Model gas costs for trade execution."""
 
@@ -598,12 +644,17 @@ class BacktestingEngine:
 
         # Network congestion adjustment
         congestion_multiplier = market_conditions.get("gas_price_gwei", 50) / 50
-        if congestion_multiplier > self.simulation_params["network_congestion_threshold"]:
+        if (
+            congestion_multiplier
+            > self.simulation_params["network_congestion_threshold"]
+        ):
             congestion_penalty = (congestion_multiplier - 1) * 0.5
             gas_cost_usd *= 1 + congestion_penalty
 
         # Gas volatility
-        volatility_factor = np.random.normal(1, self.simulation_params["gas_price_volatility"])
+        volatility_factor = np.random.normal(
+            1, self.simulation_params["gas_price_volatility"]
+        )
         gas_cost_usd *= max(0.1, volatility_factor)  # Minimum 10% of base cost
 
         return gas_cost_usd
@@ -620,7 +671,9 @@ class BacktestingEngine:
         metrics = {}
 
         if not trade_log:
-            return {metric: 0.0 for metric in self.simulation_params["performance_metrics"]}
+            return {
+                metric: 0.0 for metric in self.simulation_params["performance_metrics"]
+            }
 
         # Extract returns from trade log
         returns = []
@@ -637,7 +690,9 @@ class BacktestingEngine:
                 cumulative_value += pnl
 
         if not returns:
-            return {metric: 0.0 for metric in self.simulation_params["performance_metrics"]}
+            return {
+                metric: 0.0 for metric in self.simulation_params["performance_metrics"]
+            }
 
         returns_array = np.array(returns)
 
@@ -650,7 +705,9 @@ class BacktestingEngine:
         excess_returns = returns_array - risk_free_rate
 
         if len(returns_array) > 1:
-            sharpe_ratio = np.mean(excess_returns) / np.std(excess_returns) * np.sqrt(365)
+            sharpe_ratio = (
+                np.mean(excess_returns) / np.std(excess_returns) * np.sqrt(365)
+            )
         else:
             sharpe_ratio = 0
 
@@ -671,7 +728,9 @@ class BacktestingEngine:
         # Profit factor
         gross_profits = sum(r for r in returns_array if r > 0)
         gross_losses = abs(sum(r for r in returns_array if r < 0))
-        profit_factor = gross_profits / gross_losses if gross_losses > 0 else float("inf")
+        profit_factor = (
+            gross_profits / gross_losses if gross_losses > 0 else float("inf")
+        )
         metrics["profit_factor"] = profit_factor
 
         # Calmar ratio
@@ -682,10 +741,14 @@ class BacktestingEngine:
         downside_returns = returns_array[returns_array < risk_free_rate]
         if len(downside_returns) > 0:
             sortino_ratio = (
-                (np.mean(returns_array) - risk_free_rate) / np.std(downside_returns) * np.sqrt(365)
+                (np.mean(returns_array) - risk_free_rate)
+                / np.std(downside_returns)
+                * np.sqrt(365)
             )
         else:
-            sortino_ratio = float("inf") if np.mean(returns_array) > risk_free_rate else 0
+            sortino_ratio = (
+                float("inf") if np.mean(returns_array) > risk_free_rate else 0
+            )
         metrics["sortino_ratio"] = sortino_ratio
 
         # Alpha (vs benchmark)
@@ -773,7 +836,9 @@ class BacktestingEngine:
 
         return risk_metrics
 
-    def _get_market_returns_for_beta(self, dataset: Dict[str, Any], length: int) -> List[float]:
+    def _get_market_returns_for_beta(
+        self, dataset: Dict[str, Any], length: int
+    ) -> List[float]:
         """Get market returns for beta calculation."""
 
         market_data = dataset.get("market_data", {}).get("price_data", {})
@@ -796,7 +861,9 @@ class BacktestingEngine:
 
         return market_returns
 
-    def _analyze_execution_quality(self, trade_log: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _analyze_execution_quality(
+        self, trade_log: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Analyze execution quality metrics."""
 
         execution_quality = {
@@ -841,7 +908,9 @@ class BacktestingEngine:
                 expected_price = execution.get("expected_price", 0)
                 actual_price = execution.get("actual_price", 0)
                 trade_side = (
-                    trade_entry.get("original_trade", {}).get("parsed_trade", {}).get("side", "BUY")
+                    trade_entry.get("original_trade", {})
+                    .get("parsed_trade", {})
+                    .get("side", "BUY")
                 )
 
                 if trade_side == "BUY" and actual_price < expected_price:
@@ -866,7 +935,9 @@ class BacktestingEngine:
             successful_executions / total_trades if total_trades > 0 else 0
         )
         execution_quality["price_improvement_rate"] = (
-            price_improvements / successful_executions if successful_executions > 0 else 0
+            price_improvements / successful_executions
+            if successful_executions > 0
+            else 0
         )
 
         # Cost breakdown
@@ -986,7 +1057,9 @@ class BacktestingEngine:
                 factor_impact["factor_coefficients"] = coefficients
                 factor_impact["model_r_squared"] = r2_score(y, model.predict(X))
                 factor_impact["factor_importance"] = dict(
-                    zip(feature_names, np.abs(model.coef_) / np.sum(np.abs(model.coef_)))
+                    zip(
+                        feature_names, np.abs(model.coef_) / np.sum(np.abs(model.coef_))
+                    )
                 )
 
             except Exception as e:
@@ -1030,8 +1103,12 @@ class BacktestingEngine:
                 dataset["collection_metadata"]["date_range"].split(" to ")[1]
             )
 
-            training_window = timedelta(days=self.simulation_params["training_window_days"])
-            testing_window = timedelta(days=self.simulation_params["testing_window_days"])
+            training_window = timedelta(
+                days=self.simulation_params["training_window_days"]
+            )
+            testing_window = timedelta(
+                days=self.simulation_params["testing_window_days"]
+            )
             step_size = timedelta(days=self.simulation_params["step_size_days"])
 
             current_train_start = start_date
@@ -1058,8 +1135,10 @@ class BacktestingEngine:
                 current_train_start += step_size
 
             # Analyze parameter stability across windows
-            optimization_results["parameter_stability"] = self._analyze_parameter_stability(
-                optimization_results["walk_forward_windows"]
+            optimization_results["parameter_stability"] = (
+                self._analyze_parameter_stability(
+                    optimization_results["walk_forward_windows"]
+                )
             )
 
             # Calculate out-of-sample performance
@@ -1070,8 +1149,10 @@ class BacktestingEngine:
             )
 
             # Determine overall optimal parameters
-            optimization_results["optimal_parameters"] = self._determine_optimal_parameters(
-                optimization_results["walk_forward_windows"]
+            optimization_results["optimal_parameters"] = (
+                self._determine_optimal_parameters(
+                    optimization_results["walk_forward_windows"]
+                )
             )
 
             logger.info(
@@ -1121,7 +1202,9 @@ class BacktestingEngine:
                 if score > best_score:
                     best_score = score
                     best_config = config
-                    window_result["training_performance"] = train_result["performance_metrics"]
+                    window_result["training_performance"] = train_result[
+                        "performance_metrics"
+                    ]
 
         # Test optimal config on out-of-sample data
         if best_config:
@@ -1132,7 +1215,9 @@ class BacktestingEngine:
             )
 
             if "performance_metrics" in test_result:
-                window_result["testing_performance"] = test_result["performance_metrics"]
+                window_result["testing_performance"] = test_result[
+                    "performance_metrics"
+                ]
 
         return window_result
 
@@ -1176,11 +1261,15 @@ class BacktestingEngine:
             sorted_params = sorted(
                 stability_analysis["parameter_variance"].items(), key=lambda x: x[1]
             )  # Lower variance = more stable
-            stability_analysis["most_stable_parameters"] = [p[0] for p in sorted_params[:3]]
+            stability_analysis["most_stable_parameters"] = [
+                p[0] for p in sorted_params[:3]
+            ]
 
         # Overall stability score
         if stability_analysis["parameter_variance"]:
-            avg_variance = np.mean(list(stability_analysis["parameter_variance"].values()))
+            avg_variance = np.mean(
+                list(stability_analysis["parameter_variance"].values())
+            )
             stability_analysis["stability_score"] = 1 / (
                 1 + avg_variance
             )  # Higher score = more stable
@@ -1336,11 +1425,16 @@ class BacktestingEngine:
 
             # Calculate Value at Risk
             mc_results["var_95"] = np.percentile(returns, 5)
-            mc_results["cvar_95"] = np.mean([r for r in returns if r <= mc_results["var_95"]])
+            mc_results["cvar_95"] = np.mean(
+                [r for r in returns if r <= mc_results["var_95"]]
+            )
 
             # Confidence intervals
             mc_results["confidence_intervals"] = {
-                "return_95_ci": [np.percentile(returns, 2.5), np.percentile(returns, 97.5)],
+                "return_95_ci": [
+                    np.percentile(returns, 2.5),
+                    np.percentile(returns, 97.5),
+                ],
                 "sharpe_95_ci": [
                     np.percentile([s["sharpe_ratio"] for s in scenario_results], 2.5),
                     np.percentile([s["sharpe_ratio"] for s in scenario_results], 97.5),
@@ -1364,11 +1458,17 @@ class BacktestingEngine:
         np.random.seed(scenario_id)
 
         scenario_shocks = {
-            "volatility_multiplier": np.random.lognormal(0, 0.3),  # Log-normal for positive values
-            "liquidity_multiplier": np.random.beta(2, 2),  # Beta distribution centered on 1
+            "volatility_multiplier": np.random.lognormal(
+                0, 0.3
+            ),  # Log-normal for positive values
+            "liquidity_multiplier": np.random.beta(
+                2, 2
+            ),  # Beta distribution centered on 1
             "gas_price_multiplier": np.random.lognormal(0, 0.5),
             "correlation_shock": np.random.normal(0, 0.2),  # Correlation changes
-            "regime_change_probability": np.random.beta(1, 9),  # Low probability regime changes
+            "regime_change_probability": np.random.beta(
+                1, 9
+            ),  # Low probability regime changes
         }
 
         # Add extreme scenarios for stress testing
@@ -1406,7 +1506,9 @@ class BacktestingEngine:
         """Run backtest with scenario-specific modifications."""
 
         # Apply scenario shocks to market conditions
-        modified_dataset = self._apply_scenario_shocks_to_dataset(dataset, scenario_shocks)
+        modified_dataset = self._apply_scenario_shocks_to_dataset(
+            dataset, scenario_shocks
+        )
 
         # Run backtest with modified data
         result = await self.run_backtest(
@@ -1445,7 +1547,10 @@ class BacktestingEngine:
 
         # Modify gas data
         gas_multiplier = shocks.get("gas_price_multiplier", 1.0)
-        if "gas_data" in modified_dataset and "gas_price_series" in modified_dataset["gas_data"]:
+        if (
+            "gas_data" in modified_dataset
+            and "gas_price_series" in modified_dataset["gas_data"]
+        ):
             for gas_point in modified_dataset["gas_data"]["gas_price_series"]:
                 gas_point["gas_price_gwei"] *= gas_multiplier
 
@@ -1461,12 +1566,16 @@ class BacktestingEngine:
 
         # Extract key metrics
         final_capitals = [s["final_capital"] for s in scenario_results]
-        returns = [(c - 10000) / 10000 for c in final_capitals]  # Assuming $10K starting capital
+        returns = [
+            (c - 10000) / 10000 for c in final_capitals
+        ]  # Assuming $10K starting capital
         sharpe_ratios = [
-            s.get("performance_metrics", {}).get("sharpe_ratio", 0) for s in scenario_results
+            s.get("performance_metrics", {}).get("sharpe_ratio", 0)
+            for s in scenario_results
         ]
         max_drawdowns = [
-            s.get("performance_metrics", {}).get("max_drawdown", 0) for s in scenario_results
+            s.get("performance_metrics", {}).get("max_drawdown", 0)
+            for s in scenario_results
         ]
 
         statistics = {
@@ -1478,8 +1587,10 @@ class BacktestingEngine:
             "sharpe_std": np.std(sharpe_ratios),
             "mean_max_drawdown": np.mean(max_drawdowns),
             "probability_profit": sum(1 for r in returns if r > 0) / len(returns),
-            "probability_loss_10pct": sum(1 for r in returns if r < -0.1) / len(returns),
-            "probability_loss_20pct": sum(1 for r in returns if r < -0.2) / len(returns),
+            "probability_loss_10pct": sum(1 for r in returns if r < -0.1)
+            / len(returns),
+            "probability_loss_20pct": sum(1 for r in returns if r < -0.2)
+            / len(returns),
             "best_return": max(returns),
             "worst_return": min(returns),
             "return_percentiles": {
@@ -1568,8 +1679,10 @@ class BacktestingEngine:
                 sensitivity_results["parameter_sensitivity"][param_name] = param_results
 
             # Analyze parameter importance
-            sensitivity_results["parameter_importance"] = self._analyze_parameter_importance(
-                sensitivity_results["parameter_sensitivity"]
+            sensitivity_results["parameter_importance"] = (
+                self._analyze_parameter_importance(
+                    sensitivity_results["parameter_sensitivity"]
+                )
             )
 
             # Identify key drivers
@@ -1625,9 +1738,13 @@ class BacktestingEngine:
                 if np.mean(sharpe_ratios) != 0
                 else 0
             )
-            return_cv = np.std(returns) / abs(np.mean(returns)) if np.mean(returns) != 0 else 0
+            return_cv = (
+                np.std(returns) / abs(np.mean(returns)) if np.mean(returns) != 0 else 0
+            )
             drawdown_cv = (
-                np.std(drawdowns) / abs(np.mean(drawdowns)) if np.mean(drawdowns) != 0 else 0
+                np.std(drawdowns) / abs(np.mean(drawdowns))
+                if np.mean(drawdowns) != 0
+                else 0
             )
 
             # Higher CV = more sensitive = more important
@@ -1636,14 +1753,18 @@ class BacktestingEngine:
 
         return parameter_importance
 
-    def _identify_key_drivers(self, parameter_importance: Dict[str, float]) -> List[str]:
+    def _identify_key_drivers(
+        self, parameter_importance: Dict[str, float]
+    ) -> List[str]:
         """Identify the most important parameters (key drivers)."""
 
         if not parameter_importance:
             return []
 
         # Sort by importance (descending)
-        sorted_params = sorted(parameter_importance.items(), key=lambda x: x[1], reverse=True)
+        sorted_params = sorted(
+            parameter_importance.items(), key=lambda x: x[1], reverse=True
+        )
 
         # Return top 3 key drivers
         return [param[0] for param in sorted_params[:3]]
@@ -1734,7 +1855,9 @@ class BacktestingEngine:
         if not self.performance_history:
             return None
 
-        best_result = max(self.performance_history, key=lambda x: x.get("total_return", 0))
+        best_result = max(
+            self.performance_history, key=lambda x: x.get("total_return", 0)
+        )
         return best_result.get("strategy_name", "unknown")
 
     def _find_most_robust_strategy(self) -> Optional[str]:

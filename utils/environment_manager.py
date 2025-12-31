@@ -50,7 +50,7 @@ class DependencyInfo:
     vulnerabilities: List[Dict] = None
     last_checked: Optional[datetime] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.vulnerabilities is None:
             self.vulnerabilities = []
 
@@ -72,7 +72,7 @@ class EnvironmentHealth:
 class EnvironmentManager:
     """Main environment management class"""
 
-    def __init__(self, project_root: Optional[Path] = None):
+    def __init__(self, project_root: Optional[Path] = None) -> None:
         self.project_root = project_root or Path(__file__).parent.parent
         self.config_dir = self.project_root / "config"
         self.scripts_dir = self.project_root / "scripts"
@@ -87,7 +87,7 @@ class EnvironmentManager:
         # Setup logging
         self._setup_logging()
 
-    def _setup_logging(self):
+    def _setup_logging(self) -> None:
         """Setup logging for environment management"""
         log_dir = self.project_root / "logs"
         log_dir.mkdir(exist_ok=True)
@@ -174,7 +174,9 @@ class EnvironmentManager:
             # Upgrade pip
             pip_path = config.venv_path / "bin" / "pip"
             result = subprocess.run(
-                [str(pip_path), "install", "--upgrade", "pip"], capture_output=True, text=True
+                [str(pip_path), "install", "--upgrade", "pip"],
+                capture_output=True,
+                text=True,
             )
 
             if result.returncode != 0:
@@ -263,7 +265,9 @@ class EnvironmentManager:
             issues.append("Python version incompatible")
 
         # Check virtual environment
-        venv_ok = config.venv_path.exists() and (config.venv_path / "bin" / "python").exists()
+        venv_ok = (
+            config.venv_path.exists() and (config.venv_path / "bin" / "python").exists()
+        )
         if not venv_ok:
             issues.append("Virtual environment not found or corrupted")
 
@@ -346,7 +350,9 @@ class EnvironmentManager:
 
             for dep in critical_deps:
                 result = subprocess.run(
-                    [str(python_path), "-c", f"import {dep}"], capture_output=True, text=True
+                    [str(python_path), "-c", f"import {dep}"],
+                    capture_output=True,
+                    text=True,
                 )
 
                 if result.returncode != 0:
@@ -425,10 +431,20 @@ def main():
     """CLI interface for environment management"""
     import argparse
 
-    parser = argparse.ArgumentParser(description="Environment Manager for Polymarket Copy Bot")
+    parser = argparse.ArgumentParser(
+        description="Environment Manager for Polymarket Copy Bot"
+    )
     parser.add_argument(
         "action",
-        choices=["create", "validate", "install-deps", "activate", "info", "list", "health-check"],
+        choices=[
+            "create",
+            "validate",
+            "install-deps",
+            "activate",
+            "info",
+            "list",
+            "health-check",
+        ],
     )
     parser.add_argument("--env", default="production", help="Environment name")
     parser.add_argument("--force", action="store_true", help="Force operation")
@@ -447,7 +463,9 @@ def main():
 
     elif args.action == "validate":
         health = manager.validate_environment(args.env)
-        print(f"Environment {args.env}: {'HEALTHY' if health.is_healthy else 'UNHEALTHY'}")
+        print(
+            f"Environment {args.env}: {'HEALTHY' if health.is_healthy else 'UNHEALTHY'}"
+        )
         if health.issues:
             print("Issues:")
             for issue in health.issues:

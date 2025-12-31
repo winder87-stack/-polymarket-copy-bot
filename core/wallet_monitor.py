@@ -4,6 +4,7 @@ import asyncio
 import logging
 import time
 from datetime import datetime, timedelta, timezone
+from decimal import ROUND_HALF_UP, Decimal, getcontext
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 if TYPE_CHECKING:
@@ -18,9 +19,18 @@ from web3.exceptions import BadFunctionCallOutput, Web3ValidationError
 from core.exceptions import APIError, PolygonscanError, RateLimitError
 from core.market_maker_detector import MarketMakerDetector
 from utils.exception_handler import exception_handler, safe_execute
-from utils.helpers import BoundedCache, calculate_confidence_score, normalize_address
+from utils.helpers import (
+    BoundedCache,
+    calculate_confidence_score,
+    mask_wallet_address,
+    normalize_address,
+)
 from utils.rate_limited_client import RateLimitedPolygonscanClient
 from utils.validation import InputValidator, ValidationError
+
+# Configure Decimal for financial calculations
+getcontext().prec = 28
+getcontext().rounding = ROUND_HALF_UP
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +38,14 @@ logger = logging.getLogger(__name__)
 class BatchTransactionProcessor:
     """Efficient batch processor for blockchain transactions"""
 
-    def __init__(self, monitor: "WalletMonitor"):
+    def __init__(self, monitor: "WalletMonitor") -> None:
         self.monitor = monitor
-        self._batch_cache = {}
+        self._batch_cache = BoundedCache(
+            max_size=5000,
+            ttl_seconds=86400,
+            memory_threshold_mb=50.0,
+            cleanup_interval_seconds=60,
+        )
         self._batch_stats = {
             "total_processed": 0,
             "filtered_out": 0,
@@ -50,14 +65,18 @@ class BatchTransactionProcessor:
             self._batch_stats["filtered_out"] += len(transactions) - len(filtered_txs)
 
             if not filtered_txs:
-                logger.debug(f"🧹 All transactions filtered out for {wallet_address}")
+                logger.debug(
+                    f"🧹 All transactions filtered out for {mask_wallet_address(wallet_address)}"
+                )
                 return []
 
             # Phase 2: Batch confidence scoring
             confidence_scores = await self._batch_confidence_scoring(filtered_txs)
 
             # Phase 3: Parallel trade detection
-            trades = await self._parallel_trade_detection(filtered_txs, confidence_scores)
+            trades = await self._parallel_trade_detection(
+                filtered_txs, confidence_scores
+            )
 
             # Phase 4: Batch deduplication and processing
             unique_trades = self._deduplicate_trades(trades)
@@ -85,7 +104,10 @@ class BatchTransactionProcessor:
         except (ValueError, TypeError, KeyError, IndexError) as e:
             return await exception_handler.handle_exception(
                 e,
-                context={"wallet_address": wallet_address, "transaction_count": len(transactions)},
+                context={
+                    "wallet_address": wallet_address,
+                    "transaction_count": len(transactions),
+                },
                 component="BatchTransactionProcessor",
                 operation="process_transaction_batch",
                 default_return=[],
@@ -93,7 +115,10 @@ class BatchTransactionProcessor:
         except (ConnectionError, TimeoutError, aiohttp.ClientError, APIError) as e:
             return await exception_handler.handle_exception(
                 e,
-                context={"wallet_address": wallet_address, "transaction_count": len(transactions)},
+                context={
+                    "wallet_address": wallet_address,
+                    "transaction_count": len(transactions),
+                },
                 component="BatchTransactionProcessor",
                 operation="process_transaction_batch",
                 default_return=[],
@@ -101,7 +126,10 @@ class BatchTransactionProcessor:
         except Exception as e:
             return await exception_handler.handle_exception(
                 e,
-                context={"wallet_address": wallet_address, "transaction_count": len(transactions)},
+                context={
+                    "wallet_address": wallet_address,
+                    "transaction_count": len(transactions),
+                },
                 component="BatchTransactionProcessor",
                 operation="process_transaction_batch",
                 default_return=[],
@@ -113,11 +141,15 @@ class BatchTransactionProcessor:
         """Fast pre-filtering of transactions before deep processing"""
         # Filter 1: Skip already processed transactions
         unprocessed_txs = [
-            tx for tx in transactions if self.monitor.processed_transactions.get(tx["hash"]) is None
+            tx
+            for tx in transactions
+            if self.monitor.processed_transactions.get(tx["hash"]) is None
         ]
 
         # Filter 2: Skip transactions to non-Polymarket contracts
-        polymarket_contract_set = {normalize_address(c) for c in self.monitor.polymarket_contracts}
+        polymarket_contract_set = {
+            normalize_address(c) for c in self.monitor.polymarket_contracts
+        }
         relevant_txs = [
             tx
             for tx in unprocessed_txs
@@ -129,7 +161,8 @@ class BatchTransactionProcessor:
         recent_txs = [
             tx
             for tx in relevant_txs
-            if abs(current_time - int(tx.get("timeStamp", current_time))) < 3600  # Last hour
+            if abs(current_time - int(tx.get("timeStamp", current_time)))
+            < 3600  # Last hour
         ]
 
         logger.debug(
@@ -181,7 +214,9 @@ class BatchTransactionProcessor:
 
         return {tx["hash"]: float(score) for tx, score in zip(transactions, scores)}
 
-    async def _batch_pattern_scoring(self, transactions: List[Dict[str, Any]]) -> np.ndarray:
+    async def _batch_pattern_scoring(
+        self, transactions: List[Dict[str, Any]]
+    ) -> np.ndarray:
         """Batch pattern matching for trade detection"""
         pattern_scores = np.zeros(len(transactions))
 
@@ -221,7 +256,7 @@ class BatchTransactionProcessor:
         results = []
         semaphore = asyncio.Semaphore(10)  # Limit concurrent operations
 
-        async def limited_task(task):
+        async def limited_task(task: Any) -> Any:
             async with semaphore:
                 return await task
 
@@ -246,14 +281,17 @@ class BatchTransactionProcessor:
             if timestamp > datetime.now(timezone.utc) - timedelta(seconds=30):
                 return None
 
-            # Parse trade (optimized version)
+            # Parse trade (optimized version) - use Decimal for monetary values
+            value_wei = int(tx.get("value", 0))
             trade = {
                 "tx_hash": tx["hash"],
                 "timestamp": timestamp,
                 "block_number": int(tx.get("blockNumber", 0)),
                 "wallet_address": normalize_address(tx["from"]),
                 "contract_address": normalize_address(tx["to"]),
-                "value_eth": float(tx.get("value", 0)) / 10**18 if tx.get("value") else 0,
+                "value_eth": float(Decimal(value_wei) / Decimal(10**18))
+                if value_wei > 0
+                else 0.0,
                 "gas_used": int(tx.get("gasUsed", 0)),
                 "gas_price": int(tx.get("gasPrice", 0)),
                 "input_data": tx.get("input", "")[:200],  # Truncate for performance
@@ -298,11 +336,15 @@ class BatchTransactionProcessor:
             unique_trades.append(trade)
 
         if len(trades) != len(unique_trades):
-            logger.debug(f"🧹 Deduplicated {len(trades)} -> {len(unique_trades)} trades")
+            logger.debug(
+                f"🧹 Deduplicated {len(trades)} -> {len(unique_trades)} trades"
+            )
 
         return unique_trades
 
-    async def _batch_update_processed_transactions(self, trades: List[Dict[str, Any]]):
+    async def _batch_update_processed_transactions(
+        self, trades: List[Dict[str, Any]]
+    ) -> None:
         """Update processed transactions in batch"""
         now = time.time()
         for trade in trades:
@@ -334,15 +376,22 @@ class BatchTransactionProcessor:
         gas_price = int(tx.get("gasPrice", 0))
         return "BUY" if gas_price > 50000000000 else "SELL"  # 50 gwei threshold
 
-    def _extract_trade_amount_batch(self, tx: Dict[str, Any]) -> float:
-        """Extract trade amount"""
-        value = float(tx.get("value", 0))
-        return value / 10**18 if value > 0 else 1.0  # Default to 1 if no value
+    def _extract_trade_amount_batch(self, tx: Dict[str, Any]) -> Decimal:
+        """Extract trade amount using Decimal for precision"""
+        value_wei = int(tx.get("value", 0))
+        if value_wei > 0:
+            # Convert wei to USDC (6 decimals) using Decimal
+            return Decimal(value_wei) / Decimal(10**18)
+        else:
+            # Default to 1.0 if no value
+            return Decimal("1.0")
 
-    def _extract_trade_price_batch(self, tx: Dict[str, Any]) -> float:
-        """Extract trade price"""
+    def _extract_trade_price_batch(self, tx: Dict[str, Any]) -> Decimal:
+        """Extract trade price using Decimal for precision"""
         # Placeholder - would decode from actual transaction data
-        return 0.5 + (hash(tx.get("hash", "")) % 100) / 200  # Random-ish price
+        # Using hash to generate pseudo-random price for demonstration
+        price_value = 0.5 + (hash(tx.get("hash", "")) % 100) / 200
+        return Decimal(str(price_value))
 
     def _extract_token_id(self, tx: Dict[str, Any]) -> str:
         """Extract token ID from transaction"""
@@ -379,7 +428,9 @@ class WalletMonitor:
 
         # Initialize rate-limited clients
         if self.polygonscan_api_key:
-            self.polygonscan_client = RateLimitedPolygonscanClient(self.polygonscan_api_key)
+            self.polygonscan_client = RateLimitedPolygonscanClient(
+                self.polygonscan_api_key
+            )
         else:
             self.polygonscan_client = None
 
@@ -437,7 +488,9 @@ class WalletMonitor:
         self.api_call_times = BoundedCache(max_size=1000, ttl_seconds=86400)  # 24 hours
 
         # Wallet trade tracking for batch processing
-        self.wallet_trade_history = BoundedCache(max_size=10000, ttl_seconds=604800)  # 7 days
+        self.wallet_trade_history = BoundedCache(
+            max_size=10000, ttl_seconds=604800
+        )  # 7 days
         self.wallet_last_trade_time: Dict[str, datetime] = {}
 
         # Initialize trade history for all target wallets
@@ -445,7 +498,9 @@ class WalletMonitor:
             self.wallet_trade_history.set(wallet, [])
             self.wallet_last_trade_time[wallet] = datetime.min
 
-        logger.info(f"Initialized wallet monitor for {len(self.target_wallets)} wallets")
+        logger.info(
+            f"Initialized wallet monitor for {len(self.target_wallets)} wallets"
+        )
 
     async def update_target_wallets(
         self,
@@ -466,7 +521,9 @@ class WalletMonitor:
             if position_size_factors:
                 self.position_size_factors = position_size_factors
 
-            logger.info(f"Updated target wallets: {old_count} → {len(self.target_wallets)}")
+            logger.info(
+                f"Updated target wallets: {old_count} → {len(self.target_wallets)}"
+            )
 
             # Clear transaction cache for new wallets
             if hasattr(self, "transaction_cache"):
@@ -551,7 +608,9 @@ class WalletMonitor:
 
                 # Use batch processor for efficient trade detection
                 batch_processor = BatchTransactionProcessor(self)
-                trades = await batch_processor.process_transaction_batch(transactions, wallet)
+                trades = await batch_processor.process_transaction_batch(
+                    transactions, wallet
+                )
 
                 if trades:
                     logger.info(
@@ -584,7 +643,9 @@ class WalletMonitor:
             # Log summary
             if market_maker_analyses:
                 market_makers = sum(
-                    1 for a in market_maker_analyses if a.get("classification") == "market_maker"
+                    1
+                    for a in market_maker_analyses
+                    if a.get("classification") == "market_maker"
                 )
                 logger.info(
                     f"🎯 Market maker analysis complete: {market_makers}/{len(market_maker_analyses)} potential market makers detected"
@@ -670,20 +731,22 @@ class WalletMonitor:
         try:
             validated_wallet = InputValidator.validate_wallet_address(wallet_address)
         except ValidationError as e:
-            logger.error(f"❌ Invalid wallet address {wallet_address}: {e}")
+            logger.error(
+                f"❌ Invalid wallet address {mask_wallet_address(wallet_address)}: {e}"
+            )
             return []
 
         if not self.polygonscan_client:
-            logger.warning("No Polygonscan API key configured. Using basic Web3 monitoring.")
+            logger.warning(
+                "No Polygonscan API key configured. Using basic Web3 monitoring."
+            )
             return await self._get_basic_transactions(validated_wallet, start_block)
 
         logger.debug(f"Using Polygonscan v2 API for {validated_wallet}")
 
         try:
             # Create cache key for performance optimization
-            cache_key = (
-                f"{normalize_address(validated_wallet)}_{start_block or 0}_{end_block or 'latest'}"
-            )
+            cache_key = f"{normalize_address(validated_wallet)}_{start_block or 0}_{end_block or 'latest'}"
             now = time.time()
 
             # Check cache first (significant performance boost)
@@ -715,7 +778,9 @@ class WalletMonitor:
             max_blocks = 2000  # Limit to 2000 blocks per call to prevent timeouts
             if end_block - start_block > max_blocks:
                 end_block = start_block + max_blocks
-                logger.debug(f"Limited block range to {max_blocks} blocks for performance")
+                logger.debug(
+                    f"Limited block range to {max_blocks} blocks for performance"
+                )
 
             # Prepare v2 API request
             url = self._get_polygonscan_api_url()
@@ -738,7 +803,9 @@ class WalletMonitor:
             connector = aiohttp.TCPConnector(limit=10, ttl_dns_cache=300)
             timeout = aiohttp.ClientTimeout(total=15, connect=5)
 
-            async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
+            async with aiohttp.ClientSession(
+                connector=connector, timeout=timeout
+            ) as session:
                 async with session.get(url, params=params, headers=headers) as response:
                     call_time = time.time() - call_start
                     self.api_call_times.set(str(now), call_time)
@@ -750,13 +817,16 @@ class WalletMonitor:
                         InputValidator.validate_api_response(data, dict)
 
                         # Handle both v1 and v2 API response formats
-                        if (data.get("status") == "1" and data.get("message") == "OK") or data.get(
-                            "status"
-                        ) == "success":
+                        if (
+                            data.get("status") == "1" and data.get("message") == "OK"
+                        ) or data.get("status") == "success":
                             transactions = data.get("result", [])
 
                             # Handle different response structures
-                            if isinstance(transactions, dict) and "transactions" in transactions:
+                            if (
+                                isinstance(transactions, dict)
+                                and "transactions" in transactions
+                            ):
                                 transactions = transactions["transactions"]
 
                             if not isinstance(transactions, list):
@@ -781,7 +851,9 @@ class WalletMonitor:
                             )
                             return transactions
                         else:
-                            error_msg = data.get("message", data.get("error", "Unknown error"))
+                            error_msg = data.get(
+                                "message", data.get("error", "Unknown error")
+                            )
                             logger.warning(
                                 f"Polygonscan v2 API error for {validated_wallet}: {error_msg} (status: {data.get('status')})"
                             )
@@ -790,7 +862,9 @@ class WalletMonitor:
                         # Try to get error details from response
                         try:
                             error_data = await response.json()
-                            error_msg = error_data.get("message", f"HTTP {response.status}")
+                            error_msg = error_data.get(
+                                "message", f"HTTP {response.status}"
+                            )
                         except (ValueError, aiohttp.ContentTypeError):
                             error_msg = f"HTTP {response.status}"
 
@@ -875,7 +949,7 @@ class WalletMonitor:
         cached_data = self.transaction_cache.get(cache_key)
         if cached_data is not None:
             # cache_hits tracked internally by BoundedCache
-            logger.debug(f"Cache hit for {wallet_address}")
+            logger.debug(f"Cache hit for {mask_wallet_address(wallet_address)}")
             return cached_data
         return None
 
@@ -928,7 +1002,9 @@ class WalletMonitor:
             transactions = []
 
             # Limit block range for performance (only check recent blocks)
-            for block_num in range(max(start_block, current_block - 50), current_block + 1):
+            for block_num in range(
+                max(start_block, current_block - 50), current_block + 1
+            ):
                 try:
                     block = self.web3.eth.get_block(block_num, full_transactions=True)
                     for tx in block.transactions:
@@ -970,7 +1046,12 @@ class WalletMonitor:
             )
             return transactions
 
-        except (ConnectionError, TimeoutError, asyncio.TimeoutError, aiohttp.ClientError) as e:
+        except (
+            ConnectionError,
+            TimeoutError,
+            asyncio.TimeoutError,
+            aiohttp.ClientError,
+        ) as e:
             return await exception_handler.handle_exception(
                 e,
                 context={"wallet_address": wallet_address},
@@ -978,7 +1059,13 @@ class WalletMonitor:
                 operation="basic_transaction_monitoring",
                 default_return=[],
             )
-        except (Web3ValidationError, BadFunctionCallOutput, ValueError, TypeError, KeyError) as e:
+        except (
+            Web3ValidationError,
+            BadFunctionCallOutput,
+            ValueError,
+            TypeError,
+            KeyError,
+        ) as e:
             return await exception_handler.handle_exception(
                 e,
                 context={"wallet_address": wallet_address},
@@ -995,7 +1082,9 @@ class WalletMonitor:
                 default_return=[],
             )
 
-    def detect_polymarket_trades(self, transactions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def detect_polymarket_trades(
+        self, transactions: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """Detect Polymarket trades with input validation"""
         polymarket_trades = []
 
@@ -1016,7 +1105,8 @@ class WalletMonitor:
                 # Fast contract check (performance optimization)
                 to_address = validated_tx["to"]
                 if to_address not in [
-                    normalize_address(contract) for contract in self.polymarket_contracts
+                    normalize_address(contract)
+                    for contract in self.polymarket_contracts
                 ]:
                     continue
 
@@ -1080,13 +1170,17 @@ class WalletMonitor:
                 return None
 
             # Basic trade structure - this would need actual ABI decoding in production
+            # Use Decimal for monetary values
+            value_wei = int(tx.get("value", 0)) if tx.get("value") else 0
             trade = {
                 "tx_hash": tx["hash"],
                 "timestamp": timestamp,
                 "block_number": int(tx.get("blockNumber", 0)),
                 "wallet_address": normalize_address(tx["from"]),
                 "contract_address": normalize_address(tx["to"]),
-                "value_eth": float(tx.get("value", 0)) / 10**18 if tx.get("value") else 0,
+                "value_eth": float(Decimal(value_wei) / Decimal(10**18))
+                if value_wei > 0
+                else 0.0,
                 "gas_used": int(tx.get("gasUsed", 0)) if tx.get("gasUsed") else 0,
                 "gas_price": int(tx.get("gasPrice", 0)) if tx.get("gasPrice") else 0,
                 "input_data": tx.get("input", "")[:1000],  # Truncate for performance
@@ -1096,7 +1190,9 @@ class WalletMonitor:
                 "market_id": "unknown",  # Placeholder
                 "outcome_index": 0,  # Placeholder
                 "side": "BUY",  # Placeholder
-                "amount": float(tx.get("value", 0)) / 10**18 if tx.get("value") else 0,
+                "amount": float(Decimal(value_wei) / Decimal(10**18))
+                if value_wei > 0
+                else 0.0,
                 "price": 0.5,  # Placeholder
                 "token_id": "unknown",  # Placeholder
             }
@@ -1104,7 +1200,9 @@ class WalletMonitor:
             return trade
 
         except (ValueError, TypeError, KeyError, IndexError) as e:
-            logger.error(f"Data parsing error in parse_polymarket_trade: {str(e)[:100]}")
+            logger.error(
+                f"Data parsing error in parse_polymarket_trade: {str(e)[:100]}"
+            )
             return None
         except (ValueError, TypeError, KeyError, IndexError) as e:
             exception_handler.log_exception(
@@ -1145,7 +1243,7 @@ class WalletMonitor:
 
             # Check cache sizes are reasonable
             cache_healthy = True
-            if hasattr(self, 'transaction_cache'):
+            if hasattr(self, "transaction_cache"):
                 cache_size = len(self.transaction_cache.cache)
                 cache_healthy = cache_size < 10000  # Arbitrary large number
 
@@ -1155,11 +1253,15 @@ class WalletMonitor:
             healthy = has_wallets and cache_healthy and recent_monitor
             status = "✅ HEALTHY" if healthy else "❌ UNHEALTHY"
 
-            logger.debug(f"Wallet Monitor Health: {status} - Wallets: {has_wallets}, Cache OK: {cache_healthy}, Recent Monitor: {recent_monitor}")
+            logger.debug(
+                f"Wallet Monitor Health: {status} - Wallets: {has_wallets}, Cache OK: {cache_healthy}, Recent Monitor: {recent_monitor}"
+            )
             return healthy
 
         except Exception as e:
-            logger.error(f"Wallet monitor health check failed: {str(e)[:100]}")
+            logger.error(
+                f"Wallet monitor health check failed: {str(e)[:100]}", exc_info=True
+            )
             return False
 
     def get_performance_stats(self) -> Dict[str, Any]:
@@ -1191,7 +1293,9 @@ class WalletMonitor:
             "cache_hit_rate": tx_cache_stats["hit_ratio"],
             "avg_api_call_time": avg_call_time,
             "transaction_cache_size": tx_cache_stats["size"],
-            "processed_transactions_size": self.processed_transactions.get_stats()["size"],
+            "processed_transactions_size": self.processed_transactions.get_stats()[
+                "size"
+            ],
             "total_api_calls": self.api_call_times.get_stats()["size"],
             "batch_processing_stats": batch_stats,
         }
@@ -1199,7 +1303,9 @@ class WalletMonitor:
     def _should_run_market_maker_analysis(self) -> bool:
         """Determine if market maker analysis should run based on schedule and data changes"""
         # Run analysis weekly or if we haven't run it in the last 7 days
-        last_analysis_file = self.market_maker_detector.behavior_dir / "last_analysis.txt"
+        last_analysis_file = (
+            self.market_maker_detector.behavior_dir / "last_analysis.txt"
+        )
 
         try:
             if last_analysis_file.exists():
@@ -1221,7 +1327,9 @@ class WalletMonitor:
             )
             return True
 
-    async def _analyze_wallet_behavior(self, wallet_address: str) -> Optional[Dict[str, Any]]:
+    async def _analyze_wallet_behavior(
+        self, wallet_address: str
+    ) -> Optional[Dict[str, Any]]:
         """Analyze market maker behavior for a single wallet"""
         try:
             # Get extended trade history for analysis (longer period than monitoring)
@@ -1231,7 +1339,9 @@ class WalletMonitor:
             )
 
             if not extended_trades:
-                logger.debug(f"No trade history found for {wallet_address}")
+                logger.debug(
+                    f"No trade history found for {mask_wallet_address(wallet_address)}"
+                )
                 return None
 
             # Perform market maker analysis
@@ -1240,7 +1350,9 @@ class WalletMonitor:
             )
 
             # Update last analysis timestamp
-            last_analysis_file = self.market_maker_detector.behavior_dir / "last_analysis.txt"
+            last_analysis_file = (
+                self.market_maker_detector.behavior_dir / "last_analysis.txt"
+            )
             with open(last_analysis_file, "w") as f:
                 f.write(datetime.now(timezone.utc).isoformat())
 
@@ -1301,7 +1413,9 @@ class WalletMonitor:
             # Filter transactions by time and convert to trade format
             trade_history = []
             for tx in transactions:
-                tx_time = datetime.fromtimestamp(int(tx.get("timeStamp", 0)), tz=timezone.utc)
+                tx_time = datetime.fromtimestamp(
+                    int(tx.get("timeStamp", 0)), tz=timezone.utc
+                )
                 if start_time <= tx_time <= end_time:
                     trade = self.parse_polymarket_trade(tx)
                     if trade:
@@ -1351,9 +1465,13 @@ class WalletMonitor:
         """Get summary of market maker analysis for all wallets"""
         return await self.market_maker_detector.get_market_maker_summary()
 
-    async def get_wallet_classification_report(self, wallet_address: str) -> Dict[str, Any]:
+    async def get_wallet_classification_report(
+        self, wallet_address: str
+    ) -> Dict[str, Any]:
         """Get detailed classification report for a specific wallet"""
-        return await self.market_maker_detector.get_wallet_classification_report(wallet_address)
+        return await self.market_maker_detector.get_wallet_classification_report(
+            wallet_address
+        )
 
     async def detect_behavior_changes(self) -> List[Dict[str, Any]]:
         """Detect wallets with recent classification changes"""

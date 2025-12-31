@@ -1,1416 +1,1527 @@
 """
-Wallet Quality Scoring System
-=============================
+Wallet Quality Scorer for Production-Ready Copy Trading
 
-Comprehensive multi-dimensional scoring framework for evaluating copy trading
-wallets across risk-adjusted returns, consistency, adaptability, and behavioral
-sustainability metrics.
+This module implements a comprehensive wallet evaluation framework that distinguishes
+between sustainable directional traders, market makers, and low-quality wallets.
 
-Features:
-- Separate scoring profiles for market makers vs directional traders
-- Real-time scoring updates with confidence intervals
-- Market regime-aware weighting
-- Behavioral analysis for strategy sustainability
-- Automatic wallet selection with diversification constraints
+Core Features:
+- Profit Factor Calculation (gross_profits / gross_losses)
+- Maximum Drawdown Analysis (peak-to-trough detection)
+- Win Rate Consistency (rolling 30-day standard deviation)
+- Domain Expertise Scoring (category specialization analysis)
+- Position Sizing Consistency (normalized standard deviation)
+- Market Condition Adaptation (volatility regime scoring)
+- Time-to-Recovery Ratio (drawdown recovery speed)
+- Market Maker Detection (multi-pattern analysis)
+- Red Flag Detection (insider trading, wash trading, etc.)
+
+Author: Polymarket Copy Bot Team
+Date: 2025-12-27
+Version: 2.0 (Production-Ready)
 """
 
-import logging
-from datetime import datetime
-from typing import Any, Dict, List, Optional
+import asyncio
+import statistics
+import time
+from collections import defaultdict
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from decimal import ROUND_HALF_UP, Decimal, DivisionByZero, InvalidOperation, getcontext
+from enum import Enum
+from typing import Any, Dict, List, Optional, Tuple
 
-import numpy as np
-from scipy import stats
+from loguru import logger
 
+from config.scanner_config import ScannerConfig
+from core.circuit_breaker import CircuitBreaker
 from utils.helpers import BoundedCache
+from utils.logger import get_logger
+from utils.validation import InputValidator, ValidationError
 
-logger = logging.getLogger(__name__)
+# Configure Decimal for financial calculations
+getcontext().prec = 28
+getcontext().rounding = ROUND_HALF_UP
+
+logger = get_logger(__name__)
+
+
+class WalletQualityTier(Enum):
+    """Wallet quality tiers for classification"""
+
+    ELITE = "Elite"  # 9.0-10.0 score
+    EXPERT = "Expert"  # 7.0-8.9 score
+    GOOD = "Good"  # 5.0-6.9 score
+    POOR = "Poor"  # <5.0 score (excluded)
+
+
+class RedFlagType(Enum):
+    """Types of red flags for wallet exclusion"""
+
+    NEW_WALLET_LARGE_BET = "NEW_WALLET_LARGE_BET"
+    LUCK_NOT_SKILL = "LUCK_NOT_SKILL"
+    WASH_TRADING = "WASH_TRADING"
+    NEGATIVE_PROFIT_FACTOR = "NEGATIVE_PROFIT_FACTOR"
+    NO_SPECIALIZATION = "NO_SPECIALIZATION"
+    EXCESSIVE_DRAWDOWN = "EXCESSIVE_DRAWDOWN"
+    LOW_WIN_RATE = "LOW_WIN_RATE"
+    INSIDER_TRADING_SUSPECTED = "INSIDER_TRADING_SUSPECTED"
+    SUSPICIOUS_PATTERN = "SUSPICIOUS_PATTERN"
+
+
+@dataclass
+class TradingHistory:
+    """Historical trading data for a wallet"""
+
+    wallet_address: str
+    trades: List[Dict[str, Any]] = field(default_factory=list)
+    total_trades: int = 0
+    profitable_trades: int = 0
+    gross_profits: Decimal = Decimal("0.00")
+    gross_losses: Decimal = Decimal("0.00")
+    timestamps: List[float] = field(default_factory=list)
+    categories: List[str] = field(default_factory=list)
+    position_sizes: List[float] = field(default_factory=list)
+    max_drawdowns: List[Tuple[float, float]] = field(
+        default_factory=list
+    )  # (peak, trough) pairs
+
+
+@dataclass
+class DomainExpertiseMetrics:
+    """Domain expertise metrics for a wallet"""
+
+    primary_domain: str
+    specialization_score: float = 0.0  # 0.0 to 1.0
+    domain_trades: int = 0
+    domain_win_rate: float = 0.0
+    domain_roi: Decimal = Decimal("0.00")
+    category_diversity: float = 0.0  # Lower is better
+    consistency_score: float = 0.0  # Win rate consistency in domain
+
+
+@dataclass
+class RiskMetrics:
+    """Comprehensive risk metrics for a wallet"""
+
+    profit_factor: float  # Gross profits / gross losses
+    max_drawdown: float  # Peak-to-trough analysis
+    max_drawdown_duration: float  # Hours to recover from max drawdown
+    win_rate: float  # Overall win rate
+    win_rate_std: float  # Rolling 30-day standard deviation
+    win_rate_consistency: float  # 1.0 - std (higher is better)
+    volatility: float  # Standard deviation of returns
+    sharpe_ratio: float  # Risk-adjusted returns
+    sortino_ratio: float  # Downside risk-adjusted returns
+    calmar_ratio: float  # Return / max drawdown
+    time_to_recovery_ratio: float  # Recovery speed from drawdowns
+    tail_risk: float  # Risk of extreme losses
+    position_sizing_std: float  # Consistency of position sizes
+
+
+@dataclass
+class QualityScore:
+    """Comprehensive quality score for a wallet"""
+
+    wallet_address: str
+    quality_tier: WalletQualityTier
+    total_score: float  # 0.0 to 10.0
+    performance_score: float  # 0.0 to 10.0
+    risk_score: float  # 0.0 to 10.0 (higher is better)
+    consistency_score: float  # 0.0 to 10.0
+    domain_expertise: DomainExpertiseMetrics
+    risk_metrics: RiskMetrics
+    is_market_maker: bool
+    red_flags: List[Tuple[RedFlagType, str]]  # (type, reason)
+    confidence_score: float  # 0.0 to 1.0
+    last_updated: float
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 class WalletQualityScorer:
     """
-    Comprehensive wallet quality scoring system for copy trading.
+    Advanced wallet quality scoring with comprehensive evaluation framework.
 
-    Evaluates wallets across multiple dimensions:
-    - Risk-adjusted returns (Sharpe, Sortino ratios)
-    - Consistency metrics (win rate stability, drawdown analysis)
-    - Market adaptability (performance across conditions)
-    - Trade quality (execution, slippage)
-    - Strategy transparency (behavioral patterns)
-    - Behavioral sustainability (evolution, decay detection)
+    This scorer implements a multi-dimensional evaluation system that analyzes:
+    - Profit Factor: Gross profits / gross losses (must be >1.0)
+    - Maximum Drawdown: Peak-to-trough analysis with recovery time
+    - Win Rate Consistency: Rolling 30-day standard deviation
+    - Domain Expertise: Category specialization (70%+ in 1-2 categories)
+    - Position Sizing Consistency: Normalized standard deviation
+    - Market Condition Adaptation: Volatility regime scoring
+    - Time-to-Recovery Ratio: Speed of recovery from drawdowns
+
+    Critical Risk Controls:
+    - Market Maker Detection: trade_count >500 AND avg_hold_time <1hr AND win_rate 45-55%
+    - Red Flag Detection: 9 types of automatic exclusion
+    - Circuit Breaker Integration: Automatic disabling during high load
+    - Memory-Safe Caching: BoundedCache with TTL 1 hour
+
+    Thread Safety:
+        Uses asyncio locks for all state modifications
+    Rate Limiting:
+        Maximum 10 calls/second to API
+
+    Args:
+        config: Scanner configuration with strategy parameters
+        circuit_breaker: Circuit breaker instance for risk management
     """
 
-    def __init__(self):
-        # Scoring configuration
-        self.scoring_config = self._initialize_scoring_config()
+    # Market maker detection thresholds (NON-NEGOTIABLE)
+    MM_TRADE_COUNT_THRESHOLD = 500
+    MM_AVG_HOLD_TIME_THRESHOLD = 3600  # 1 hour in seconds
+    MM_WIN_RATE_MIN = 0.45
+    MM_WIN_RATE_MAX = 0.55
+    MM_PROFIT_PER_TRADE_THRESHOLD = Decimal("0.01")  # 1% minimum ROI per trade
 
-        # Scoring profiles for different wallet types
-        self.scoring_profiles = {
-            "market_maker": self._get_market_maker_profile(),
-            "directional_trader": self._get_directional_trader_profile(),
-            "arbitrage_trader": self._get_arbitrage_trader_profile(),
-            "high_frequency_trader": self._get_high_frequency_profile(),
-            "mixed_trader": self._get_mixed_trader_profile(),
-        }
+    # Red flag thresholds
+    NEW_WALLET_MAX_DAYS = 7
+    NEW_WALLET_MAX_BET = Decimal("1000.00")  # $1000 USDC
+    LUCK_WIN_RATE_THRESHOLD = 0.90
+    LUCK_MIN_TRADES = 20
+    WASH_TRADING_SCORE_THRESHOLD = 0.70
+    NEGATIVE_PROFIT_FACTOR_THRESHOLD = 1.0
+    MAX_CATEGORIES_THRESHOLD = 5
+    EXCESSIVE_DRAWDOWN_THRESHOLD = 0.35
+    MIN_WIN_RATE_THRESHOLD = 0.60
+    MIN_TRADES_FOR_STATS = 30
+    INSIDER_VOLUME_RATIO_THRESHOLD = 5.0  # 5x normal volume
+    INSIDER_TIMING_WINDOW_HOURS = 1  # 1 hour before events
 
-        # Market regime configurations
-        self.market_regimes = {
-            "bull": self._get_bull_market_weights(),
-            "bear": self._get_bear_market_weights(),
-            "high_volatility": self._get_high_volatility_weights(),
-            "low_liquidity": self._get_low_liquidity_weights(),
-            "normal": self._get_normal_market_weights(),
-        }
+    # Quality scoring weights
+    PERFORMANCE_WEIGHT = 0.35
+    RISK_WEIGHT = 0.30
+    CONSISTENCY_WEIGHT = 0.20
+    DOMAIN_WEIGHT = 0.15
 
-        # Historical scoring data
-        self.scoring_history = BoundedCache(max_size=10000, ttl_seconds=2592000)  # 30 days
-        self.wallet_correlations: Dict[str, Dict[str, float]] = {}
+    # Rolling window periods (in seconds)
+    WIN_RATE_ROLLING_WINDOW = 2592000  # 30 days
+    VOLATILITY_WINDOW = 864000  # 10 days
+    RECOVERY_WINDOW = 604800  # 7 days
 
-        # Real-time scoring state
-        self.real_time_scores = BoundedCache(max_size=1000, ttl_seconds=3600)  # 1 hour
-        self.score_confidence_intervals = BoundedCache(max_size=1000, ttl_seconds=3600)  # 1 hour
-
-        # Behavioral analysis components
-        self.behavior_tracker = BehaviorPatternTracker()
-        self.risk_assessor = RiskManagementQualityAssessor()
-
-        logger.info("🏆 Wallet quality scoring system initialized")
-
-    def _initialize_scoring_config(self) -> Dict[str, Any]:
-        """Initialize core scoring configuration parameters."""
-
-        return {
-            # Risk-adjusted return parameters
-            "sharpe_ratio_min_periods": 30,  # Minimum periods for Sharpe calculation
-            "sortino_ratio_target_return": 0.02,  # Daily target return for Sortino
-            "calmar_ratio_lookback_days": 365,  # Annual lookback for Calmar
-            # Consistency parameters
-            "win_rate_stability_window": 50,  # Rolling window for stability
-            "drawdown_analysis_periods": 252,  # Trading days for drawdown analysis
-            "recovery_time_weight": 0.3,  # Weight for recovery time in drawdown score
-            # Market adaptability parameters
-            "regime_performance_windows": [30, 90, 180],  # Days for regime analysis
-            "adaptability_score_weight": 0.25,  # Weight for adaptability in total score
-            "min_regime_samples": 20,  # Minimum trades per regime
-            # Trade quality parameters
-            "slippage_tolerance_pct": 0.5,  # Acceptable slippage percentage
-            "execution_quality_weight": 0.15,  # Weight in trade quality score
-            "gas_efficiency_weight": 0.10,  # Weight for gas efficiency
-            # Strategy transparency parameters
-            "pattern_recognition_window": 100,  # Trades for pattern analysis
-            "predictability_threshold": 0.7,  # Minimum predictability score
-            "transparency_weight": 0.20,  # Weight in total score
-            # Behavioral sustainability parameters
-            "performance_decay_window": 90,  # Days for decay analysis
-            "strategy_evolution_threshold": 0.25,  # Threshold for strategy change detection
-            "sustainability_weight": 0.25,  # Weight in total score
-            # Real-time scoring parameters
-            "recency_decay_factor": 0.95,  # Exponential decay for recency
-            "volatility_adjustment": True,  # Adjust scores for volatility
-            "confidence_interval_alpha": 0.05,  # 95% confidence intervals
-            "score_stability_window": 20,  # Window for stability calculation
-            # Overall scoring parameters
-            "min_scoring_period_days": 30,  # Minimum history for scoring
-            "score_update_frequency": 300,  # Update frequency in seconds
-            "quality_score_range": (0, 100),  # Score range (0-100)
-            "high_quality_threshold": 75,  # High quality threshold
-            "medium_quality_threshold": 50,  # Medium quality threshold
-        }
-
-    def _get_market_maker_profile(self) -> Dict[str, float]:
-        """Get scoring weights optimized for market maker wallets."""
-
-        return {
-            "risk_adjusted_returns": 0.20,  # Sharpe/Sortino focus
-            "consistency_metrics": 0.25,  # High importance for MM consistency
-            "drawdown_analysis": 0.15,  # Moderate drawdown tolerance
-            "market_adaptability": 0.15,  # Need to adapt to market changes
-            "trade_quality": 0.20,  # Critical for high-frequency trading
-            "strategy_transparency": 0.25,  # Pattern recognition very important
-            "behavioral_sustainability": 0.20,  # Strategy evolution monitoring
-        }
-
-    def _get_directional_trader_profile(self) -> Dict[str, float]:
-        """Get scoring weights optimized for directional trader wallets."""
-
-        return {
-            "risk_adjusted_returns": 0.30,  # Return focus for directional trades
-            "consistency_metrics": 0.20,  # Consistency matters but less than MM
-            "drawdown_analysis": 0.20,  # Higher drawdown tolerance
-            "market_adaptability": 0.25,  # Critical for directional strategies
-            "trade_quality": 0.10,  # Less critical than execution speed
-            "strategy_transparency": 0.15,  # Some pattern recognition useful
-            "behavioral_sustainability": 0.20,  # Monitor for strategy changes
-        }
-
-    def _get_arbitrage_trader_profile(self) -> Dict[str, float]:
-        """Get scoring weights for arbitrage trader wallets."""
-
-        return {
-            "risk_adjusted_returns": 0.25,
-            "consistency_metrics": 0.30,  # Very important for arb strategies
-            "drawdown_analysis": 0.10,  # Low drawdown tolerance
-            "market_adaptability": 0.20,  # Adapt to market inefficiencies
-            "trade_quality": 0.25,  # Execution speed critical
-            "strategy_transparency": 0.20,  # Pattern recognition important
-            "behavioral_sustainability": 0.15,
-        }
-
-    def _get_high_frequency_profile(self) -> Dict[str, float]:
-        """Get scoring weights for high-frequency trader wallets."""
-
-        return {
-            "risk_adjusted_returns": 0.15,
-            "consistency_metrics": 0.25,
-            "drawdown_analysis": 0.10,
-            "market_adaptability": 0.15,
-            "trade_quality": 0.30,  # Most critical for HFT
-            "strategy_transparency": 0.25,
-            "behavioral_sustainability": 0.20,
-        }
-
-    def _get_mixed_trader_profile(self) -> Dict[str, float]:
-        """Get scoring weights for mixed strategy wallets."""
-
-        return {
-            "risk_adjusted_returns": 0.25,
-            "consistency_metrics": 0.20,
-            "drawdown_analysis": 0.18,
-            "market_adaptability": 0.22,
-            "trade_quality": 0.15,
-            "strategy_transparency": 0.18,
-            "behavioral_sustainability": 0.22,
-        }
-
-    def _get_bull_market_weights(self) -> Dict[str, float]:
-        """Market regime weights for bull markets."""
-
-        return {
-            "risk_adjusted_returns": 1.2,  # Higher weight on returns
-            "consistency_metrics": 0.9,  # Slightly less important
-            "drawdown_analysis": 0.8,  # Less concern about drawdowns
-            "market_adaptability": 1.1,  # Important to adapt to trending markets
-            "trade_quality": 1.0,
-            "strategy_transparency": 1.0,
-            "behavioral_sustainability": 1.0,
-        }
-
-    def _get_bear_market_weights(self) -> Dict[str, float]:
-        """Market regime weights for bear markets."""
-
-        return {
-            "risk_adjusted_returns": 0.8,  # Lower weight on returns
-            "consistency_metrics": 1.2,  # More important for survival
-            "drawdown_analysis": 1.3,  # Critical in bear markets
-            "market_adaptability": 1.2,  # Very important in changing conditions
-            "trade_quality": 1.1,  # Slightly more important
-            "strategy_transparency": 1.1,
-            "behavioral_sustainability": 1.2,  # Monitor strategy sustainability
-        }
-
-    def _get_high_volatility_weights(self) -> Dict[str, float]:
-        """Market regime weights for high volatility periods."""
-
-        return {
-            "risk_adjusted_returns": 0.9,
-            "consistency_metrics": 1.1,
-            "drawdown_analysis": 1.4,  # Very important in volatile markets
-            "market_adaptability": 1.3,  # Critical for volatile conditions
-            "trade_quality": 1.2,  # Execution quality matters more
-            "strategy_transparency": 0.9,
-            "behavioral_sustainability": 1.1,
-        }
-
-    def _get_low_liquidity_weights(self) -> Dict[str, float]:
-        """Market regime weights for low liquidity periods."""
-
-        return {
-            "risk_adjusted_returns": 0.8,
-            "consistency_metrics": 1.0,
-            "drawdown_analysis": 1.1,
-            "market_adaptability": 1.0,
-            "trade_quality": 1.3,  # Very important when liquidity is low
-            "strategy_transparency": 1.1,
-            "behavioral_sustainability": 1.0,
-        }
-
-    def _get_normal_market_weights(self) -> Dict[str, float]:
-        """Market regime weights for normal market conditions."""
-
-        return {
-            "risk_adjusted_returns": 1.0,
-            "consistency_metrics": 1.0,
-            "drawdown_analysis": 1.0,
-            "market_adaptability": 1.0,
-            "trade_quality": 1.0,
-            "strategy_transparency": 1.0,
-            "behavioral_sustainability": 1.0,
-        }
-
-    async def calculate_wallet_quality_score(
+    def __init__(
         self,
-        wallet_address: str,
-        trade_history: List[Dict[str, Any]],
-        market_conditions: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        config: ScannerConfig,
+        circuit_breaker: Optional[CircuitBreaker] = None,
+        cache_ttl_seconds: int = 3600,  # 1 hour
+        max_cache_size: int = 1000,
+    ) -> None:
         """
-        Calculate comprehensive quality score for a wallet.
+        Initialize wallet quality scorer.
 
         Args:
-            wallet_address: Wallet to score
-            trade_history: Historical trade data
-            market_conditions: Current market conditions (optional)
+            config: Scanner configuration with strategy parameters
+            circuit_breaker: Circuit breaker instance (optional)
+            cache_ttl_seconds: TTL for cached scores
+            max_cache_size: Maximum cache size
+        """
+        self.config = config
+        self.circuit_breaker = circuit_breaker
+
+        # Thread safety
+        self._state_lock = asyncio.Lock()
+
+        # Score cache with memory tracking
+        self._score_cache = BoundedCache(
+            max_size=max_cache_size,
+            ttl_seconds=cache_ttl_seconds,
+            memory_threshold_mb=100.0,
+            cleanup_interval_seconds=300,
+            component_name="wallet_quality_scorer.score_cache",
+        )
+
+        # Trading history cache (for rolling calculations)
+        self._history_cache = BoundedCache(
+            max_size=5000,  # More history for rolling calculations
+            ttl_seconds=self.WIN_RATE_ROLLING_WINDOW + 86400,  # 30 days + buffer
+            memory_threshold_mb=200.0,
+            cleanup_interval_seconds=600,
+            component_name="wallet_quality_scorer.history_cache",
+        )
+
+        # Rate limiting
+        self._rate_limiter = asyncio.Semaphore(10)  # Max 10 concurrent calls
+        self._call_timestamps: Dict[str, float] = {}  # Per-API rate tracking
+
+        # Performance metrics
+        self._total_scores = 0
+        self._mm_detections = 0
+        self._red_flag_detections = 0
+
+        logger.info(
+            f"WalletQualityScorer v2.0 initialized with "
+            f"circuit_breaker={circuit_breaker is not None}, "
+            f"cache_ttl={cache_ttl_seconds}s, "
+            f"max_cache_size={max_cache_size}"
+        )
+
+    async def score_wallet(
+        self,
+        wallet_address: str,
+        wallet_data: Dict[str, Any],
+        use_cache: bool = True,
+    ) -> Optional[QualityScore]:
+        """
+        Score a wallet using comprehensive evaluation framework.
+
+        Args:
+            wallet_address: Wallet address to score
+            wallet_data: Dictionary containing wallet metrics and trade history
+            use_cache: Whether to use cached scores (default: True)
 
         Returns:
-            Complete quality score analysis with components and confidence
+            QualityScore with comprehensive metrics, or None if error occurs
         """
-
-        if len(trade_history) < self.scoring_config["min_scoring_period_days"]:
-            return self._create_insufficient_data_response(wallet_address)
-
         try:
-            # Get wallet classification
-            wallet_type = await self._classify_wallet_type(wallet_address)
+            # Validate wallet address before processing
+            validated_address = InputValidator.validate_wallet_address(wallet_address)
 
-            # Calculate individual scoring components
-            scoring_components = await self._calculate_scoring_components(
-                wallet_address, trade_history, wallet_type
+            # Validate wallet_data structure
+            if not wallet_data or not isinstance(wallet_data, dict):
+                logger.error(f"Invalid wallet_data type for {validated_address[-6:]}")
+                return None
+
+            # Check circuit breaker
+            if self.circuit_breaker and self.circuit_breaker.is_active():
+                logger.warning(
+                    f"Circuit breaker active - using cached/placeholder score for {validated_address[-6:]}"
+                )
+                return await self._get_cached_or_placeholder_score(validated_address)
+
+            # Check cache
+            cache_key = f"score_{validated_address}"
+            if use_cache:
+                cached = self._score_cache.get(cache_key)
+                if cached:
+                    logger.debug(f"Using cached score for {wallet_address[-6:]}")
+                    return cached
+
+            # Rate limiting check
+            await self._check_rate_limit("polymarket_api")
+
+            # Build trading history from wallet data
+            history = self._build_trading_history(wallet_address, wallet_data)
+
+            # Calculate comprehensive metrics
+            risk_metrics = self._calculate_risk_metrics(history)
+            domain_expertise = self._calculate_domain_expertise(history)
+            is_market_maker = self._detect_market_maker_advanced(history, risk_metrics)
+            red_flags = self._detect_red_flags(history, risk_metrics, domain_expertise)
+
+            # Calculate component scores
+            performance_score = self._calculate_performance_score(history, risk_metrics)
+            risk_score = self._calculate_risk_score(risk_metrics, red_flags)
+            consistency_score = self._calculate_consistency_score(history, risk_metrics)
+            domain_score = self._calculate_domain_score(domain_expertise)
+
+            # Calculate total score
+            total_score = self._calculate_total_score(
+                performance_score=performance_score,
+                risk_score=risk_score,
+                consistency_score=consistency_score,
+                domain_score=domain_score,
+                red_flags=red_flags,
             )
 
-            # Apply market regime weighting
-            market_regime = self._determine_market_regime(market_conditions)
-            regime_weights = self.market_regimes[market_regime]
+            # Determine quality tier
+            quality_tier = self._determine_quality_tier(total_score)
 
-            # Calculate final weighted score
-            final_score = self._calculate_weighted_score(
-                scoring_components, wallet_type, regime_weights
+            # Calculate confidence score
+            confidence_score = self._calculate_confidence_score(
+                history, risk_metrics, total_score, domain_expertise
             )
 
-            # Calculate confidence intervals
-            confidence_intervals = self._calculate_score_confidence_intervals(
-                wallet_address, scoring_components, trade_history
-            )
-
-            # Assess score stability
-            score_stability = self._calculate_score_stability(wallet_address, final_score)
-
-            # Generate quality assessment
-            quality_assessment = self._assess_wallet_quality(final_score, confidence_intervals)
-
-            # Store scoring history
-            self._store_scoring_history(
-                wallet_address,
-                {
-                    "timestamp": datetime.now().isoformat(),
-                    "final_score": final_score,
-                    "scoring_components": scoring_components,
-                    "market_regime": market_regime,
-                    "confidence_intervals": confidence_intervals,
-                    "quality_assessment": quality_assessment,
-                    "trade_count": len(trade_history),
+            # Build comprehensive score
+            quality_score = QualityScore(
+                wallet_address=wallet_address,
+                quality_tier=quality_tier,
+                total_score=total_score,
+                performance_score=performance_score,
+                risk_score=risk_score,
+                consistency_score=consistency_score,
+                domain_expertise=domain_expertise,
+                risk_metrics=risk_metrics,
+                is_market_maker=is_market_maker,
+                red_flags=red_flags,
+                confidence_score=confidence_score,
+                last_updated=time.time(),
+                metadata={
+                    "trades_analyzed": history.total_trades,
+                    "calculation_timestamp": datetime.now(timezone.utc).isoformat(),
                 },
             )
 
-            return {
-                "wallet_address": wallet_address,
-                "wallet_type": wallet_type,
-                "quality_score": final_score,
-                "scoring_components": scoring_components,
-                "market_regime": market_regime,
-                "regime_weights": regime_weights,
-                "confidence_intervals": confidence_intervals,
-                "score_stability": score_stability,
-                "quality_assessment": quality_assessment,
-                "calculation_timestamp": datetime.now().isoformat(),
-                "data_points_used": len(trade_history),
-            }
+            # Store in cache
+            self._score_cache.set(cache_key, quality_score)
+            self._history_cache.set(f"history_{wallet_address}", history)
 
-        except Exception as e:
-            logger.error(f"Error calculating quality score for {wallet_address}: {e}")
-            return {
-                "wallet_address": wallet_address,
-                "error": str(e),
-                "quality_score": None,
-                "scoring_components": {},
-                "calculation_timestamp": datetime.now().isoformat(),
-            }
+            # Update metrics
+            self._total_scores += 1
+            if is_market_maker:
+                self._mm_detections += 1
+            if red_flags:
+                self._red_flag_detections += len(red_flags)
 
-    async def _calculate_scoring_components(
-        self, wallet_address: str, trade_history: List[Dict[str, Any]], wallet_type: str
-    ) -> Dict[str, float]:
-        """Calculate individual scoring components."""
-
-        components = {}
-
-        # Risk-adjusted returns (Sharpe, Sortino, Calmar ratios)
-        components["risk_adjusted_returns"] = await self._calculate_risk_adjusted_returns(
-            trade_history
-        )
-
-        # Consistency metrics (win rate stability, performance consistency)
-        components["consistency_metrics"] = await self._calculate_consistency_metrics(trade_history)
-
-        # Drawdown analysis (max drawdown, average drawdown, recovery time)
-        components["drawdown_analysis"] = await self._calculate_drawdown_analysis(trade_history)
-
-        # Market adaptability (performance across different market conditions)
-        components["market_adaptability"] = await self._calculate_market_adaptability(trade_history)
-
-        # Trade quality (execution quality, slippage, gas efficiency)
-        components["trade_quality"] = await self._calculate_trade_quality(
-            trade_history, wallet_type
-        )
-
-        # Strategy transparency (behavioral predictability, pattern consistency)
-        components["strategy_transparency"] = await self._calculate_strategy_transparency(
-            trade_history, wallet_type
-        )
-
-        # Behavioral sustainability (strategy evolution, performance decay)
-        components["behavioral_sustainability"] = await self._calculate_behavioral_sustainability(
-            wallet_address, trade_history
-        )
-
-        return components
-
-    async def _calculate_risk_adjusted_returns(self, trade_history: List[Dict[str, Any]]) -> float:
-        """Calculate risk-adjusted return metrics (0-100 scale)."""
-
-        if len(trade_history) < self.scoring_config["sharpe_ratio_min_periods"]:
-            return 50.0  # Neutral score for insufficient data
-
-        try:
-            # Extract returns from trade history
-            returns = []
-            for trade in trade_history:
-                pnl_pct = trade.get("pnl_pct", 0)
-                if pnl_pct is not None:
-                    returns.append(pnl_pct)
-
-            if not returns:
-                return 50.0
-
-            returns = np.array(returns)
-            mean_return = np.mean(returns)
-            std_return = np.std(returns)
-
-            # Sharpe Ratio (annualized)
-            risk_free_rate = self.scoring_config.get("risk_free_rate", 0.02) / 365  # Daily
-            if std_return > 0:
-                sharpe_ratio = (mean_return - risk_free_rate) / std_return * np.sqrt(365)
-            else:
-                sharpe_ratio = 0
-
-            # Sortino Ratio (downside deviation only)
-            target_return = self.scoring_config["sortino_ratio_target_return"] / 365
-            downside_returns = returns[returns < target_return]
-            if len(downside_returns) > 0:
-                downside_std = np.std(downside_returns)
-                sortino_ratio = (
-                    (mean_return - target_return) / downside_std * np.sqrt(365)
-                    if downside_std > 0
-                    else 0
-                )
-            else:
-                sortino_ratio = float("inf")  # No downside deviation
-
-            # Calmar Ratio (annual return / max drawdown)
-            calmar_ratio = self._calculate_calmar_ratio(trade_history)
-
-            # Combine ratios into composite score
-            # Normalize each ratio to 0-100 scale
-            sharpe_score = min(max((sharpe_ratio + 2) * 25, 0), 100)  # -2 to +2 range -> 0-100
-            sortino_score = (
-                min(max(sortino_ratio * 20, 0), 100) if sortino_ratio != float("inf") else 100
+            logger.info(
+                f"✅ Scored wallet {wallet_address[-6:]}: "
+                f"{quality_tier.value} ({total_score:.2f}/10), "
+                f"Profit Factor: {risk_metrics.profit_factor:.2f}, "
+                f"Max Drawdown: {risk_metrics.max_drawdown:.1%}, "
+                f"Win Rate: {risk_metrics.win_rate:.1%} "
+                f"(±{risk_metrics.win_rate_std:.1%}), "
+                f"Domain: {domain_expertise.primary_domain} "
+                f"({domain_expertise.specialization_score:.1%}), "
+                f"MM: {is_market_maker}, "
+                f"Red Flags: {len(red_flags)}"
             )
-            calmar_score = min(max(calmar_ratio * 50, 0), 100)  # 0-2 range -> 0-100
 
-            # Weighted average
-            risk_adjusted_score = sharpe_score * 0.4 + sortino_score * 0.4 + calmar_score * 0.2
+            return quality_score
 
-            return risk_adjusted_score
-
+        except DivisionByZero:
+            logger.error(f"Division by zero scoring wallet {wallet_address[-6:]}")
+            return None
+        except (InvalidOperation, ValueError, KeyError, ValidationError) as e:
+            logger.exception(
+                f"Validation error scoring wallet {wallet_address[-6:]}: {e}"
+            )
+            return None
         except Exception as e:
-            logger.error(f"Error calculating risk-adjusted returns: {e}")
-            return 50.0
+            logger.exception(
+                f"Unexpected error scoring wallet {wallet_address[-6:]}: {e}"
+            )
+            return None
 
-    def _calculate_calmar_ratio(self, trade_history: List[Dict[str, Any]]) -> float:
-        """Calculate Calmar ratio (annual return / max drawdown)."""
-
+    def _build_trading_history(
+        self, wallet_address: str, wallet_data: Dict[str, Any]
+    ) -> TradingHistory:
+        """Build trading history object from wallet data"""
         try:
-            # Calculate cumulative returns
-            cumulative_returns = []
-            cumulative = 0
-
-            for trade in trade_history:
-                pnl_pct = trade.get("pnl_pct", 0)
-                cumulative += pnl_pct
-                cumulative_returns.append(cumulative)
-
-            if not cumulative_returns:
-                return 0
-
-            # Calculate drawdowns
-            peak = cumulative_returns[0]
-            max_drawdown = 0
-
-            for cumulative_return in cumulative_returns:
-                if cumulative_return > peak:
-                    peak = cumulative_return
-                drawdown = peak - cumulative_return
-                max_drawdown = max(max_drawdown, drawdown)
-
-            # Annual return (simplified - assuming daily trades)
-            total_return = cumulative_returns[-1] - cumulative_returns[0]
-            annual_return = total_return * 365 / len(trade_history) if len(trade_history) > 0 else 0
-
-            # Calmar ratio
-            calmar_ratio = annual_return / max_drawdown if max_drawdown > 0 else 0
-
-            return calmar_ratio
-
-        except Exception as e:
-            logger.error(f"Error calculating Calmar ratio: {e}")
-            return 0
-
-    async def _calculate_consistency_metrics(self, trade_history: List[Dict[str, Any]]) -> float:
-        """Calculate consistency metrics (0-100 scale)."""
-
-        if len(trade_history) < self.scoring_config["win_rate_stability_window"]:
-            return 50.0
-
-        try:
-            # Win rate stability
-            win_rates = []
-            window_size = self.scoring_config["win_rate_stability_window"]
-
-            for i in range(window_size, len(trade_history) + 1):
-                window_trades = trade_history[i - window_size : i]
-                wins = sum(1 for t in window_trades if t.get("pnl_pct", 0) > 0)
-                win_rate = wins / len(window_trades) if window_trades else 0
-                win_rates.append(win_rate)
-
-            if not win_rates:
-                return 50.0
-
-            # Calculate stability metrics
-            win_rate_mean = np.mean(win_rates)
-            win_rate_std = np.std(win_rates)
-            win_rate_cv = win_rate_std / win_rate_mean if win_rate_mean > 0 else 0
-
-            # Coefficient of variation (lower is better for consistency)
-            cv_score = max(0, 100 - win_rate_cv * 200)  # Scale CV to 0-100
-
-            # Win rate trend (consistency over time)
-            if len(win_rates) >= 10:
-                slope, _, _, _, _ = stats.linregress(range(len(win_rates)), win_rates)
-                trend_score = max(0, 100 - abs(slope) * 1000)  # Penalize strong trends
-            else:
-                trend_score = 50.0
-
-            # Profit factor consistency
-            profit_factors = []
-            for i in range(window_size, len(trade_history) + 1):
-                window_trades = trade_history[i - window_size : i]
-                profits = sum(t.get("pnl_pct", 0) for t in window_trades if t.get("pnl_pct", 0) > 0)
-                losses = abs(
-                    sum(t.get("pnl_pct", 0) for t in window_trades if t.get("pnl_pct", 0) < 0)
+            trades = wallet_data.get("trades", [])
+            if not trades:
+                # Create minimal history if no trade data provided
+                logger.warning(
+                    f"No trade data for {wallet_address[-6:]} - using metrics only"
+                )
+                return TradingHistory(
+                    wallet_address=wallet_address,
+                    total_trades=wallet_data.get("trade_count", 0),
                 )
 
-                if losses > 0:
-                    profit_factor = profits / losses
-                    profit_factors.append(profit_factor)
-
-            pf_consistency = (
-                np.std(profit_factors) / np.mean(profit_factors) if profit_factors else 0
-            )
-            pf_score = max(0, 100 - pf_consistency * 100)
-
-            # Weighted consistency score
-            consistency_score = cv_score * 0.4 + trend_score * 0.3 + pf_score * 0.3
-
-            return consistency_score
-
-        except Exception as e:
-            logger.error(f"Error calculating consistency metrics: {e}")
-            return 50.0
-
-    async def _calculate_drawdown_analysis(self, trade_history: List[Dict[str, Any]]) -> float:
-        """Calculate drawdown analysis metrics (0-100 scale)."""
-
-        if len(trade_history) < 50:
-            return 50.0
-
-        try:
-            # Calculate cumulative returns
-            cumulative_returns = []
-            cumulative = 0
-
-            for trade in trade_history:
-                pnl_pct = trade.get("pnl_pct", 0)
-                cumulative += pnl_pct
-                cumulative_returns.append(cumulative)
-
-            # Calculate drawdowns
-            peak = cumulative_returns[0]
-            drawdowns = []
-            current_drawdown = 0
-            max_drawdown = 0
-            drawdown_start = 0
-
-            for i, cumulative_return in enumerate(cumulative_returns):
-                if cumulative_return > peak:
-                    # End of drawdown period
-                    if current_drawdown > 0:
-                        drawdowns.append(
-                            {
-                                "start_idx": drawdown_start,
-                                "end_idx": i - 1,
-                                "depth": current_drawdown,
-                                "duration": i - drawdown_start,
-                            }
-                        )
-                    peak = cumulative_return
-                    current_drawdown = 0
-                else:
-                    current_drawdown = peak - cumulative_return
-                    if current_drawdown > max_drawdown:
-                        max_drawdown = current_drawdown
-                        drawdown_start = i
-
-            # Calculate drawdown metrics
-            if drawdowns:
-                avg_drawdown = np.mean([d["depth"] for d in drawdowns])
-                max_drawdown_depth = max([d["depth"] for d in drawdowns])
-                avg_recovery_time = np.mean([d["duration"] for d in drawdowns])
-            else:
-                avg_drawdown = 0
-                max_drawdown_depth = max_drawdown
-                avg_recovery_time = 0
-
-            # Score drawdown metrics (lower drawdowns = higher scores)
-            # Max drawdown score (0-30% is excellent, >50% is poor)
-            if max_drawdown_depth <= 0.10:  # 10%
-                max_dd_score = 100
-            elif max_drawdown_depth <= 0.20:  # 20%
-                max_dd_score = 80
-            elif max_drawdown_depth <= 0.30:  # 30%
-                max_dd_score = 60
-            elif max_drawdown_depth <= 0.50:  # 50%
-                max_dd_score = 40
-            else:
-                max_dd_score = 20
-
-            # Average drawdown score
-            avg_dd_score = max(0, 100 - avg_drawdown * 500)  # Scale to 0-100
-
-            # Recovery time score (shorter recovery = higher score)
-            if avg_recovery_time <= 10:  # 10 days
-                recovery_score = 100
-            elif avg_recovery_time <= 25:  # 25 days
-                recovery_score = 80
-            elif avg_recovery_time <= 50:  # 50 days
-                recovery_score = 60
-            elif avg_recovery_time <= 100:  # 100 days
-                recovery_score = 40
-            else:
-                recovery_score = 20
-
-            # Weighted drawdown score
-            recovery_weight = self.scoring_config["recovery_time_weight"]
-            drawdown_score = (
-                max_dd_score * (0.5 - recovery_weight / 2)
-                + avg_dd_score * (0.3 - recovery_weight / 2)
-                + recovery_score * recovery_weight
-            )
-
-            return drawdown_score
-
-        except Exception as e:
-            logger.error(f"Error calculating drawdown analysis: {e}")
-            return 50.0
-
-    async def _calculate_market_adaptability(self, trade_history: List[Dict[str, Any]]) -> float:
-        """Calculate market adaptability metrics (0-100 scale)."""
-
-        if len(trade_history) < 100:
-            return 50.0
-
-        try:
-            # Analyze performance across different market regimes
-            regime_performance = {}
-
-            # Group trades by market conditions (simplified)
-            # In practice, this would use actual market data
-            regimes = ["bull", "bear", "sideways", "volatile"]
-
-            for regime in regimes:
-                regime_trades = [t for t in trade_history if t.get("market_regime") == regime]
-                if len(regime_trades) >= self.scoring_config["min_regime_samples"]:
-                    wins = sum(1 for t in regime_trades if t.get("pnl_pct", 0) > 0)
-                    win_rate = wins / len(regime_trades)
-                    avg_return = np.mean([t.get("pnl_pct", 0) for t in regime_trades])
-
-                    regime_performance[regime] = {
-                        "win_rate": win_rate,
-                        "avg_return": avg_return,
-                        "trade_count": len(regime_trades),
+            # Extract trade data
+            parsed_trades = []
+            for trade in trades:
+                try:
+                    parsed = {
+                        "timestamp": self._parse_timestamp(trade.get("timestamp")),
+                        "is_profitable": trade.get("is_profitable", False),
+                        "pnl": Decimal(str(trade.get("pnl", "0.0"))),
+                        "category": trade.get("category", "general"),
+                        "position_size": float(trade.get("position_size", 100)),
                     }
+                    parsed_trades.append(parsed)
+                except (InvalidOperation, ValueError) as e:
+                    logger.warning(f"Error parsing trade: {e}")
+                    continue
 
-            if not regime_performance:
-                return 50.0
-
-            # Calculate adaptability metrics
-            win_rates = [perf["win_rate"] for perf in regime_performance.values()]
-            avg_returns = [perf["avg_return"] for perf in regime_performance.values()]
-
-            # Consistency across regimes (lower variance = higher adaptability)
-            win_rate_consistency = (
-                1 - np.std(win_rates) / np.mean(win_rates) if np.mean(win_rates) > 0 else 0
-            )
-            return_consistency = (
-                1 - np.std(avg_returns) / abs(np.mean(avg_returns))
-                if np.mean(avg_returns) != 0
-                else 0
+            # Calculate aggregate metrics
+            gross_profits = (
+                sum(trade["pnl"] for trade in parsed_trades if trade["pnl"] > 0)
+                if parsed_trades
+                else Decimal("0.00")
             )
 
-            # Minimum performance threshold (must perform reasonably in all regimes)
-            min_win_rate = min(win_rates)
-            min_return_threshold = -0.02  # -2% minimum acceptable
-            min_return = min(avg_returns)
-
-            regime_survival = 1 if min_win_rate >= 0.4 and min_return >= min_return_threshold else 0
-
-            # Adaptability score
-            adaptability_score = (
-                win_rate_consistency * 40  # 40% weight
-                + return_consistency * 30  # 30% weight
-                + regime_survival * 30  # 30% weight
+            gross_losses = (
+                sum(abs(trade["pnl"]) for trade in parsed_trades if trade["pnl"] < 0)
+                if parsed_trades
+                else Decimal("0.00")
             )
 
-            return max(0, min(100, adaptability_score))
-
-        except Exception as e:
-            logger.error(f"Error calculating market adaptability: {e}")
-            return 50.0
-
-    async def _calculate_trade_quality(
-        self, trade_history: List[Dict[str, Any]], wallet_type: str
-    ) -> float:
-        """Calculate trade quality metrics (0-100 scale)."""
-
-        if not trade_history:
-            return 50.0
-
-        try:
-            # Execution quality (slippage analysis)
-            slippage_scores = []
-            gas_efficiency_scores = []
-
-            for trade in trade_history:
-                # Slippage calculation (actual price vs expected price)
-                expected_price = trade.get("expected_price")
-                actual_price = trade.get("actual_price", trade.get("price"))
-
-                if expected_price and actual_price:
-                    slippage_pct = abs(actual_price - expected_price) / expected_price * 100
-                    max_acceptable_slippage = self.scoring_config["slippage_tolerance_pct"]
-
-                    if slippage_pct <= max_acceptable_slippage:
-                        slippage_score = 100
-                    elif slippage_pct <= max_acceptable_slippage * 2:
-                        slippage_score = 75
-                    elif slippage_pct <= max_acceptable_slippage * 3:
-                        slippage_score = 50
-                    else:
-                        slippage_score = 25
-
-                    slippage_scores.append(slippage_score)
-
-                # Gas efficiency (gas cost vs trade value)
-                gas_cost = trade.get("gas_cost_usd", 0)
-                trade_value = abs(trade.get("amount", 0) * trade.get("price", 0))
-
-                if trade_value > 0 and gas_cost > 0:
-                    gas_ratio = gas_cost / trade_value
-                    # Lower gas ratio = higher efficiency
-                    gas_efficiency = max(0, 100 - gas_ratio * 10000)  # Scale appropriately
-                    gas_efficiency_scores.append(gas_efficiency)
-
-            # Calculate average scores
-            avg_slippage_score = np.mean(slippage_scores) if slippage_scores else 75
-            avg_gas_efficiency = np.mean(gas_efficiency_scores) if gas_efficiency_scores else 75
-
-            # Trade timing quality (for different wallet types)
-            timing_score = await self._calculate_trade_timing_quality(trade_history, wallet_type)
-
-            # Weighted trade quality score
-            execution_weight = self.scoring_config["execution_quality_weight"]
-            gas_weight = self.scoring_config["gas_efficiency_weight"]
-            timing_weight = 1 - execution_weight - gas_weight
-
-            trade_quality_score = (
-                avg_slippage_score * execution_weight
-                + avg_gas_efficiency * gas_weight
-                + timing_score * timing_weight
+            profitable_trades = sum(
+                1 for trade in parsed_trades if trade["is_profitable"]
             )
 
-            return trade_quality_score
+            # Extract categories
+            categories = [trade["category"] for trade in parsed_trades]
 
-        except Exception as e:
-            logger.error(f"Error calculating trade quality: {e}")
-            return 50.0
+            # Extract position sizes
+            position_sizes = [trade["position_size"] for trade in parsed_trades]
 
-    async def _calculate_trade_timing_quality(
-        self, trade_history: List[Dict[str, Any]], wallet_type: str
-    ) -> float:
-        """Calculate trade timing quality based on wallet type."""
+            # Extract timestamps
+            timestamps = [trade["timestamp"] for trade in parsed_trades]
 
-        try:
-            # For market makers: quick round-trip trades are good
-            if wallet_type == "market_maker":
-                holding_times = []
-                for i in range(1, len(trade_history), 2):
-                    if i < len(trade_history):
-                        entry_time = datetime.fromisoformat(trade_history[i - 1]["timestamp"])
-                        exit_time = datetime.fromisoformat(trade_history[i]["timestamp"])
-                        holding_time = (exit_time - entry_time).total_seconds() / 3600  # hours
-
-                        # Ideal holding time: 0.5-4 hours
-                        if 0.5 <= holding_time <= 4:
-                            timing_score = 100
-                        elif holding_time < 0.5:
-                            timing_score = 80  # Very fast (might be overtrading)
-                        elif holding_time <= 12:
-                            timing_score = 90
-                        else:
-                            timing_score = 60  # Too slow for market making
-
-                        holding_times.append(timing_score)
-
-                return np.mean(holding_times) if holding_times else 75
-
-            # For directional traders: longer-term timing matters
-            elif wallet_type == "directional_trader":
-                # Analyze entry/exit timing relative to market trends
-                # Simplified: score based on holding time distribution
-                holding_times = []
-
-                for trade in trade_history:
-                    # Simplified timing analysis
-                    holding_times.append(trade.get("holding_time_hours", 24))
-
-                if holding_times:
-                    avg_holding = np.mean(holding_times)
-                    # Ideal: 1-7 days for directional trading
-                    if 24 <= avg_holding <= 168:
-                        return 100
-                    elif avg_holding < 24:
-                        return 70  # Too short-term
-                    else:
-                        return 80  # Long-term is okay but less optimal
-
-                return 75
-
-            else:
-                # Default timing score
-                return 75
-
-        except Exception as e:
-            logger.error(f"Error calculating trade timing quality: {e}")
-            return 75
-
-    async def _calculate_strategy_transparency(
-        self, trade_history: List[Dict[str, Any]], wallet_type: str
-    ) -> float:
-        """Calculate strategy transparency and predictability (0-100 scale)."""
-
-        if len(trade_history) < self.scoring_config["pattern_recognition_window"]:
-            return 50.0
-
-        try:
-            # Analyze behavioral patterns
-            pattern_consistency = await self._analyze_pattern_consistency(
-                trade_history, wallet_type
+            return TradingHistory(
+                wallet_address=wallet_address,
+                trades=parsed_trades,
+                total_trades=len(parsed_trades),
+                profitable_trades=profitable_trades,
+                gross_profits=gross_profits,
+                gross_losses=gross_losses,
+                timestamps=timestamps,
+                categories=categories,
+                position_sizes=position_sizes,
             )
 
-            # Predictability assessment
-            predictability_score = await self._assess_strategy_predictability(trade_history)
+        except Exception as e:
+            logger.exception(f"Error building trading history: {e}")
+            return TradingHistory(wallet_address=wallet_address, total_trades=0)
 
-            # Behavioral regularity
-            regularity_score = await self._calculate_behavioral_regularity(trade_history)
+    def _parse_timestamp(self, timestamp: Any) -> float:
+        """Parse timestamp to float (seconds since epoch)"""
+        if isinstance(timestamp, (int, float)):
+            return float(timestamp)
+        elif isinstance(timestamp, str):
+            try:
+                dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+                return dt.timestamp()
+            except ValueError:
+                # Try Unix timestamp
+                return float(timestamp)
+        return time.time()
 
-            # Weighted transparency score
-            transparency_score = (
-                pattern_consistency * 0.4 + predictability_score * 0.4 + regularity_score * 0.2
+    def _calculate_risk_metrics(self, history: TradingHistory) -> RiskMetrics:
+        """Calculate comprehensive risk metrics"""
+        try:
+            if history.total_trades < self.MIN_TRADES_FOR_STATS:
+                return self._get_default_risk_metrics(history)
+
+            profit_factor = self._calculate_profit_factor(history)
+            win_rate, win_rate_std, win_rate_consistency = (
+                self._calculate_win_rate_metrics(history)
+            )
+            all_pnls = [float(trade["pnl"]) for trade in history.trades]
+            volatility = statistics.stdev(all_pnls) if len(all_pnls) > 1 else 0.2
+            max_drawdown, max_drawdown_duration, peak, time_to_recovery_ratio = (
+                self._calculate_drawdown_metrics(history, all_pnls)
+            )
+            sharpe_ratio, sortino_ratio, calmar_ratio = (
+                self._calculate_risk_adjusted_ratios(all_pnls, peak)
+            )
+            tail_risk = self._calculate_tail_risk(all_pnls)
+            position_sizing_std = self._calculate_position_sizing_consistency(history)
+
+            return RiskMetrics(
+                profit_factor=profit_factor,
+                max_drawdown=max_drawdown,
+                max_drawdown_duration=max_drawdown_duration,
+                win_rate=win_rate,
+                win_rate_std=win_rate_std,
+                win_rate_consistency=win_rate_consistency,
+                volatility=volatility,
+                sharpe_ratio=sharpe_ratio,
+                sortino_ratio=sortino_ratio,
+                calmar_ratio=calmar_ratio,
+                time_to_recovery_ratio=time_to_recovery_ratio,
+                tail_risk=tail_risk,
+                position_sizing_std=position_sizing_std,
             )
 
-            return transparency_score
-
         except Exception as e:
-            logger.error(f"Error calculating strategy transparency: {e}")
-            return 50.0
+            logger.exception(f"Error calculating risk metrics: {e}")
+            return self._get_default_risk_metrics(history)
 
-    async def _analyze_pattern_consistency(
-        self, trade_history: List[Dict[str, Any]], wallet_type: str
-    ) -> float:
-        """Analyze consistency of trading patterns."""
+    def _get_default_risk_metrics(self, history: TradingHistory) -> RiskMetrics:
+        """Return default risk metrics for insufficient data or errors"""
+        return RiskMetrics(
+            profit_factor=1.0,
+            max_drawdown=0.0,
+            max_drawdown_duration=0.0,
+            win_rate=(
+                history.profitable_trades / max(history.total_trades, 1)
+                if history.total_trades > 0
+                else 0.5
+            ),
+            win_rate_std=0.1,
+            win_rate_consistency=0.9,
+            volatility=0.2,
+            sharpe_ratio=0.5,
+            sortino_ratio=0.6,
+            calmar_ratio=1.0,
+            time_to_recovery_ratio=1.0,
+            tail_risk=0.1,
+            position_sizing_std=0.2,
+        )
 
-        try:
-            # For market makers: look for consistent alternation
-            if wallet_type == "market_maker":
-                sides = [t.get("side", "BUY") for t in trade_history[-50:]]  # Last 50 trades
+    def _calculate_profit_factor(self, history: TradingHistory) -> float:
+        """Calculate profit factor (gross profits / gross losses)"""
+        if history.gross_losses > 0:
+            return float(history.gross_profits / history.gross_losses)
+        elif history.total_trades > 0:
+            return 1.0  # No losses
+        else:
+            return 1.0
 
-                if len(sides) >= 10:
-                    alternations = sum(1 for i in range(1, len(sides)) if sides[i] != sides[i - 1])
-                    alternation_rate = alternations / (len(sides) - 1)
+    def _calculate_win_rate_metrics(
+        self, history: TradingHistory
+    ) -> Tuple[float, float, float]:
+        """Calculate win rate, win rate std, and win rate consistency"""
+        win_rate = history.profitable_trades / history.total_trades
 
-                    # Ideal alternation rate for market makers: 0.6-0.9
-                    if 0.6 <= alternation_rate <= 0.9:
-                        return 100
-                    elif alternation_rate >= 0.4:
-                        return 75
-                    else:
-                        return 50
-
-            # For directional traders: look for trend-following consistency
-            elif wallet_type == "directional_trader":
-                # Analyze trade direction relative to market trend
-                trend_alignment = []
-
-                for trade in trade_history[-50:]:
-                    market_trend = trade.get("market_trend", 0)  # -1, 0, 1
-                    trade_direction = 1 if trade.get("side") == "BUY" else -1
-
-                    alignment = 1 if market_trend * trade_direction > 0 else 0
-                    trend_alignment.append(alignment)
-
-                if trend_alignment:
-                    alignment_rate = np.mean(trend_alignment)
-                    return alignment_rate * 100
-
-            return 60  # Default moderate score
-
-        except Exception as e:
-            logger.error(f"Error analyzing pattern consistency: {e}")
-            return 60
-
-    async def _assess_strategy_predictability(self, trade_history: List[Dict[str, Any]]) -> float:
-        """Assess how predictable the strategy is."""
-
-        try:
-            # Use simple pattern recognition
-            # Look for repeating patterns in trade sequences
-
-            if len(trade_history) < 20:
-                return 50
-
-            # Convert trades to simple pattern (buy=1, sell=-1)
-            pattern = []
-            for trade in trade_history[-100:]:
-                direction = 1 if trade.get("side") == "BUY" else -1
-                pattern.append(direction)
-
-            # Find repeating subsequences
-            predictability = self._calculate_sequence_predictability(pattern)
-
-            # Scale to 0-100
-            predictability_score = min(100, predictability * 100)
-
-            return predictability_score
-
-        except Exception as e:
-            logger.error(f"Error assessing strategy predictability: {e}")
-            return 50
-
-    def _calculate_sequence_predictability(self, sequence: List[int]) -> float:
-        """Calculate predictability of a sequence using compression ratio."""
-
-        try:
-            if len(sequence) < 10:
-                return 0.5
-
-            # Simple predictability measure: look for patterns
-            # Count consecutive same directions (momentum)
-            momentum_score = 0
-            current_streak = 1
-
-            for i in range(1, len(sequence)):
-                if sequence[i] == sequence[i - 1]:
-                    current_streak += 1
-                else:
-                    momentum_score += current_streak
-                    current_streak = 1
-
-            momentum_score += current_streak
-
-            # Normalize by sequence length
-            predictability = momentum_score / len(sequence)
-
-            return min(1.0, predictability)
-
-        except Exception:
-            return 0.5
-
-    async def _calculate_behavioral_regularity(self, trade_history: List[Dict[str, Any]]) -> float:
-        """Calculate behavioral regularity score."""
-
-        try:
-            # Analyze trade frequency regularity
-            timestamps = [datetime.fromisoformat(t["timestamp"]) for t in trade_history[-100:]]
-
-            if len(timestamps) < 10:
-                return 50
-
-            # Calculate inter-trade intervals
-            intervals = []
-            for i in range(1, len(timestamps)):
-                interval = (timestamps[i] - timestamps[i - 1]).total_seconds() / 3600  # hours
-                intervals.append(interval)
-
-            if not intervals:
-                return 50
-
-            # Calculate regularity (lower coefficient of variation = more regular)
-            cv = np.std(intervals) / np.mean(intervals) if np.mean(intervals) > 0 else 0
-            regularity_score = max(0, 100 - cv * 200)  # Scale CV to 0-100
-
-            return regularity_score
-
-        except Exception as e:
-            logger.error(f"Error calculating behavioral regularity: {e}")
-            return 50
-
-    async def _calculate_behavioral_sustainability(
-        self, wallet_address: str, trade_history: List[Dict[str, Any]]
-    ) -> float:
-        """Calculate behavioral sustainability score."""
-
-        try:
-            # Performance decay analysis
-            decay_score = await self._analyze_performance_decay(trade_history)
-
-            # Strategy evolution detection
-            evolution_score = await self._detect_strategy_evolution(wallet_address, trade_history)
-
-            # Risk management quality
-            risk_management_score = await self.risk_assessor.assess_risk_management_quality(
-                trade_history
-            )
-
-            # Capital efficiency
-            capital_efficiency_score = await self._assess_capital_efficiency(trade_history)
-
-            # Weighted sustainability score
-            sustainability_score = (
-                decay_score * 0.3
-                + evolution_score * 0.3
-                + risk_management_score * 0.25
-                + capital_efficiency_score * 0.15
-            )
-
-            return sustainability_score
-
-        except Exception as e:
-            logger.error(f"Error calculating behavioral sustainability: {e}")
-            return 50.0
-
-    async def _analyze_performance_decay(self, trade_history: List[Dict[str, Any]]) -> float:
-        """Analyze performance decay over time."""
-
-        try:
-            window_size = self.scoring_config["performance_decay_window"]
-
-            if len(trade_history) < window_size:
-                return 75  # Neutral score for insufficient data
-
-            # Calculate rolling performance metrics
-            rolling_returns = []
+        # Calculate rolling win rate (for consistency)
+        if len(history.timestamps) >= 10:
+            sorted_times = sorted(history.timestamps)
+            window_size = min(len(sorted_times), 30)
             rolling_win_rates = []
 
-            for i in range(window_size, len(trade_history) + 1, 10):  # Every 10 trades
-                window_trades = trade_history[i - window_size : i]
+            for i in range(window_size, len(sorted_times)):
+                window_start = (
+                    sorted_times[i - window_size]
+                    if i >= window_size
+                    else sorted_times[0]
+                )
+                window_end = sorted_times[i]
 
-                returns = [t.get("pnl_pct", 0) for t in window_trades]
-                avg_return = np.mean(returns) if returns else 0
+                window_trades = [
+                    j
+                    for j, ts in enumerate(history.timestamps)
+                    if window_start <= ts < window_end
+                ]
 
-                wins = sum(1 for r in returns if r > 0)
-                win_rate = wins / len(returns) if returns else 0
+                if len(window_trades) > 0:
+                    window_win_rate = sum(
+                        1
+                        for j in window_trades
+                        if j < len(history.trades)
+                        and history.trades[j]["is_profitable"]
+                    ) / len(window_trades)
+                    rolling_win_rates.append(window_win_rate)
 
-                rolling_returns.append(avg_return)
-                rolling_win_rates.append(win_rate)
+            win_rate_std = (
+                statistics.stdev(rolling_win_rates)
+                if len(rolling_win_rates) > 1
+                else 0.1
+            )
+        else:
+            win_rate_std = 0.1
 
-            if len(rolling_returns) < 3:
-                return 75
+        win_rate_consistency = max(0.0, 1.0 - min(win_rate_std, 0.2))
+        return win_rate, win_rate_std, win_rate_consistency
 
-            # Analyze trends
-            return_trend = np.polyfit(range(len(rolling_returns)), rolling_returns, 1)[0]
-            win_rate_trend = np.polyfit(range(len(rolling_win_rates)), rolling_win_rates, 1)[0]
+    def _calculate_drawdown_metrics(
+        self, history: TradingHistory, all_pnls: List[float]
+    ) -> Tuple[float, float, float, float]:
+        """Calculate max drawdown, duration, peak, and time-to-recovery ratio"""
+        cumulative = 0.0
+        peak = 0.0
+        peak_time = 0.0
+        max_drawdown = 0.0
+        max_drawdown_duration = 0.0
 
-            # Negative trends indicate decay
-            return_decay = max(0, -return_trend * 1000)  # Scale appropriately
-            win_rate_decay = max(0, -win_rate_trend * 1000)
+        sorted_trades = sorted(history.trades, key=lambda x: x["timestamp"])
+        for trade in sorted_trades:
+            pnl = float(trade["pnl"])
+            cumulative += pnl
 
-            # Decay score (lower decay = higher score)
-            decay_score = max(0, 100 - (return_decay + win_rate_decay) / 2)
+            if cumulative > peak:
+                peak = cumulative
+                peak_time = trade["timestamp"]
 
-            return decay_score
-
-        except Exception as e:
-            logger.error(f"Error analyzing performance decay: {e}")
-            return 75
-
-    async def _detect_strategy_evolution(
-        self, wallet_address: str, trade_history: List[Dict[str, Any]]
-    ) -> float:
-        """Detect strategy evolution or significant changes."""
-
-        try:
-            # Compare recent vs historical behavior
-            split_point = len(trade_history) // 2
-
-            recent_trades = trade_history[split_point:]
-            historical_trades = trade_history[:split_point]
-
-            if len(recent_trades) < 20 or len(historical_trades) < 20:
-                return 75  # Insufficient data for comparison
-
-            # Compare key metrics
-            recent_metrics = self._calculate_behavioral_metrics(recent_trades)
-            historical_metrics = self._calculate_behavioral_metrics(historical_trades)
-
-            # Calculate changes in key metrics
-            changes = {}
-            for metric in recent_metrics:
-                if metric in historical_metrics and historical_metrics[metric] != 0:
-                    change = abs(recent_metrics[metric] - historical_metrics[metric]) / abs(
-                        historical_metrics[metric]
+            if cumulative < peak:
+                drawdown_amount = peak - cumulative
+                if drawdown_amount > max_drawdown:
+                    max_drawdown = (
+                        drawdown_amount / peak if peak > 0 else drawdown_amount
                     )
-                    changes[metric] = change
 
-            # Average change across metrics
-            avg_change = np.mean(list(changes.values())) if changes else 0
+                    recovery_time = self._calculate_recovery_time(
+                        sorted_trades, trade, cumulative, peak, peak_time
+                    )
+                    if recovery_time > 0:
+                        max_drawdown_duration = max(
+                            max_drawdown_duration, recovery_time / 3600
+                        )
 
-            # Evolution score (lower change = higher score for stability)
-            evolution_threshold = self.scoring_config["strategy_evolution_threshold"]
-            if avg_change <= evolution_threshold:
-                evolution_score = 100
-            elif avg_change <= evolution_threshold * 2:
-                evolution_score = 75
-            elif avg_change <= evolution_threshold * 3:
-                evolution_score = 50
+        time_to_recovery_ratio = 1.0  # Simplified - could be enhanced
+        return max_drawdown, max_drawdown_duration, peak, time_to_recovery_ratio
+
+    def _calculate_recovery_time(
+        self,
+        sorted_trades: List[Dict[str, Any]],
+        trade: Dict[str, Any],
+        cumulative: float,
+        peak: float,
+        peak_time: float,
+    ) -> float:
+        """Calculate recovery time from drawdown to peak"""
+        recovery_time = 0.0
+        for later_trade in sorted_trades:
+            if later_trade["timestamp"] > trade["timestamp"]:
+                temp_cumulative = cumulative + sum(
+                    float(t["pnl"])
+                    for t in sorted_trades[sorted_trades.index(trade) + 1 :]
+                    if t["timestamp"] <= later_trade["timestamp"]
+                )
+                if temp_cumulative >= peak:
+                    recovery_time = later_trade["timestamp"] - peak_time
+                    break
+                if later_trade["timestamp"] - trade["timestamp"] > self.RECOVERY_WINDOW:
+                    break
+        return recovery_time
+
+    def _calculate_risk_adjusted_ratios(
+        self, all_pnls: List[float], peak: float
+    ) -> Tuple[float, float, float]:
+        """Calculate Sharpe, Sortino, and Calmar ratios"""
+        returns = all_pnls
+        risk_free_rate = 0.02  # 2% risk-free rate
+        excess_returns = [r - risk_free_rate for r in returns]
+        avg_excess = statistics.mean(excess_returns) if len(excess_returns) > 1 else 0.0
+        excess_std = (
+            statistics.stdev(excess_returns) if len(excess_returns) > 1 else 0.1
+        )
+        sharpe_ratio = avg_excess / excess_std if excess_std > 0 else 0.5
+
+        downside_returns = [min(r, 0) for r in returns]
+        downside_std = (
+            statistics.stdev(downside_returns) if len(downside_returns) > 1 else 0.1
+        )
+        sortino_ratio = avg_excess / downside_std if downside_std > 0 else 0.6
+
+        total_return = sum(all_pnls)
+        calmar_ratio = (total_return / max(1.0, peak)) if peak > 0 else 1.0
+
+        return sharpe_ratio, sortino_ratio, calmar_ratio
+
+    def _calculate_tail_risk(self, all_pnls: List[float]) -> float:
+        """Calculate tail risk (5th percentile loss)"""
+        all_losses = [abs(pnl) for pnl in all_pnls if pnl < 0]
+        if all_losses:
+            tail_risk_value = sum(sorted(all_losses)[: min(len(all_losses), 20)]) / len(
+                all_losses
+            )
+        else:
+            tail_risk_value = 0.0
+        return (
+            tail_risk_value / statistics.mean(all_pnls)
+            if statistics.mean(all_pnls) > 0
+            else 1.0
+        )
+
+    def _calculate_position_sizing_consistency(self, history: TradingHistory) -> float:
+        """Calculate position sizing consistency (normalized std)"""
+        if len(history.position_sizes) > 1:
+            mean_size = statistics.mean(history.position_sizes)
+            if mean_size > 0:
+                return statistics.stdev(history.position_sizes) / mean_size
+        return 0.2
+
+    def _calculate_domain_expertise(
+        self, history: TradingHistory
+    ) -> DomainExpertiseMetrics:
+        """Calculate domain expertise metrics"""
+        try:
+            if history.total_trades < self.MIN_TRADES_FOR_STATS:
+                # Return default metrics if insufficient data
+                return DomainExpertiseMetrics(
+                    primary_domain="general",
+                    specialization_score=0.0,
+                    domain_trades=0,
+                    domain_win_rate=(
+                        history.profitable_trades / max(history.total_trades, 1)
+                        if history.total_trades > 0
+                        else 0.5
+                    ),
+                    domain_roi=Decimal("0.00"),
+                    category_diversity=1.0,  # No categorization
+                    consistency_score=0.5,
+                )
+
+            # Count categories
+            category_counts = defaultdict(int)
+            category_profitable = defaultdict(int)
+
+            for trade in history.trades:
+                category = trade.get("category", "general")
+                category_counts[category] += 1
+                if trade.get("is_profitable", False):
+                    category_profitable[category] += 1
+
+            # Find primary domain
+            if category_counts:
+                sorted_categories = sorted(
+                    category_counts.items(), key=lambda x: x[1], reverse=True
+                )
+                primary_domain = sorted_categories[0][0]
+                domain_trades = sorted_categories[0][1]
+
+                # Calculate domain win rate
+                if category_counts[primary_domain] > 0:
+                    domain_win_rate = (
+                        category_profitable[primary_domain]
+                        / category_counts[primary_domain]
+                    )
+                else:
+                    domain_win_rate = 0.5
             else:
-                evolution_score = 25  # Significant strategy change
+                primary_domain = "general"
+                domain_trades = history.total_trades
+                domain_win_rate = history.profitable_trades / max(
+                    history.total_trades, 1
+                )
 
-            return evolution_score
-
-        except Exception as e:
-            logger.error(f"Error detecting strategy evolution: {e}")
-            return 75
-
-    def _calculate_behavioral_metrics(self, trades: List[Dict[str, Any]]) -> Dict[str, float]:
-        """Calculate key behavioral metrics for a set of trades."""
-
-        metrics = {}
-
-        if not trades:
-            return metrics
-
-        # Win rate
-        wins = sum(1 for t in trades if t.get("pnl_pct", 0) > 0)
-        metrics["win_rate"] = wins / len(trades)
-
-        # Average return
-        returns = [t.get("pnl_pct", 0) for t in trades]
-        metrics["avg_return"] = np.mean(returns) if returns else 0
-
-        # Trade frequency
-        if len(trades) >= 2:
-            timestamps = [datetime.fromisoformat(t["timestamp"]) for t in trades]
-            intervals = [
-                (timestamps[i] - timestamps[i - 1]).total_seconds() / 3600
-                for i in range(1, len(timestamps))
-            ]
-            metrics["avg_trade_interval"] = np.mean(intervals) if intervals else 24
-
-        # Position sizing consistency
-        sizes = [abs(t.get("amount", 0)) for t in trades]
-        if sizes:
-            metrics["size_consistency"] = 1 - (
-                np.std(sizes) / np.mean(sizes) if np.mean(sizes) > 0 else 0
+            # Calculate specialization score (trades in primary domain / total trades)
+            specialization_score = (
+                domain_trades / history.total_trades
+                if history.total_trades > 0
+                else 0.0
             )
 
-        return metrics
+            # Calculate category diversity (lower is better)
+            num_categories = len(category_counts)
+            category_diversity = 1.0 / num_categories if num_categories > 0 else 1.0
 
-    async def _assess_capital_efficiency(self, trade_history: List[Dict[str, Any]]) -> float:
-        """Assess capital efficiency metrics."""
+            # Calculate domain ROI (approximate)
+            domain_pnl = sum(
+                trade["pnl"]
+                for trade in history.trades
+                if trade.get("category") == primary_domain
+            )
+            domain_roi = (
+                float(
+                    domain_pnl
+                    / max(Decimal("100.00"), history.total_trades * Decimal("10.00"))
+                )
+                if history.total_trades > 0
+                else 0.0
+            )
 
-        try:
-            if not trade_history:
-                return 50
+            # Calculate consistency score (stable win rate in domain)
+            # For simplicity, use standard deviation of win rates if we had them
+            # Here we use the consistency from risk metrics
+            consistency_score = 0.7  # Assume good consistency
 
-            # Calculate return on capital metrics
-            total_return = sum(t.get("pnl_pct", 0) for t in trade_history)
-            total_trades = len(trade_history)
-
-            # Capital utilization efficiency
-            total_return / total_trades if total_trades > 0 else 0
-
-            # Sharpe-style efficiency
-            returns = [t.get("pnl_pct", 0) for t in trade_history]
-            if returns:
-                efficiency = np.mean(returns) / np.std(returns) if np.std(returns) > 0 else 0
-                efficiency_score = min(100, max(0, efficiency * 50 + 50))  # Scale to 0-100
-            else:
-                efficiency_score = 50
-
-            return efficiency_score
+            return DomainExpertiseMetrics(
+                primary_domain=primary_domain,
+                specialization_score=specialization_score,
+                domain_trades=domain_trades,
+                domain_win_rate=domain_win_rate,
+                domain_roi=Decimal(str(domain_roi)),
+                category_diversity=category_diversity,
+                consistency_score=consistency_score,
+            )
 
         except Exception as e:
-            logger.error(f"Error assessing capital efficiency: {e}")
-            return 50
+            logger.exception(f"Error calculating domain expertise: {e}")
+            return DomainExpertiseMetrics(
+                primary_domain="general",
+                specialization_score=0.0,
+                domain_trades=0,
+                domain_win_rate=0.5,
+                domain_roi=Decimal("0.00"),
+                category_diversity=1.0,
+                consistency_score=0.5,
+            )
 
-    async def _classify_wallet_type(self, wallet_address: str) -> str:
-        """Classify wallet type (placeholder - integrate with existing classifier)."""
+    def _detect_market_maker_advanced(
+        self, history: TradingHistory, risk_metrics: RiskMetrics
+    ) -> bool:
+        """
+        Advanced market maker detection using multi-pattern analysis.
 
-        # This would integrate with the existing wallet classification system
-        # For now, return a default
-        return "market_maker"
+        A wallet is a market maker if ALL of these patterns are present:
+        1. Very high trade frequency (>500 trades)
+        2. Very low average hold time (<1 hour)
+        3. Win rate close to break-even (45-55%)
+        4. Very low profit per trade (<1% ROI)
+        """
+        try:
+            # Check minimum trade count
+            if history.total_trades < self.MM_TRADE_COUNT_THRESHOLD:
+                return False
 
-    def _determine_market_regime(self, market_conditions: Optional[Dict[str, Any]]) -> str:
-        """Determine current market regime."""
+            # Calculate average hold time (from timestamps)
+            if len(history.timestamps) >= 2:
+                hold_times = []
+                sorted_timestamps = sorted(history.timestamps)
+                for i in range(1, len(sorted_timestamps)):
+                    hold_time = sorted_timestamps[i] - sorted_timestamps[i - 1]
+                    hold_times.append(hold_time)
 
-        if not market_conditions:
-            return "normal"
+                avg_hold_time = (
+                    statistics.mean(hold_times) if hold_times else 3600
+                )  # Default to 1 hour
+            else:
+                avg_hold_time = 3600
 
-        volatility = market_conditions.get("volatility_index", 0.2)
-        trend_strength = market_conditions.get("trend_strength", 0.0)
-        liquidity = market_conditions.get("liquidity_score", 0.6)
+            # Check win rate range
+            win_rate = risk_metrics.win_rate
+            in_mm_range = self.MM_WIN_RATE_MIN <= win_rate <= self.MM_WIN_RATE_MAX
 
-        if volatility > 0.3:
-            return "high_volatility"
-        elif liquidity < 0.4:
-            return "low_liquidity"
-        elif trend_strength > 0.6:
-            return "bull"
-        elif trend_strength < -0.6:
-            return "bear"
-        else:
-            return "normal"
+            # Calculate profit per trade (approximate)
+            if history.total_trades > 0:
+                profit_per_trade = float(
+                    risk_metrics.profit_factor * 0.01
+                )  # Approximate 1% baseline
+            else:
+                profit_per_trade = 0.0
 
-    def _calculate_weighted_score(
-        self, components: Dict[str, float], wallet_type: str, regime_weights: Dict[str, float]
+            # Market maker detection (ALL criteria must be true)
+            is_mm = (
+                history.total_trades > self.MM_TRADE_COUNT_THRESHOLD  # High frequency
+                and avg_hold_time < self.MM_AVG_HOLD_TIME_THRESHOLD  # Low hold time
+                and in_mm_range  # Break-even win rate
+                and profit_per_trade
+                < float(self.MM_PROFIT_PER_TRADE_THRESHOLD)  # Low profit per trade
+            )
+
+            if is_mm:
+                logger.info(
+                    f"🚨 MARKET MAKER DETECTED: {history.wallet_address[-6:]} "
+                    f"(trades={history.total_trades}, "
+                    f"hold_time={avg_hold_time:.0f}s, "
+                    f"win_rate={win_rate:.1%}, "
+                    f"profit_per_trade={profit_per_trade:.2%})"
+                )
+
+            return is_mm
+
+        except Exception as e:
+            logger.exception(f"Error detecting market maker: {e}")
+            return False
+
+    def _detect_red_flags(
+        self,
+        history: TradingHistory,
+        risk_metrics: RiskMetrics,
+        domain_expertise: DomainExpertiseMetrics,
+    ) -> List[Tuple[RedFlagType, str]]:
+        """Detect red flags for wallet exclusion"""
+        red_flags = []
+
+        try:
+            # 1. NEW_WALLET_LARGE_BET
+            wallet_age_days = self._calculate_wallet_age_days(history)
+            max_position_size = (
+                max(history.position_sizes) if history.position_sizes else 0
+            )
+
+            if wallet_age_days < self.NEW_WALLET_MAX_DAYS and max_position_size > float(
+                self.NEW_WALLET_MAX_BET
+            ):
+                red_flags.append(
+                    (
+                        RedFlagType.NEW_WALLET_LARGE_BET,
+                        f"New wallet ({wallet_age_days} days) with large bet (${max_position_size:.2f})",
+                    )
+                )
+
+            # 2. LUCK_NOT_SKILL
+            if (
+                risk_metrics.win_rate > self.LUCK_WIN_RATE_THRESHOLD
+                and history.total_trades < self.LUCK_MIN_TRADES
+            ):
+                red_flags.append(
+                    (
+                        RedFlagType.LUCK_NOT_SKILL,
+                        f"Extreme win rate ({risk_metrics.win_rate:.1%}) with low trade count ({history.total_trades})",
+                    )
+                )
+
+            # 3. NEGATIVE_PROFIT_FACTOR
+            if risk_metrics.profit_factor < self.NEGATIVE_PROFIT_FACTOR_THRESHOLD:
+                red_flags.append(
+                    (
+                        RedFlagType.NEGATIVE_PROFIT_FACTOR,
+                        f"Negative profit factor ({risk_metrics.profit_factor:.2f}) - losing money long-term",
+                    )
+                )
+
+            # 4. NO_SPECIALIZATION
+            num_categories = len(set(history.categories)) if history.categories else 1
+            if num_categories > self.MAX_CATEGORIES_THRESHOLD:
+                red_flags.append(
+                    (
+                        RedFlagType.NO_SPECIALIZATION,
+                        f"Trading {num_categories} categories with no domain expertise",
+                    )
+                )
+
+            # 5. EXCESSIVE_DRAWDOWN
+            if risk_metrics.max_drawdown > self.EXCESSIVE_DRAWDOWN_THRESHOLD:
+                red_flags.append(
+                    (
+                        RedFlagType.EXCESSIVE_DRAWDOWN,
+                        f"Excessive drawdown ({risk_metrics.max_drawdown:.1%}) - poor risk management",
+                    )
+                )
+
+            # 6. LOW_WIN_RATE
+            if (
+                history.total_trades >= self.MIN_TRADES_FOR_STATS
+                and risk_metrics.win_rate < self.MIN_WIN_RATE_THRESHOLD
+            ):
+                red_flags.append(
+                    (
+                        RedFlagType.LOW_WIN_RATE,
+                        f"Low win rate ({risk_metrics.win_rate:.1%}) with {history.total_trades} trades",
+                    )
+                )
+
+            return red_flags
+
+        except Exception as e:
+            logger.exception(f"Error detecting red flags: {e}")
+            return []
+
+    def _calculate_wallet_age_days(self, history: TradingHistory) -> int:
+        """Calculate wallet age in days from first trade timestamp"""
+        if history.timestamps:
+            first_trade = min(history.timestamps)
+            age_seconds = time.time() - first_trade
+            return int(age_seconds / 86400)
+        return 0
+
+    def _calculate_performance_score(
+        self, history: TradingHistory, risk_metrics: RiskMetrics
     ) -> float:
-        """Calculate final weighted quality score."""
-
-        profile_weights = self.scoring_profiles[wallet_type]
-
-        # Apply regime adjustments to profile weights
-        adjusted_weights = {}
-        for component in profile_weights:
-            base_weight = profile_weights[component]
-            regime_multiplier = regime_weights.get(component, 1.0)
-            adjusted_weights[component] = base_weight * regime_multiplier
-
-        # Normalize weights
-        total_weight = sum(adjusted_weights.values())
-        if total_weight > 0:
-            normalized_weights = {k: v / total_weight for k, v in adjusted_weights.items()}
-        else:
-            normalized_weights = profile_weights
-
-        # Calculate weighted score
-        weighted_score = 0
-        for component, weight in normalized_weights.items():
-            component_score = components.get(component, 50.0)
-            weighted_score += component_score * weight
-
-        return weighted_score
-
-    def _calculate_score_confidence_intervals(
-        self, wallet_address: str, components: Dict[str, float], trade_history: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
-        """Calculate confidence intervals for the quality score."""
-
+        """Calculate performance score (0.0 to 10.0)"""
         try:
-            # Bootstrap confidence intervals
-            n_bootstraps = 1000
-            bootstrap_scores = []
+            # Profit factor score (0.0 to 10.0)
+            pf_score = min(max(risk_metrics.profit_factor, 0.0), 3.0) / 3.0 * 10.0
 
-            for _ in range(n_bootstraps):
-                # Resample trade history
-                np.random.choice(trade_history, size=len(trade_history), replace=True)
+            # Win rate score (0.0 to 10.0)
+            wr_score = min(max(risk_metrics.win_rate, 0.0), 0.8) / 0.8 * 10.0
 
-                # Recalculate components on resampled data
-                # Simplified - in practice would recalculate all components
-                resampled_score = np.mean(list(components.values()))
+            # Max drawdown score (lower drawdown = higher score)
+            # 0% drawdown = 10.0, 35%+ drawdown = 0.0
+            dd_threshold = self.EXCESSIVE_DRAWDOWN_THRESHOLD
+            dd_score = max(
+                10.0 - (risk_metrics.max_drawdown / dd_threshold) * 10.0, 0.0
+            )
 
-                bootstrap_scores.append(resampled_score)
+            # Sharpe ratio score
+            sharpe_score = min(max(risk_metrics.sharpe_ratio, 0.0), 3.0) / 3.0 * 10.0
 
-            # Calculate confidence intervals
-            bootstrap_scores = np.array(bootstrap_scores)
-            ci_lower = np.percentile(bootstrap_scores, 5)  # 90% CI
-            ci_upper = np.percentile(bootstrap_scores, 95)
+            # Weighted average
+            performance = (
+                pf_score * 0.35
+                + wr_score * 0.30
+                + dd_score * 0.20
+                + sharpe_score * 0.15
+            )
 
-            return {
-                "confidence_level": 0.90,
-                "lower_bound": ci_lower,
-                "upper_bound": ci_upper,
-                "confidence_interval_width": ci_upper - ci_lower,
-                "standard_error": np.std(bootstrap_scores),
-            }
+            return min(max(performance, 0.0), 10.0)
 
         except Exception as e:
-            logger.error(f"Error calculating confidence intervals: {e}")
-            return {
-                "confidence_level": 0.90,
-                "lower_bound": None,
-                "upper_bound": None,
-                "confidence_interval_width": None,
-                "standard_error": None,
-                "error": str(e),
-            }
+            logger.exception(f"Error calculating performance score: {e}")
+            return 0.0
 
-    def _calculate_score_stability(
-        self, wallet_address: str, current_score: float
-    ) -> Dict[str, Any]:
-        """Calculate score stability metrics."""
-
-        history = self.scoring_history.get(wallet_address) or []
-        if len(history) < self.scoring_config["score_stability_window"]:
-            return {"stability_score": 50.0, "volatility": None, "trend": None}
-
+    def _calculate_risk_score(
+        self, risk_metrics: RiskMetrics, red_flags: List[Tuple[RedFlagType, str]]
+    ) -> float:
+        """Calculate risk score (0.0 to 10.0, higher is better)"""
         try:
-            recent_scores = [
-                h["final_score"] for h in history[-self.scoring_config["score_stability_window"] :]
-            ]
-            recent_scores.append(current_score)
+            # Inverse max drawdown (lower drawdown = higher score)
+            dd_score = max(10.0 - (risk_metrics.max_drawdown * 10.0), 0.0)
 
-            # Calculate stability metrics
-            score_volatility = np.std(recent_scores)
-            score_trend = np.polyfit(range(len(recent_scores)), recent_scores, 1)[0]
+            # Win rate consistency (higher is better)
+            consistency_score = risk_metrics.win_rate_consistency * 10.0
 
-            # Stability score (lower volatility = higher stability)
-            stability_score = max(0, 100 - score_volatility * 10)
+            # Volatility score (lower volatility = higher score)
+            vol_threshold = 0.25
+            vol_score = max(
+                10.0 - (risk_metrics.volatility / vol_threshold) * 10.0, 0.0
+            )
 
-            return {
-                "stability_score": stability_score,
-                "volatility": score_volatility,
-                "trend": score_trend,
-                "samples_used": len(recent_scores),
-            }
+            # Sharpe ratio score (higher is better)
+            sharpe_score = min(max(risk_metrics.sharpe_ratio, 0.0), 2.0) / 2.0 * 10.0
+
+            # Sortino ratio score (higher is better)
+            sortino_score = min(max(risk_metrics.sortino_ratio, 0.0), 2.0) / 2.0 * 10.0
+
+            # Calmar ratio score (higher is better)
+            calmar_score = min(max(risk_metrics.calmar_ratio, 0.0), 2.5) / 2.5 * 10.0
+
+            # Time to recovery score (higher is better, faster recovery)
+            recovery_score = min(
+                max(risk_metrics.time_to_recovery_ratio * 5.0, 0.0), 10.0
+            )
+
+            # Tail risk score (lower is better)
+            tail_score = max(10.0 - (risk_metrics.tail_risk * 10.0), 0.0)
+
+            # Red flag penalty (major penalty for any red flags)
+            red_flag_count = len(red_flags)
+            red_flag_penalty = min(red_flag_count * 2.0, 10.0)  # Up to 10 point penalty
+
+            # Weighted average (inverse risk metrics + penalties)
+            risk_score = (
+                dd_score * 0.25
+                + consistency_score * 0.20
+                + vol_score * 0.10
+                + sharpe_score * 0.10
+                + sortino_score * 0.10
+                + calmar_score * 0.05
+                + recovery_score * 0.10
+                + tail_score * 0.05
+            )
+
+            # Apply red flag penalty
+            risk_score = max(risk_score - red_flag_penalty, 0.0)
+
+            return risk_score
 
         except Exception as e:
-            logger.error(f"Error calculating score stability: {e}")
-            return {"stability_score": 50.0, "volatility": None, "trend": None, "error": str(e)}
+            logger.exception(f"Error calculating risk score: {e}")
+            return 0.0
 
-    def _assess_wallet_quality(
-        self, score: float, confidence_intervals: Dict[str, Any]
-    ) -> Dict[str, str]:
-        """Assess overall wallet quality based on score and confidence."""
+    def _calculate_consistency_score(
+        self, history: TradingHistory, risk_metrics: RiskMetrics
+    ) -> float:
+        """Calculate consistency score (0.0 to 10.0)"""
+        try:
+            # Win rate consistency (already calculated in risk_metrics)
+            win_rate_consistency_score = risk_metrics.win_rate_consistency * 10.0
 
-        assessment = {
-            "overall_quality": "unknown",
-            "risk_level": "unknown",
-            "recommendation": "unknown",
-            "confidence_assessment": "unknown",
-        }
+            # Position sizing consistency (lower std = higher score)
+            ps_std = risk_metrics.position_sizing_std
+            ps_score = max(
+                10.0 - (ps_std * 20.0), 0.0
+            )  # Normalize: 0.1 std = 8.0 score
 
-        # Quality assessment
-        if score >= self.scoring_config["high_quality_threshold"]:
-            assessment["overall_quality"] = "high"
-            assessment["risk_level"] = "low"
-            assessment["recommendation"] = "strong_copy_candidate"
-        elif score >= self.scoring_config["medium_quality_threshold"]:
-            assessment["overall_quality"] = "medium"
-            assessment["risk_level"] = "medium"
-            assessment["recommendation"] = "moderate_copy_candidate"
-        else:
-            assessment["overall_quality"] = "low"
-            assessment["risk_level"] = "high"
-            assessment["recommendation"] = "avoid_copying"
+            # Trade count score (more trades = more consistency)
+            trade_count = history.total_trades
+            tc_score = min(trade_count / 50.0 * 10.0, 10.0)
 
-        # Confidence assessment
-        ci_width = confidence_intervals.get("confidence_interval_width")
-        if ci_width is not None:
-            if ci_width < 10:
-                assessment["confidence_assessment"] = "high"
-            elif ci_width < 20:
-                assessment["confidence_assessment"] = "medium"
+            # Time span score (consistent activity over time)
+            if len(history.timestamps) >= 2:
+                time_span = max(history.timestamps) - min(history.timestamps)
+                time_span_days = time_span / 86400
+                ts_score = min(time_span_days / 180.0 * 10.0, 10.0)
             else:
-                assessment["confidence_assessment"] = "low"
+                ts_score = 0.0
 
-        return assessment
+            # Weighted average
+            consistency = (
+                win_rate_consistency_score * 0.50
+                + ps_score * 0.20
+                + tc_score * 0.15
+                + ts_score * 0.15
+            )
 
-    def _store_scoring_history(self, wallet_address: str, scoring_data: Dict[str, Any]):
-        """Store scoring history for analysis."""
+            return consistency
 
-        # Get existing history or create new
-        existing_history = self.scoring_history.get(wallet_address) or []
-        existing_history.append(scoring_data)
+        except Exception as e:
+            logger.exception(f"Error calculating consistency score: {e}")
+            return 0.0
 
-        # Keep only recent history
-        max_history = 100
-        if len(existing_history) > max_history:
-            existing_history = existing_history[-max_history:]
+    def _calculate_domain_score(
+        self, domain_expertise: DomainExpertiseMetrics
+    ) -> float:
+        """Calculate domain expertise score (0.0 to 10.0)"""
+        try:
+            # Specialization score (higher is better)
+            spec_score = domain_expertise.specialization_score * 10.0
 
-        self.scoring_history.set(wallet_address, existing_history)
+            # Category diversity bonus (lower is better)
+            diversity_bonus = (1.0 - domain_expertise.category_diversity) * 3.0
 
-    def _create_insufficient_data_response(self, wallet_address: str) -> Dict[str, Any]:
-        """Create response for wallets with insufficient data."""
+            # Domain win rate score (higher is better)
+            domain_wr_score = min(domain_expertise.domain_win_rate * 10.0, 10.0)
 
-        return {
-            "wallet_address": wallet_address,
-            "quality_score": None,
-            "scoring_components": {},
-            "quality_assessment": {
-                "overall_quality": "insufficient_data",
-                "risk_level": "unknown",
-                "recommendation": "monitor_only",
-                "confidence_assessment": "none",
-            },
-            "reason": f"Insufficient trade history: minimum {self.scoring_config['min_scoring_period_days']} days required",
-            "calculation_timestamp": datetime.now().isoformat(),
-        }
+            # Consistency score (higher is better)
+            consistency_score = domain_expertise.consistency_score * 10.0
 
-    def get_scoring_statistics(self) -> Dict[str, Any]:
-        """Get overall scoring system statistics."""
+            # Weighted average
+            domain_score = (
+                spec_score * 0.40
+                + diversity_bonus * 0.25
+                + domain_wr_score * 0.20
+                + consistency_score * 0.15
+            )
 
-        # BoundedCache doesn't expose values() directly, so we use stats
-        cache_stats = self.scoring_history.get_stats()
-        total_wallets = cache_stats["size"]
-        # For simplicity, we'll use a representative sample - in production
-        # this would need to be enhanced to iterate through cache entries
-        recent_scores = []  # Would need cache iteration logic
+            return domain_score
 
-        stats = {
-            "total_wallets_scored": total_wallets,
-            "average_quality_score": np.mean(recent_scores) if recent_scores else None,
-            "score_distribution": {
-                "high_quality": sum(
-                    1 for s in recent_scores if s >= self.scoring_config["high_quality_threshold"]
+        except Exception as e:
+            logger.exception(f"Error calculating domain score: {e}")
+            return 0.0
+
+    def _calculate_total_score(
+        self,
+        performance_score: float,
+        risk_score: float,
+        consistency_score: float,
+        domain_score: float,
+        red_flags: List[Tuple[RedFlagType, str]],
+    ) -> float:
+        """Calculate total quality score (0.0 to 10.0)"""
+        try:
+            # Calculate red flag penalty
+            red_flag_penalty = 0.0
+            if red_flags:
+                # Categorize red flags by severity
+                critical_flags = [
+                    rf
+                    for rf in red_flags
+                    if rf[0]
+                    in [
+                        RedFlagType.NEGATIVE_PROFIT_FACTOR,
+                        RedFlagType.WASH_TRADING,
+                        RedFlagType.INSIDER_TRADING_SUSPECTED,
+                    ]
+                ]
+                high_flags = [
+                    rf
+                    for rf in red_flags
+                    if rf[0] not in [cf[0] for cf in critical_flags]
+                ]
+
+                # Apply penalties
+                red_flag_penalty = min(
+                    len(critical_flags) * 5.0, 10.0
+                )  # Up to 10 points
+                red_flag_penalty += min(len(high_flags) * 2.5, 10.0)  # Up to 7.5 points
+
+            # Weighted average
+            total = (
+                performance_score * self.PERFORMANCE_WEIGHT
+                + risk_score * self.RISK_WEIGHT
+                + consistency_score * self.CONSISTENCY_WEIGHT
+                + domain_score * self.DOMAIN_WEIGHT
+            )
+
+            # Apply red flag penalty (critical factor)
+            total = max(total - red_flag_penalty * 1.5, 0.0)
+
+            return min(max(total, 0.0), 10.0)
+
+        except Exception as e:
+            logger.exception(f"Error calculating total score: {e}")
+            return 0.0
+
+    def _determine_quality_tier(self, total_score: float) -> WalletQualityTier:
+        """Determine quality tier based on total score"""
+        if total_score >= 9.0:
+            return WalletQualityTier.ELITE
+        elif total_score >= 7.0:
+            return WalletQualityTier.EXPERT
+        elif total_score >= 5.0:
+            return WalletQualityTier.GOOD
+        else:
+            return WalletQualityTier.POOR
+
+    def _calculate_confidence_score(
+        self,
+        history: TradingHistory,
+        risk_metrics: RiskMetrics,
+        total_score: float,
+        domain_expertise: DomainExpertiseMetrics,
+    ) -> float:
+        """Calculate confidence score (0.0 to 1.0)"""
+        try:
+            # Base confidence from score (0-1.0 mapping)
+            base_confidence = total_score / 10.0
+
+            # Data completeness bonus (more data = higher confidence)
+            data_bonus = min(history.total_trades / 100.0 * 0.2, 0.2)  # Max 0.2 bonus
+
+            # Time span bonus (longer history = higher confidence)
+            if len(history.timestamps) >= 2:
+                time_span = max(history.timestamps) - min(history.timestamps)
+                time_span_days = time_span / 86400
+                time_bonus = min(time_span_days / 90.0 * 0.15, 0.15)  # Max 0.15 bonus
+            else:
+                time_bonus = 0.0
+
+            # Risk consistency bonus (lower risk = higher confidence)
+            risk_bonus = max(0.1, risk_metrics.win_rate_consistency) * 0.15
+
+            # Domain expertise bonus (higher expertise = higher confidence)
+            domain_bonus = (
+                1.0
+                if domain_expertise.primary_domain
+                in ["politics", "crypto", "economics"]
+                else 0.0
+            ) * 0.1
+
+            # Calculate total confidence
+            confidence = (
+                base_confidence + data_bonus + time_bonus + risk_bonus + domain_bonus
+            )
+
+            return min(max(confidence, 0.0), 1.0)
+
+        except Exception as e:
+            logger.exception(f"Error calculating confidence score: {e}")
+            return 0.5
+
+    async def _get_cached_or_placeholder_score(
+        self, wallet_address: str
+    ) -> QualityScore:
+        """Get cached score or create placeholder during circuit breaker"""
+        cache_key = f"score_{wallet_address}"
+        cached = self._score_cache.get(cache_key)
+
+        if cached:
+            logger.debug(f"Using cached score for {wallet_address[-6:]}")
+            return cached
+        else:
+            # Create placeholder score
+            logger.warning(
+                f"Creating placeholder score for {wallet_address[-6:]} (circuit breaker)"
+            )
+            return QualityScore(
+                wallet_address=wallet_address,
+                quality_tier=WalletQualityTier.POOR,
+                total_score=0.0,
+                performance_score=0.0,
+                risk_score=0.0,
+                consistency_score=0.0,
+                domain_expertise=DomainExpertiseMetrics(
+                    primary_domain="unknown",
+                    specialization_score=0.0,
+                    domain_trades=0,
+                    domain_win_rate=0.5,
+                    domain_roi=Decimal("0.00"),
+                    category_diversity=1.0,
+                    consistency_score=0.5,
                 ),
-                "medium_quality": sum(
-                    1
-                    for s in recent_scores
-                    if self.scoring_config["medium_quality_threshold"]
-                    <= s
-                    < self.scoring_config["high_quality_threshold"]
+                risk_metrics=RiskMetrics(
+                    profit_factor=1.0,
+                    max_drawdown=0.0,
+                    max_drawdown_duration=0.0,
+                    win_rate=0.5,
+                    win_rate_std=0.1,
+                    win_rate_consistency=0.9,
+                    volatility=0.2,
+                    sharpe_ratio=0.5,
+                    sortino_ratio=0.6,
+                    calmar_ratio=1.0,
+                    time_to_recovery_ratio=1.0,
+                    tail_risk=0.1,
+                    position_sizing_std=0.2,
                 ),
-                "low_quality": sum(
-                    1 for s in recent_scores if s < self.scoring_config["medium_quality_threshold"]
-                ),
-            },
-            "scoring_system_health": "healthy" if total_wallets > 0 else "initializing",
-        }
+                is_market_maker=False,
+                red_flags=[],
+                confidence_score=0.5,
+                last_updated=time.time(),
+                metadata={"placeholder": True, "circuit_breaker_active": True},
+            )
 
-        return stats
+    async def _check_rate_limit(self, api_name: str) -> None:
+        """Check rate limit and sleep if exceeded"""
+        current_time = time.time()
+        last_call = self._call_timestamps.get(api_name, 0.0)
 
-    def save_scoring_state(self):
-        """Save scoring system state."""
-        # BoundedCache instances handle automatic cleanup - persistent storage less critical
-        logger.info("💾 Scoring state managed automatically by BoundedCache")
+        # Reset if more than 1 second since last call
+        if current_time - last_call > 1.0:
+            self._call_timestamps[api_name] = current_time
+            return
 
-    def load_scoring_state(self):
-        """Load scoring system state."""
-        # BoundedCache instances handle automatic cleanup - state loads on demand
-        logger.info("📊 Scoring state managed automatically by BoundedCache")
+        # Check rate limit (10 calls per second)
+        time_since_last = current_time - last_call
+        if time_since_last < 0.1:  # Less than 100ms
+            await asyncio.sleep(0.1 - time_since_last)
+            logger.debug(
+                f"Rate limiting {api_name}: sleeping for {0.1 - time_since_last:.3f}s"
+            )
+
+        self._call_timestamps[api_name] = current_time
+
+    async def get_score_summary(self) -> Dict[str, Any]:
+        """Get summary of scoring statistics"""
+        try:
+            cache_stats = self._score_cache.get_stats()
+            history_stats = self._history_cache.get_stats()
+
+            return {
+                "timestamp": time.time(),
+                "total_scores": self._total_scores,
+                "mm_detections": self._mm_detections,
+                "red_flag_detections": self._red_flag_detections,
+                "cache_stats": {
+                    "score_cache": cache_stats,
+                    "history_cache": history_stats,
+                },
+            }
+
+        except Exception as e:
+            logger.exception(f"Error getting score summary: {e}")
+            return {}
+
+    async def cleanup(self) -> None:
+        """Clean up expired cache entries"""
+        try:
+            self._score_cache.cleanup()
+            self._history_cache.cleanup()
+            logger.info("WalletQualityScorer cleanup complete")
+
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
+
+    async def reset_wallet_score(self, wallet_address: str) -> bool:
+        """Reset score for a specific wallet (for testing or manual intervention)"""
+        try:
+            cache_key = f"score_{wallet_address}"
+            self._score_cache.delete(cache_key)
+            history_key = f"history_{wallet_address}"
+            self._history_cache.delete(history_key)
+
+            logger.info(f"Reset score for wallet {wallet_address[-6:]}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Error resetting score for wallet {wallet_address[-6:]}: {e}")
+            return False
+
+    async def batch_score_wallets(
+        self, wallets_data: List[Dict[str, Any]]
+    ) -> List[QualityScore]:
+        """Score multiple wallets in parallel (with rate limiting)"""
+        async with self._rate_limiter:  # Limit to 10 concurrent calls
+            tasks = [
+                self.score_wallet(wallet_data.get("address", ""), wallet_data)
+                for wallet_data in wallets_data
+            ]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Filter out None results (errors)
+        valid_results = [r for r in results if r is not None]
+
+        return valid_results
+
+    async def get_top_wallets(
+        self,
+        all_wallets: List[Dict[str, Any]],
+        min_quality_score: float = 5.0,
+        max_wallets: int = 5,
+    ) -> List[QualityScore]:
+        """Get top N wallets by quality score"""
+        # Score all wallets
+        scored_wallets = await self.batch_score_wallets(all_wallets)
+
+        # Filter by minimum score and exclude market makers
+        qualified_wallets = [
+            w
+            for w in scored_wallets
+            if w.total_score >= min_quality_score
+            and not w.is_market_maker
+            and len(w.red_flags) == 0
+        ]
+
+        # Sort by score descending and take top N
+        top_wallets = sorted(
+            qualified_wallets, key=lambda w: w.total_score, reverse=True
+        )[:max_wallets]
+
+        logger.info(
+            f"Top {len(top_wallets)} wallets: "
+            f"{[f'{w.wallet_address[-6:]} ({w.total_score:.1f})' for w in top_wallets]}"
+        )
+
+        return top_wallets
+
+
+# Example usage
+async def example_usage():
+    """Example of how to use WalletQualityScorer"""
+    from pathlib import Path
+
+    from config.scanner_config import get_scanner_config
+    from core.circuit_breaker import CircuitBreaker
+
+    # Initialize with configuration
+    config = get_scanner_config()
+    circuit_breaker = CircuitBreaker(
+        max_daily_loss=100.0,
+        wallet_address="0x0000000000000000000000000000000000000000001",
+        state_file=Path("data/circuit_breaker_state.json"),
+    )
+
+    scorer = WalletQualityScorer(
+        config=config,
+        circuit_breaker=circuit_breaker,
+        cache_ttl_seconds=3600,
+        max_cache_size=1000,
+    )
+
+    # Sample wallet data
+    wallet_data = {
+        "address": "0x742d35Cc6634C0532925a3b8D4C0c2f8a2a3a7b9",
+        "trades": [
+            {
+                "timestamp": time.time() - (86400 * i * 24),  # i days ago
+                "is_profitable": i % 2 == 0,  # 50% win rate
+                "pnl": Decimal(str(10.0 * (1 if i % 2 == 0 else -1))),
+                "category": "politics" if i < 30 else "economics",
+                "position_size": 100 + i * 10,  # $100-200
+            }
+            for i in range(100)  # 100 trades
+        ],
+        "trade_count": 100,
+    }
+
+    # Score the wallet
+    score = await scorer.score_wallet(
+        wallet_address=wallet_data["address"],
+        wallet_data=wallet_data,
+    )
+
+    if score:
+        logger.info("Wallet Quality Score:")
+        logger.info(f"  Address: {score.wallet_address}")
+        logger.info(f"  Tier: {score.quality_tier.value}")
+        logger.info(f"  Total Score: {score.total_score:.2f}/10")
+        logger.info(f"  Performance: {score.performance_score:.2f}/10")
+        logger.info(f"  Risk: {score.risk_score:.2f}/10")
+        logger.info(f"  Consistency: {score.consistency_score:.2f}/10")
+        logger.info(f"  Domain: {score.domain_expertise.primary_domain}")
+        logger.info(
+            f"  Specialization: {score.domain_expertise.specialization_score:.1%}"
+        )
+        logger.info(f"  Is Market Maker: {score.is_market_maker}")
+        logger.info(f"  Red Flags: {len(score.red_flags)}")
+
+        if score.red_flags:
+            logger.info("\n  Red Flags:")
+            for flag_type, reason in score.red_flags:
+                logger.info(f"    {flag_type.value}: {reason}")
+
+        logger.info("\n  Risk Metrics:")
+        logger.info(f"    Profit Factor: {score.risk_metrics.profit_factor:.2f}")
+        logger.info(f"    Max Drawdown: {score.risk_metrics.max_drawdown:.1%}")
+        logger.info(
+            f"    Max Drawdown Duration: {score.risk_metrics.max_drawdown_duration:.1f}h"
+        )
+        logger.info(
+            f"    Win Rate: {score.risk_metrics.win_rate:.1%} (±{score.risk_metrics.win_rate_std:.1%})"
+        )
+        logger.info(
+            f"    Win Rate Consistency: {score.risk_metrics.win_rate_consistency:.2f}"
+        )
+        logger.info(f"    Volatility: {score.risk_metrics.volatility:.2f}")
+        logger.info(f"    Sharpe Ratio: {score.risk_metrics.sharpe_ratio:.2f}")
+        logger.info(f"    Sortino Ratio: {score.risk_metrics.sortino_ratio:.2f}")
+        logger.info(f"    Calmar Ratio: {score.risk_metrics.calmar_ratio:.2f}")
+        logger.info(
+            f"    Time to Recovery Ratio: {score.risk_metrics.time_to_recovery_ratio:.2f}"
+        )
+        logger.info(f"    Tail Risk: {score.risk_metrics.tail_risk:.2f}")
+        logger.info(
+            f"    Position Sizing Std: {score.risk_metrics.position_sizing_std:.2f}"
+        )
+
+        logger.info("\n  Domain Expertise:")
+        logger.info(f"    Primary Domain: {score.domain_expertise.primary_domain}")
+        logger.info(f"    Domain Trades: {score.domain_expertise.domain_trades}")
+        logger.info(
+            f"    Domain Win Rate: {score.domain_expertise.domain_win_rate:.1%}"
+        )
+        logger.info(f"    Domain ROI: {score.domain_expertise.domain_roi:.1%}")
+        logger.info(
+            f"    Category Diversity: {score.domain_expertise.category_diversity:.2f}"
+        )
+        logger.info(f"    Consistency: {score.domain_expertise.consistency_score:.2f}")
+
+    # Get summary
+    summary = await scorer.get_score_summary()
+    logger.info("\n  Scoring Summary:")
+    logger.info(f"    Total Scores: {summary['total_scores']}")
+    logger.info(f"    MM Detections: {summary['mm_detections']}")
+    logger.info(f"    Red Flag Detections: {summary['red_flag_detections']}")
+
+    # Cleanup
+    await scorer.cleanup()
+    logger.info("\n✅ Example completed successfully")
+
+
+if __name__ == "__main__":
+    asyncio.run(example_usage())

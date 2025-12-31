@@ -34,8 +34,14 @@ class CLOBAPIMock:
             "0x1234567890abcdef1234567890abcdef12345678": {
                 "conditionId": "0x1234567890abcdef1234567890abcdef12345678",
                 "tokens": [
-                    {"tokenId": "0xabcdef1234567890abcdef1234567890abcdef12", "outcome": "YES"},
-                    {"tokenId": "0xabcdef1234567890abcdef1234567890abcdef13", "outcome": "NO"},
+                    {
+                        "tokenId": "0xabcdef1234567890abcdef1234567890abcdef12",
+                        "outcome": "YES",
+                    },
+                    {
+                        "tokenId": "0xabcdef1234567890abcdef1234567890abcdef13",
+                        "outcome": "NO",
+                    },
                 ],
                 "active": True,
                 "closed": False,
@@ -45,8 +51,14 @@ class CLOBAPIMock:
             "0xabcdef1234567890abcdef1234567890abcdef": {
                 "conditionId": "0xabcdef1234567890abcdef1234567890abcdef",
                 "tokens": [
-                    {"tokenId": "0x1234567890abcdef1234567890abcdef12345678", "outcome": "YES"},
-                    {"tokenId": "0x1234567890abcdef1234567890abcdef12345679", "outcome": "NO"},
+                    {
+                        "tokenId": "0x1234567890abcdef1234567890abcdef12345678",
+                        "outcome": "YES",
+                    },
+                    {
+                        "tokenId": "0x1234567890abcdef1234567890abcdef12345679",
+                        "outcome": "NO",
+                    },
                 ],
                 "active": True,
                 "closed": False,
@@ -145,7 +157,9 @@ class CLOBAPIMock:
             await asyncio.sleep(self.response_delay)
 
         if market_id:
-            return [trade for trade in self.trades if trade.get("market_id") == market_id]
+            return [
+                trade for trade in self.trades if trade.get("market_id") == market_id
+            ]
         return self.trades.copy()
 
     async def create_order(
@@ -328,7 +342,9 @@ class MockCLOBClient:
         loop = asyncio.new_event_loop()
         try:
             return loop.run_until_complete(
-                self.api_mock.create_order(market, side, amount, price, token_id, gas_price)
+                self.api_mock.create_order(
+                    market, side, amount, price, token_id, gas_price
+                )
             )
         finally:
             loop.close()
@@ -390,7 +406,9 @@ class AsyncCLOBClient:
         gas_price: int = None,
     ):
         """Async create_order."""
-        return await self.api_mock.create_order(market, side, amount, price, token_id, gas_price)
+        return await self.api_mock.create_order(
+            market, side, amount, price, token_id, gas_price
+        )
 
     async def post_order(self, order):
         """Async post_order."""

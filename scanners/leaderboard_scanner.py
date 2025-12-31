@@ -2,7 +2,7 @@ import asyncio
 import threading
 import time
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from config.scanner_config import ScannerConfig, WalletScore
 from scanners.wallet_analyzer import WalletAnalyzer
@@ -15,7 +15,7 @@ logger = get_logger(__name__)
 class SimpleErrorCounter:
     """Simple error counter for scanner circuit breaker functionality"""
 
-    def __init__(self, max_errors: int, reset_period_hours: int = 24):
+    def __init__(self, max_errors: int, reset_period_hours: int = 24) -> None:
         self.max_errors = max_errors
         self.reset_period_seconds = reset_period_hours * 3600
         self.error_count = 0
@@ -50,10 +50,12 @@ class SimpleErrorCounter:
 class LeaderboardScanner:
     """Production-grade leaderboard scanner with circuit breakers and monitoring"""
 
-    def __init__(self, config: ScannerConfig):
+    def __init__(self, config: ScannerConfig) -> None:
         self.config = config
         # Pass API failure callback to wallet analyzer
-        self.wallet_analyzer = WalletAnalyzer(config, api_failure_callback=self._handle_api_failure)
+        self.wallet_analyzer = WalletAnalyzer(
+            config, api_failure_callback=self._handle_api_failure
+        )
         self.circuit_breaker = SimpleErrorCounter(
             max_errors=self.config.MAX_DAILY_SCANNER_ERRORS, reset_period_hours=24
         )
@@ -70,7 +72,7 @@ class LeaderboardScanner:
         self.is_running = False
         self.scan_thread = None
 
-    def start_scanning(self):
+    def start_scanning(self) -> None:
         """Start continuous scanning in background thread"""
         if self.is_running:
             logger.warning("Scanner already running")
@@ -83,19 +85,21 @@ class LeaderboardScanner:
         self.scan_thread.start()
         logger.info("Leaderboard scanner started successfully")
 
-    def stop_scanning(self):
+    def stop_scanning(self) -> None:
         """Stop the scanner gracefully"""
         self.is_running = False
         if self.scan_thread and self.scan_thread.is_alive():
             self.scan_thread.join(timeout=5.0)
         logger.info("Leaderboard scanner stopped")
 
-    def _scan_loop(self):
+    def _scan_loop(self) -> None:
         """Main scanning loop with error handling and backoff"""
         while self.is_running:
             try:
                 if self.circuit_breaker.is_tripped():
-                    logger.warning("Scanner circuit breaker tripped. Waiting for reset...")
+                    logger.warning(
+                        "Scanner circuit breaker tripped. Waiting for reset..."
+                    )
                     time.sleep(300)  # Wait 5 minutes before checking again
                     continue
 
@@ -130,7 +134,10 @@ class LeaderboardScanner:
                 results = self.wallet_analyzer.analyze_leaderboard_wallets()
 
                 # Check if we're in fallback mode due to API issues
-                if hasattr(self.wallet_analyzer, "polymarket_api") and self.fallback_mode:
+                if (
+                    hasattr(self.wallet_analyzer, "polymarket_api")
+                    and self.fallback_mode
+                ):
                     logger.info(
                         "✅ Scan successful while in fallback mode - API may have recovered"
                     )
@@ -183,7 +190,9 @@ class LeaderboardScanner:
                     "address": wallet.address,
                     "confidence_score": wallet.confidence_score,
                     "risk_score": wallet.risk_score,
-                    "position_size_factor": self._calculate_position_size_factor(wallet),
+                    "position_size_factor": self._calculate_position_size_factor(
+                        wallet
+                    ),
                     "metrics": wallet.metrics,
                 }
             )
@@ -201,7 +210,9 @@ class LeaderboardScanner:
         # Performance bonus
         performance_bonus = min(wallet_score.performance_score * 0.2, 0.1)
 
-        final_factor = max(0.1, base_factor - risk_penalty + performance_bonus)  # Min 0.1x
+        final_factor = max(
+            0.1, base_factor - risk_penalty + performance_bonus
+        )  # Min 0.1x
 
         logger.debug(
             f"Position size factor for {wallet_score.address[:8]}: "
@@ -211,7 +222,9 @@ class LeaderboardScanner:
 
         return final_factor
 
-    def _handle_api_failure(self, endpoint: str, error: Exception, attempt: int, max_attempts: int):
+    def _handle_api_failure(
+        self, endpoint: str, error: Exception, attempt: int, max_attempts: int
+    ) -> None:
         """Comprehensive API failure handling with escalation"""
         error_msg = str(error)[:200]
         logger.error(
@@ -223,7 +236,9 @@ class LeaderboardScanner:
         failure_severity = (
             "HIGH"
             if self.api_failure_count >= 3
-            else "MEDIUM" if self.api_failure_count >= 2 else "LOW"
+            else "MEDIUM"
+            if self.api_failure_count >= 2
+            else "LOW"
         )
 
         # Send appropriate alert based on severity
@@ -253,7 +268,9 @@ class LeaderboardScanner:
 
         # Auto-escalation to fallback mode
         if self.api_failure_count >= 3 and not self.fallback_mode:
-            logger.critical("🔥 Activating fallback mode due to persistent API failures")
+            logger.critical(
+                "🔥 Activating fallback mode due to persistent API failures"
+            )
             self.fallback_mode = True
             self.fallback_start_time = time.time()
             asyncio.create_task(
@@ -265,12 +282,14 @@ class LeaderboardScanner:
                 )
             )
 
-    def _handle_scan_failure(self, error: Exception):
+    def _handle_scan_failure(self, error: Exception) -> None:
         """Handle scan failures with intelligent degradation"""
         self.api_failure_count += 1
 
         if self.api_failure_count >= self.config.MAX_API_FAILURES:
-            logger.warning("🚨 API failure threshold exceeded. Activating fallback mode.")
+            logger.warning(
+                "🚨 API failure threshold exceeded. Activating fallback mode."
+            )
             self.fallback_mode = True
             self.fallback_mode_until = time.time() + (
                 self.config.FALLBACK_MODE_DURATION_HOURS * 3600
@@ -299,7 +318,7 @@ class LeaderboardScanner:
             # Return emergency fallback if community wallets fail
             return self.wallet_analyzer.polymarket_api._get_emergency_wallets()
 
-    def _check_fallback_mode_recovery(self):
+    def _check_fallback_mode_recovery(self) -> None:
         """Check if fallback mode should be deactivated"""
         if self.fallback_mode and time.time() > self.fallback_mode_until:
             logger.info(
@@ -308,7 +327,7 @@ class LeaderboardScanner:
             self.fallback_mode = False
             self.api_failure_count = 0  # Reset failure count to try again
 
-    async def send_error_alert(self, title: str, details: Dict[str, Any]):
+    async def send_error_alert(self, title: str, details: Dict[str, Any]) -> None:
         """Send error alert (placeholder for actual alerting system)"""
         try:
             logger.error(f"ALERT: {title}")
@@ -321,7 +340,7 @@ class LeaderboardScanner:
             logger.error(f"Failed to send error alert: {e}")
 
     def health_check(self) -> bool:
-        """✅ Proper health check method for scanner"""
+        """✅ Comprehensive health check for scanner"""
         try:
             # Check if scanner is running
             is_running = self.is_running
@@ -329,24 +348,59 @@ class LeaderboardScanner:
             # Check circuit breaker status
             circuit_ok = not self.circuit_breaker.is_tripped()
 
-            # Check last scan was recent
+            # Check last scan was recent (within 2x scan interval)
             recent_scan = (time.time() - self.last_scan_time) < (
                 self.config.SCAN_INTERVAL_HOURS * 3600 * 2
             )
 
-            # Check we have valid results
+            # Check we have valid scan results
             has_results = len(self.last_scan_results) > 0
 
-            healthy = is_running and circuit_ok and recent_scan and has_results
-            status = "✅ HEALTHY" if healthy else "❌ UNHEALTHY"
+            # Check memory usage (if available)
+            memory_ok = True
+            if hasattr(self, "get_memory_usage"):
+                memory_usage = self.get_memory_usage()
+                memory_ok = memory_usage < self.config.MEMORY_LIMIT_MB
+
+            # Determine overall health
+            healthy = (
+                is_running and circuit_ok and recent_scan and has_results and memory_ok
+            )
+
+            # Log detailed status
+            status_details = {
+                "running": is_running,
+                "circuit_ok": circuit_ok,
+                "recent_scan": recent_scan,
+                "has_results": has_results,
+                "memory_ok": memory_ok,
+            }
 
             logger.debug(
-                f"Scanner Health: {status} - Running: {is_running}, Circuit: {circuit_ok}, Recent Scan: {recent_scan}, Has Results: {has_results}"
+                f"Scanner Health: {'✅ HEALTHY' if healthy else '❌ UNHEALTHY'} - Details: {status_details}"
             )
+
+            if not healthy:
+                # Send alert if critical components are failing
+                if not (circuit_ok and has_results):
+                    from utils.alerts import send_error_alert
+
+                    asyncio.create_task(
+                        send_error_alert(
+                            "Scanner Health Check Failed",
+                            {
+                                "status": "UNHEALTHY",
+                                "details": status_details,
+                                "last_scan_time": self.last_scan_time,
+                                "error_count": self.circuit_breaker.error_count,
+                            },
+                        )
+                    )
+
             return healthy
 
         except Exception as e:
-            logger.error(f"Scanner health check failed: {str(e)[:100]}")
+            logger.error(f"Scanner health check failed: {str(e)[:150]}")
             return False
 
     def get_scan_status(self) -> Dict[str, Any]:
@@ -365,7 +419,9 @@ class LeaderboardScanner:
                 "fallback_mode": self.fallback_mode,
                 "fallback_mode_until": self.fallback_mode_until,
                 "time_until_recovery": (
-                    max(0, self.fallback_mode_until - time.time()) if self.fallback_mode else 0
+                    max(0, self.fallback_mode_until - time.time())
+                    if self.fallback_mode
+                    else 0
                 ),
             },
             "top_wallets": [w.address for w in self.last_scan_results[:5]],

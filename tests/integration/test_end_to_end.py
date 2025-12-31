@@ -17,7 +17,11 @@ class TestEndToEndTradingFlow:
 
     @pytest.mark.asyncio
     async def test_successful_trading_cycle(
-        self, mock_polymarket_client, mock_wallet_monitor, mock_trade_executor, test_settings
+        self,
+        mock_polymarket_client,
+        mock_wallet_monitor,
+        mock_trade_executor,
+        test_settings,
     ):
         """Test successful complete trading cycle."""
         # Mock successful initialization
@@ -29,7 +33,6 @@ class TestEndToEndTradingFlow:
             patch.object(mock_wallet_monitor, "health_check", return_value=True),
             patch.object(mock_trade_executor, "health_check", return_value=True),
         ):
-
             bot = PolymarketCopyBot()
 
             # Initialize bot
@@ -51,22 +54,31 @@ class TestEndToEndTradingFlow:
 
             # Mock monitoring to return detected trade
             with (
-                patch.object(mock_wallet_monitor, "monitor_wallets", return_value=[sample_trade]),
                 patch.object(
-                    mock_trade_executor, "execute_copy_trade", return_value={"status": "success"}
+                    mock_wallet_monitor, "monitor_wallets", return_value=[sample_trade]
                 ),
-                patch.object(mock_trade_executor, "manage_positions", return_value=None),
                 patch.object(
-                    mock_wallet_monitor, "clean_processed_transactions", return_value=None
+                    mock_trade_executor,
+                    "execute_copy_trade",
+                    return_value={"status": "success"},
+                ),
+                patch.object(
+                    mock_trade_executor, "manage_positions", return_value=None
+                ),
+                patch.object(
+                    mock_wallet_monitor,
+                    "clean_processed_transactions",
+                    return_value=None,
                 ),
                 patch.object(bot, "_periodic_performance_report", return_value=None),
             ):
-
                 # Run monitoring loop once
                 await bot.monitor_loop()
 
                 # Verify trade was executed
-                mock_trade_executor.execute_copy_trade.assert_called_once_with(sample_trade)
+                mock_trade_executor.execute_copy_trade.assert_called_once_with(
+                    sample_trade
+                )
                 mock_trade_executor.manage_positions.assert_called_once()
                 mock_wallet_monitor.clean_processed_transactions.assert_called_once()
 
@@ -74,7 +86,9 @@ class TestEndToEndTradingFlow:
     async def test_bot_initialization_failure(self, test_settings):
         """Test bot initialization failure."""
         # Mock client initialization failure
-        with patch("main.PolymarketClient", side_effect=Exception("Client init failed")):
+        with patch(
+            "main.PolymarketClient", side_effect=Exception("Client init failed")
+        ):
             bot = PolymarketCopyBot()
 
             initialized = await bot.initialize()
@@ -93,7 +107,6 @@ class TestEndToEndTradingFlow:
             patch.object(mock_wallet_monitor, "health_check", return_value=True),
             patch.object(mock_trade_executor, "health_check", return_value=False),
         ):
-
             bot = PolymarketCopyBot()
 
             initialized = await bot.initialize()
@@ -114,7 +127,6 @@ class TestErrorRecoveryScenarios:
             patch("main.WalletMonitor", return_value=mock_wallet_monitor),
             patch("main.TradeExecutor", return_value=mock_trade_executor),
         ):
-
             mock_client = Mock()
             mock_client_class.return_value = mock_client
             mock_client.health_check.return_value = True
@@ -154,7 +166,6 @@ class TestErrorRecoveryScenarios:
             patch("main.WalletMonitor", return_value=mock_wallet_monitor),
             patch("main.TradeExecutor", return_value=mock_trade_executor),
         ):
-
             mock_client = Mock()
             mock_client_class.return_value = mock_client
             mock_client.health_check.return_value = True
@@ -165,7 +176,9 @@ class TestErrorRecoveryScenarios:
             await bot.initialize()
 
             # Mock monitoring failure
-            mock_wallet_monitor.monitor_wallets.side_effect = Exception("Monitoring failed")
+            mock_wallet_monitor.monitor_wallets.side_effect = Exception(
+                "Monitoring failed"
+            )
 
             # Mock other methods
             mock_trade_executor.manage_positions.return_value = None
@@ -188,7 +201,6 @@ class TestErrorRecoveryScenarios:
             patch("main.WalletMonitor", return_value=mock_wallet_monitor),
             patch("main.TradeExecutor", return_value=mock_trade_executor),
         ):
-
             # Mock initial health check failure
             mock_polymarket_client.health_check.side_effect = [
                 False,  # Initial failure
@@ -217,14 +229,15 @@ class TestCircuitBreakerIntegration:
     """Test circuit breaker integration scenarios."""
 
     @pytest.mark.asyncio
-    async def test_circuit_breaker_activation_and_reset(self, mock_trade_executor, sample_trade):
+    async def test_circuit_breaker_activation_and_reset(
+        self, mock_trade_executor, sample_trade
+    ):
         """Test circuit breaker activation and automatic reset."""
         with (
             patch("main.PolymarketClient") as mock_client_class,
             patch("main.WalletMonitor") as mock_wallet_class,
             patch("main.TradeExecutor", return_value=mock_trade_executor),
         ):
-
             mock_client = Mock()
             mock_wallet = Mock()
             mock_client_class.return_value = mock_client
@@ -336,7 +349,9 @@ class TestRiskManagementIntegration:
         await mock_trade_executor.manage_positions()
 
         # Verify position closing was attempted
-        mock_trade_executor._close_position.assert_called_once_with(position_key, "TAKE_PROFIT")
+        mock_trade_executor._close_position.assert_called_once_with(
+            position_key, "TAKE_PROFIT"
+        )
 
 
 class TestPerformanceReportingIntegration:
@@ -387,7 +402,6 @@ class TestConfigurationIntegration:
             patch("main.WalletMonitor") as mock_wallet_class,
             patch("main.TradeExecutor") as mock_trade_class,
         ):
-
             # Mock component classes
             mock_client = Mock()
             mock_wallet = Mock()
@@ -456,7 +470,7 @@ class TestAlertingIntegration:
 
                 try:
                     await bot.initialize()
-                except:
+                except Exception:
                     pass
 
                 # Error alert should have been sent during initialization failure
@@ -467,7 +481,9 @@ class TestAlertingIntegration:
         """Test that circuit breaker activation triggers alerts."""
         with patch("main.send_telegram_alert") as mock_alert:
             # Activate circuit breaker
-            mock_trade_executor.activate_circuit_breaker("Test circuit breaker activation")
+            mock_trade_executor.activate_circuit_breaker(
+                "Test circuit breaker activation"
+            )
 
             # Alert should be sent
             if mock_trade_executor.settings.alerts.alert_on_circuit_breaker:
@@ -492,7 +508,6 @@ class TestShutdownIntegration:
             patch.object(mock_wallet_monitor, "health_check", return_value=True),
             patch.object(mock_trade_executor, "health_check", return_value=True),
         ):
-
             bot = PolymarketCopyBot()
             await bot.initialize()
 
@@ -522,7 +537,7 @@ class TestConcurrencyIntegration:
                 "side": "BUY" if i % 2 == 0 else "SELL",
                 "amount": 10.0 + i,
                 "price": 0.60 + (i * 0.01),
-                "token_id": f"0x{i+1:040x}",
+                "token_id": f"0x{i + 1:040x}",
                 "confidence_score": 0.8,
             }
             for i in range(5)

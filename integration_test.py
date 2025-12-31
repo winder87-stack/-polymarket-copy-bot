@@ -3,6 +3,7 @@
 Comprehensive Integration Test for Polymarket Copy Trading Bot
 Tests component integration, security fixes, and end-to-end functionality.
 """
+
 import asyncio
 import json
 import logging
@@ -15,11 +16,15 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 # Set test environment variables
-os.environ["PRIVATE_KEY"] = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+os.environ["PRIVATE_KEY"] = (
+    "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+)
 os.environ["POLYGON_RPC_URL"] = "https://polygon-rpc.com"
 os.environ["TELEGRAM_BOT_TOKEN"] = "test_token"
 os.environ["TELEGRAM_CHAT_ID"] = "123456789"
@@ -47,25 +52,35 @@ class IntegrationTestRunner:
 
         try:
             # Test 1: Component Initialization
-            self.results["component_initialization"] = await self.test_component_initialization()
+            self.results[
+                "component_initialization"
+            ] = await self.test_component_initialization()
 
             # Test 2: Configuration Loading
-            self.results["configuration_loading"] = await self.test_configuration_loading()
+            self.results[
+                "configuration_loading"
+            ] = await self.test_configuration_loading()
 
             # Test 3: Security Validation
             self.results["security_validation"] = await self.test_security_validation()
 
             # Test 4: Concurrent Operations
-            self.results["concurrent_operations"] = await self.test_concurrent_operations()
+            self.results[
+                "concurrent_operations"
+            ] = await self.test_concurrent_operations()
 
             # Test 5: Error Handling
             self.results["error_handling"] = await self.test_error_handling()
 
             # Test 6: Performance Validation
-            self.results["performance_validation"] = await self.test_performance_validation()
+            self.results[
+                "performance_validation"
+            ] = await self.test_performance_validation()
 
             # Test 7: Race Condition Fixes
-            self.results["race_condition_fixes"] = await self.test_race_condition_fixes()
+            self.results[
+                "race_condition_fixes"
+            ] = await self.test_race_condition_fixes()
 
             # Overall assessment
             self.results["overall_integration"] = self.assess_overall_integration()
@@ -105,7 +120,6 @@ class IntegrationTestRunner:
                 patch("core.clob_client.Web3") as mock_web3,
                 patch("core.wallet_monitor.Web3") as mock_web3_monitor,
             ):
-
                 mock_web3_instance = Mock()
                 mock_web3_instance.is_connected.return_value = True
                 mock_web3.return_value = mock_web3_instance
@@ -158,14 +172,18 @@ class IntegrationTestRunner:
             logger.info("✅ Default configuration loaded")
 
             # Test environment variable override
-            with patch.dict(os.environ, {"MAX_DAILY_LOSS": "150.0", "MONITOR_INTERVAL": "20"}):
+            with patch.dict(
+                os.environ, {"MAX_DAILY_LOSS": "150.0", "MONITOR_INTERVAL": "20"}
+            ):
                 test_settings = Settings()
                 assert test_settings.risk.max_daily_loss == 150.0
                 assert test_settings.monitoring.monitor_interval == 20
                 logger.info("✅ Environment variable override working")
 
             # Test wallet file loading
-            with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".json", delete=False
+            ) as f:
                 test_wallets = {
                     "target_wallets": [
                         "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
@@ -181,7 +199,6 @@ class IntegrationTestRunner:
                     patch("config.settings.os.path.exists", return_value=True),
                     patch("builtins.open", create=True) as mock_open,
                 ):
-
                     mock_file = Mock()
                     mock_file.read.return_value = json.dumps(test_wallets)
                     mock_open.return_value.__enter__.return_value = mock_file
@@ -205,7 +222,11 @@ class IntegrationTestRunner:
 
         try:
             from utils.logging_utils import CustomJsonFormatter
-            from utils.security import mask_sensitive_data, secure_log, validate_private_key
+            from utils.security import (
+                mask_sensitive_data,
+                secure_log,
+                validate_private_key,
+            )
 
             # Test private key validation
             valid_keys = [
@@ -268,7 +289,9 @@ class IntegrationTestRunner:
             # Test concurrent API calls
             async def make_api_call(call_id):
                 balance = await api.get_balance()
-                market = await api.get_market("0x1234567890abcdef1234567890abcdef12345678")
+                market = await api.get_market(
+                    "0x1234567890abcdef1234567890abcdef12345678"
+                )
                 return f"call_{call_id}", balance, market
 
             # Run multiple concurrent calls
@@ -471,7 +494,9 @@ class IntegrationTestRunner:
         passed_tests = sum(
             1 for result in self.results.values() if isinstance(result, bool) and result
         )
-        total_tests = sum(1 for result in self.results.values() if isinstance(result, bool))
+        total_tests = sum(
+            1 for result in self.results.values() if isinstance(result, bool)
+        )
 
         success_rate = passed_tests / total_tests if total_tests > 0 else 0
 
@@ -485,9 +510,9 @@ class IntegrationTestRunner:
 # Polymarket Copy Trading Bot - Integration Test Report
 
 ## Executive Summary
-- **Test Date**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}
+- **Test Date**: {datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")}
 - **Duration**: {time.time() - self.start_time:.2f} seconds
-- **Overall Status**: {'✅ PASSED' if self.results['overall_integration'] else '❌ FAILED'}
+- **Overall Status**: {"✅ PASSED" if self.results["overall_integration"] else "❌ FAILED"}
 
 ## Test Results
 
@@ -552,7 +577,9 @@ async def main():
             status = "✅ PASSED" if result else "❌ FAILED"
             print(f"   {test_name.replace('_', ' ').title()}: {status}")
 
-    print(f"\n🎯 Overall Status: {'✅ PASSED' if results['overall_integration'] else '❌ FAILED'}")
+    print(
+        f"\n🎯 Overall Status: {'✅ PASSED' if results['overall_integration'] else '❌ FAILED'}"
+    )
     print(f"📈 Success Rate: {passed_tests}/{total_tests} tests passed")
 
     # Generate detailed report

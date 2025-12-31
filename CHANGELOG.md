@@ -5,6 +5,22 @@ All notable changes to the Polymarket Copy Trading Bot will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2025-12-29
+
+### Added
+- Added missing return type hints across 22 functions in 10 files (Issue #30)
+- Added `__all__` exports to config/__init__.py for proper re-exporting
+- Auto-formatted 101 files with ruff for consistent code style (Issue #32)
+
+### Fixed
+- Fixed unused imports across 12 files (Issue #31)
+- Fixed major syntax errors in main.py, core/trade_executor.py, scripts/analyze_wallet_quality.py
+- Fixed f-string formatting issues
+- Fixed type: ignore comment in core/clob_client.py (Issue #22)
+
+### Changed
+- Version bumped from 1.0.1 to 1.0.2
+
 ## [Unreleased]
 
 ### Fixed

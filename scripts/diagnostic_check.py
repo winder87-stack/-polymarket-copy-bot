@@ -78,7 +78,9 @@ class DiagnosticChecker:
 
         # Generate insights and recommendations
         diagnostics["insights"] = self._generate_insights(diagnostics)
-        diagnostics["recommendations"] = self._generate_diagnostic_recommendations(diagnostics)
+        diagnostics["recommendations"] = self._generate_diagnostic_recommendations(
+            diagnostics
+        )
 
         duration = (datetime.now() - start_time).total_seconds()
         logger.info(f"🔍 Diagnostics completed in {duration:.1f}s")
@@ -137,7 +139,6 @@ class DiagnosticChecker:
         status = {}
 
         try:
-
             # Main service status
             result = await asyncio.create_subprocess_exec(
                 "systemctl",
@@ -215,7 +216,9 @@ class DiagnosticChecker:
                     file_patterns = {}
                     for pattern, key in error_patterns:
                         matches = [
-                            line for line in recent_lines if re.search(pattern, line, re.IGNORECASE)
+                            line
+                            for line in recent_lines
+                            if re.search(pattern, line, re.IGNORECASE)
                         ]
                         file_patterns[key] = {
                             "count": len(matches),
@@ -229,9 +232,15 @@ class DiagnosticChecker:
 
         return analysis
 
-    async def _diagnose_performance_analysis(self, cutoff_time: datetime) -> Dict[str, Any]:
+    async def _diagnose_performance_analysis(
+        self, cutoff_time: datetime
+    ) -> Dict[str, Any]:
         """Analyze performance metrics and trends"""
-        analysis = {"metrics_available": False, "performance_trends": {}, "anomalies_detected": []}
+        analysis = {
+            "metrics_available": False,
+            "performance_trends": {},
+            "anomalies_detected": [],
+        }
 
         # Check for performance benchmark results
         perf_file = Path("monitoring/performance/latest_benchmark.json")
@@ -250,7 +259,9 @@ class DiagnosticChecker:
                 # Check for performance regressions
                 comparison = perf_data.get("comparison", {})
                 if comparison.get("regressions"):
-                    analysis["performance_trends"]["regressions"] = comparison["regressions"]
+                    analysis["performance_trends"]["regressions"] = comparison[
+                        "regressions"
+                    ]
                     analysis["anomalies_detected"].extend(
                         [
                             f"Performance regression in {reg['metric']}: {reg['change_percent']:+.1f}%"
@@ -265,7 +276,11 @@ class DiagnosticChecker:
 
     async def _diagnose_network_diagnostics(self) -> Dict[str, Any]:
         """Diagnose network connectivity and performance"""
-        diagnostics = {"connectivity_tests": {}, "latency_tests": {}, "dns_resolution": {}}
+        diagnostics = {
+            "connectivity_tests": {},
+            "latency_tests": {},
+            "dns_resolution": {},
+        }
 
         endpoints = [
             ("polygon-rpc.com", 443),
@@ -315,7 +330,9 @@ class DiagnosticChecker:
                         "exists": True,
                         "size_bytes": stat_info.st_size,
                         "permissions": oct(stat_info.st_mode)[-3:],
-                        "modified": datetime.fromtimestamp(stat_info.st_mtime).isoformat(),
+                        "modified": datetime.fromtimestamp(
+                            stat_info.st_mtime
+                        ).isoformat(),
                     }
 
                     # Check for obvious security issues
@@ -348,16 +365,22 @@ class DiagnosticChecker:
         # System insights
         system_info = diagnostics["sections"].get("system_info", {})
         if system_info.get("memory", {}).get("used_percent", 0) > 80:
-            insights.append("High memory usage detected - consider optimizing memory usage")
+            insights.append(
+                "High memory usage detected - consider optimizing memory usage"
+            )
 
         if system_info.get("cpu", {}).get("usage_percent", 0) > 80:
-            insights.append("High CPU usage detected - investigate performance bottlenecks")
+            insights.append(
+                "High CPU usage detected - investigate performance bottlenecks"
+            )
 
         # Log insights
         log_analysis = diagnostics["sections"].get("log_analysis", {})
         for log_file, patterns in log_analysis.get("patterns", {}).items():
             if patterns.get("errors", {}).get("count", 0) > 10:
-                insights.append(f"High error rate in {log_file} - investigate error patterns")
+                insights.append(
+                    f"High error rate in {log_file} - investigate error patterns"
+                )
 
         # Performance insights
         perf_analysis = diagnostics["sections"].get("performance_analysis", {})
@@ -375,7 +398,9 @@ class DiagnosticChecker:
 
         return insights
 
-    def _generate_diagnostic_recommendations(self, diagnostics: Dict[str, Any]) -> List[str]:
+    def _generate_diagnostic_recommendations(
+        self, diagnostics: Dict[str, Any]
+    ) -> List[str]:
         """Generate diagnostic recommendations"""
         recommendations = []
 
@@ -417,7 +442,9 @@ class DiagnosticChecker:
             )
 
         if not recommendations:
-            recommendations.append("System diagnostics show healthy state - continue monitoring")
+            recommendations.append(
+                "System diagnostics show healthy state - continue monitoring"
+            )
 
         return recommendations
 
@@ -428,19 +455,27 @@ async def main():
 
     parser = argparse.ArgumentParser(description="Diagnostic Check Script")
     parser.add_argument("--component", help="Focus on specific component")
-    parser.add_argument("--hours", type=int, default=24, help="Analysis time window in hours")
+    parser.add_argument(
+        "--hours", type=int, default=24, help="Analysis time window in hours"
+    )
     parser.add_argument("--output", help="Output file (default: stdout)")
     parser.add_argument("--json", action="store_true", help="JSON output format")
 
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+    )
 
     try:
         checker = DiagnosticChecker()
-        results = await checker.run_full_diagnostics(component=args.component, hours=args.hours)
+        results = await checker.run_full_diagnostics(
+            component=args.component, hours=args.hours
+        )
 
-        output = json.dumps(results, indent=2, default=str) if args.json else str(results)
+        output = (
+            json.dumps(results, indent=2, default=str) if args.json else str(results)
+        )
 
         if args.output:
             with open(args.output, "w") as f:

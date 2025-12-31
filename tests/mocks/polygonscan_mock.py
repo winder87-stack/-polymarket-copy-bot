@@ -42,7 +42,9 @@ class PolygonScanMockServer:
                 "value": "0",
                 "gasUsed": "150000",
                 "gasPrice": "50000000000",
-                "timeStamp": str(int((datetime.now() - timedelta(seconds=30)).timestamp())),
+                "timeStamp": str(
+                    int((datetime.now() - timedelta(seconds=30)).timestamp())
+                ),
                 "input": "0x1234567890abcdef",
                 "blockNumber": "50000000",
             },
@@ -53,7 +55,9 @@ class PolygonScanMockServer:
                 "value": "1000000000000000000",  # 1 ETH
                 "gasUsed": "21000",
                 "gasPrice": "30000000000",
-                "timeStamp": str(int((datetime.now() - timedelta(minutes=5)).timestamp())),
+                "timeStamp": str(
+                    int((datetime.now() - timedelta(minutes=5)).timestamp())
+                ),
                 "input": "0x",
                 "blockNumber": "50000001",
             },
@@ -90,7 +94,9 @@ class PolygonScanMockServer:
         # Sort by block number descending (as PolygonScan does)
         filtered_txs.sort(key=lambda x: int(x["blockNumber"]), reverse=True)
 
-        return web.json_response({"status": "1", "message": "OK", "result": filtered_txs})
+        return web.json_response(
+            {"status": "1", "message": "OK", "result": filtered_txs}
+        )
 
     async def handle_tokentx(self, request: web.Request) -> web.Response:
         """Handle tokentx API calls."""
@@ -110,7 +116,9 @@ class PolygonScanMockServer:
                 "to": address,
                 "value": "1000000000000000000",  # 1 token (assuming 18 decimals)
                 "contractAddress": "0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
-                "timeStamp": str(int((datetime.now() - timedelta(hours=1)).timestamp())),
+                "timeStamp": str(
+                    int((datetime.now() - timedelta(hours=1)).timestamp())
+                ),
                 "blockNumber": "50000002",
             }
         ]
@@ -123,10 +131,14 @@ class PolygonScanMockServer:
         logs = [
             {
                 "address": "0x42f5d81136d8b8c6e2e5f5abd46a5f9be4457b3a",
-                "topics": ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"],
+                "topics": [
+                    "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+                ],
                 "data": "0x000000000000000000000000742d35Cc6634C0532925a3b844Bc454e4438f44e0000000000000000000000000000000000000000000000000000000000000001",
                 "blockNumber": "0x2faf080",
-                "timeStamp": str(int((datetime.now() - timedelta(hours=2)).timestamp())),
+                "timeStamp": str(
+                    int((datetime.now() - timedelta(hours=2)).timestamp())
+                ),
                 "gasPrice": "0xb2d05e00",
                 "gasUsed": "0x24a86",
                 "logIndex": "0x0",
@@ -139,7 +151,9 @@ class PolygonScanMockServer:
 
     async def handle_error_response(self, request: web.Request) -> web.Response:
         """Handle error responses for testing."""
-        return web.json_response({"status": "0", "message": "Rate limit exceeded", "result": []})
+        return web.json_response(
+            {"status": "0", "message": "Rate limit exceeded", "result": []}
+        )
 
     async def create_app(self) -> web.Application:
         """Create the web application."""
@@ -161,7 +175,9 @@ class PolygonScanMockServer:
         self.site = web.TCPSite(self.runner, self.host, self.port)
         await self.site.start()
 
-        logger.info(f"Mock PolygonScan server started on http://{self.host}:{self.port}")
+        logger.info(
+            f"Mock PolygonScan server started on http://{self.host}:{self.port}"
+        )
 
     async def stop(self):
         """Stop the mock server."""
@@ -216,7 +232,11 @@ class AsyncPolygonScanClient:
             await self.session.close()
 
     async def get_transactions(
-        self, address: str, api_key: str = "test", start_block: int = 0, end_block: int = 99999999
+        self,
+        address: str,
+        api_key: str = "test",
+        start_block: int = 0,
+        end_block: int = 99999999,
     ) -> List[Dict[str, Any]]:
         """Get transactions for an address."""
         params = {

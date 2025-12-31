@@ -39,7 +39,7 @@ class DependencySpec:
     environment_specific: bool = False
     environments: List[str] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.environments is None:
             self.environments = ["production", "staging", "development"]
 
@@ -74,7 +74,7 @@ class DependencyStatus:
 class DependencyManager:
     """Main dependency management class"""
 
-    def __init__(self, project_root: Optional[Path] = None):
+    def __init__(self, project_root: Optional[Path] = None) -> None:
         self.project_root = project_root or Path(__file__).parent.parent
 
         # Setup paths
@@ -91,7 +91,7 @@ class DependencyManager:
         # Setup logging
         self._setup_logging()
 
-    def _setup_logging(self):
+    def _setup_logging(self) -> None:
         """Setup logging for dependency management"""
         log_dir = self.project_root / "logs"
         log_dir.mkdir(exist_ok=True)
@@ -297,7 +297,9 @@ class DependencyManager:
 
         logger.info(f"Generated {requirements_file}")
 
-    def check_vulnerabilities(self, environment: str = "production") -> List[VulnerabilityInfo]:
+    def check_vulnerabilities(
+        self, environment: str = "production"
+    ) -> List[VulnerabilityInfo]:
         """Check for security vulnerabilities in dependencies"""
         vulnerabilities = []
 
@@ -404,10 +406,13 @@ class DependencyManager:
             cache_time = datetime.fromisoformat(cache_data["timestamp"])
             cache_age = datetime.now() - cache_time
             return cache_age < timedelta(hours=24)
-        except Exception:
+        except (KeyError, ValueError, TypeError) as e:
+            logger.debug(f"Invalid cache data: {e}")
             return False
 
-    def update_dependencies(self, environment: str, dry_run: bool = True) -> Dict[str, Any]:
+    def update_dependencies(
+        self, environment: str, dry_run: bool = True
+    ) -> Dict[str, Any]:
         """Update dependencies to latest compatible versions"""
         updates = {
             "environment": environment,
@@ -418,7 +423,9 @@ class DependencyManager:
         }
 
         try:
-            requirements_file = self.requirements_dir / f"requirements-{environment}.txt"
+            requirements_file = (
+                self.requirements_dir / f"requirements-{environment}.txt"
+            )
             if not requirements_file.exists():
                 logger.error(f"Requirements file not found: {requirements_file}")
                 return updates
@@ -443,7 +450,9 @@ class DependencyManager:
 
         try:
             # Use pip-tools to resolve conflicts
-            requirements_file = self.requirements_dir / f"requirements-{environment}.txt"
+            requirements_file = (
+                self.requirements_dir / f"requirements-{environment}.txt"
+            )
             if not requirements_file.exists():
                 logger.error(f"Requirements file not found: {requirements_file}")
                 return conflicts
@@ -494,7 +503,9 @@ class DependencyManager:
     def install_dependencies(self, environment: str, upgrade: bool = False) -> bool:
         """Install dependencies for an environment"""
         try:
-            requirements_file = self.requirements_dir / f"requirements-{environment}.txt"
+            requirements_file = (
+                self.requirements_dir / f"requirements-{environment}.txt"
+            )
 
             if not requirements_file.exists():
                 logger.error(f"Requirements file not found: {requirements_file}")
@@ -521,13 +532,16 @@ class DependencyManager:
             return False
 
 
-def main():
+def main() -> None:
     """CLI interface for dependency management"""
     import argparse
 
-    parser = argparse.ArgumentParser(description="Dependency Manager for Polymarket Copy Bot")
+    parser = argparse.ArgumentParser(
+        description="Dependency Manager for Polymarket Copy Bot"
+    )
     parser.add_argument(
-        "action", choices=["generate", "check-vulns", "update", "resolve", "status", "install"]
+        "action",
+        choices=["generate", "check-vulns", "update", "resolve", "status", "install"],
     )
     parser.add_argument("--env", default="production", help="Environment name")
     parser.add_argument("--dry-run", action="store_true", help="Dry run for updates")

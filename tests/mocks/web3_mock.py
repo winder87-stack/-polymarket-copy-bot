@@ -91,8 +91,10 @@ class Web3MockProvider:
         return {
             "number": block_number,
             "hash": f"0xblock{block_number:064x}",
-            "parentHash": f"0xblock{block_number-1:064x}",
-            "timestamp": int((datetime.now() - timedelta(minutes=block_number)).timestamp()),
+            "parentHash": f"0xblock{block_number - 1:064x}",
+            "timestamp": int(
+                (datetime.now() - timedelta(minutes=block_number)).timestamp()
+            ),
             "transactions": [
                 f"0xtx{block_number}_{i:064x}" for i in range(min(5, block_number % 10))
             ],
@@ -157,7 +159,8 @@ class Web3MockProvider:
             # Return full transaction objects
             block = block.copy()
             block["transactions"] = [
-                self._create_mock_transaction(tx_hash) for tx_hash in block["transactions"]
+                self._create_mock_transaction(tx_hash)
+                for tx_hash in block["transactions"]
             ]
 
         return block
@@ -169,7 +172,9 @@ class Web3MockProvider:
 
         return self.transactions.get(tx_hash, self._create_mock_transaction(tx_hash))
 
-    def eth_call(self, transaction: Dict[str, Any], block_identifier: str = "latest") -> str:
+    def eth_call(
+        self, transaction: Dict[str, Any], block_identifier: str = "latest"
+    ) -> str:
         """Execute eth_call."""
         if self.should_fail and self.fail_with_exception:
             raise self.fail_with_exception
@@ -179,7 +184,9 @@ class Web3MockProvider:
 
         if to_address == "0x2791bca1f2de4661ed88a30c99a7a9449aa84174":  # USDC contract
             # Mock balanceOf call
-            if transaction.get("data", "").startswith("0x70a08231"):  # balanceOf selector
+            if transaction.get("data", "").startswith(
+                "0x70a08231"
+            ):  # balanceOf selector
                 owner = transaction["data"][34:74]  # Extract address from call data
                 balance = self.balances.get(f"0x{owner}", 0)
                 return hex(balance)[2:].zfill(64)  # Return as 32-byte hex
@@ -273,7 +280,9 @@ class MockWeb3:
         """Get transaction by hash."""
         return self.provider.eth_get_transaction(tx_hash)
 
-    def call(self, transaction: Dict[str, Any], block_identifier: str = "latest") -> str:
+    def call(
+        self, transaction: Dict[str, Any], block_identifier: str = "latest"
+    ) -> str:
         """Execute call."""
         return self.provider.eth_call(transaction, block_identifier)
 
@@ -383,5 +392,7 @@ if __name__ == "__main__":
     usdc_address = "0x2791bca1f2de4661ed88a30c99a7a9449aa84174"
     contract = create_mock_contract(web3, usdc_address)
 
-    balance = contract.functions.balanceOf("0x742d35Cc6634C0532925a3b844Bc454e4438f44e").call()
+    balance = contract.functions.balanceOf(
+        "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+    ).call()
     print(f"USDC Balance: {balance}")

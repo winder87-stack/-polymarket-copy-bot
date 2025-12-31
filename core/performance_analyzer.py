@@ -40,7 +40,9 @@ class PerformanceAnalyzer:
     """
 
     def __init__(
-        self, market_maker_detector: MarketMakerDetector, risk_manager: MarketMakerRiskManager
+        self,
+        market_maker_detector: MarketMakerDetector,
+        risk_manager: MarketMakerRiskManager,
     ):
         self.detector = market_maker_detector
         self.risk_manager = risk_manager
@@ -97,13 +99,17 @@ class PerformanceAnalyzer:
         # Maintain history size limit
         if len(self.performance_data) > self.max_performance_history:
             # Keep most recent records
-            self.performance_data = self.performance_data[-self.max_performance_history :]
+            self.performance_data = self.performance_data[
+                -self.max_performance_history :
+            ]
 
         logger.debug(
             f"📊 Recorded trade performance for {trade_record.get('wallet_address', 'unknown')[:8]}..."
         )
 
-    async def _enrich_trade_record(self, trade_record: Dict[str, Any]) -> Dict[str, Any]:
+    async def _enrich_trade_record(
+        self, trade_record: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Enrich trade record with additional analysis data."""
 
         enriched = trade_record.copy()
@@ -111,14 +117,20 @@ class PerformanceAnalyzer:
         wallet_address = trade_record.get("wallet_address", "")
         if wallet_address:
             # Get wallet classification
-            wallet_info = await self.detector.get_wallet_classification_report(wallet_address)
+            wallet_info = await self.detector.get_wallet_classification_report(
+                wallet_address
+            )
             enriched["wallet_type"] = wallet_info.get("classification", "unknown")
             enriched["wallet_confidence"] = wallet_info.get("confidence_score", 0.0)
-            enriched["mm_probability"] = wallet_info.get("market_maker_probability", 0.0)
+            enriched["mm_probability"] = wallet_info.get(
+                "market_maker_probability", 0.0
+            )
 
             # Get risk metrics
             risk_metrics = self.risk_manager.get_risk_metrics()
-            enriched["portfolio_risk_score"] = risk_metrics.get("overall_risk_score", 0.0)
+            enriched["portfolio_risk_score"] = risk_metrics.get(
+                "overall_risk_score", 0.0
+            )
 
         # Calculate derived metrics
         entry_price = trade_record.get("entry_price", 0)
@@ -197,7 +209,9 @@ class PerformanceAnalyzer:
             },
         }
 
-    def _calculate_type_performance_metrics(self, type_data: pd.DataFrame) -> Dict[str, Any]:
+    def _calculate_type_performance_metrics(
+        self, type_data: pd.DataFrame
+    ) -> Dict[str, Any]:
         """Calculate detailed performance metrics for a wallet type."""
 
         # Basic trade metrics
@@ -257,7 +271,8 @@ class PerformanceAnalyzer:
                 downside_deviation = np.std(downside_returns)
                 avg_return = np.mean(pnl_values)
                 sortino_ratio = (
-                    (avg_return - self.analysis_config["risk_free_rate"] / 365) / downside_deviation
+                    (avg_return - self.analysis_config["risk_free_rate"] / 365)
+                    / downside_deviation
                     if downside_deviation > 0
                     else 0
                 )
@@ -282,9 +297,13 @@ class PerformanceAnalyzer:
         # Trade frequency and timing
         if len(type_data) > 1:
             type_data["timestamp"] = pd.to_datetime(type_data["timestamp"])
-            time_diffs = type_data["timestamp"].diff().dropna().dt.total_seconds() / 3600  # hours
+            time_diffs = (
+                type_data["timestamp"].diff().dropna().dt.total_seconds() / 3600
+            )  # hours
             avg_time_between_trades = time_diffs.mean()
-            trades_per_day = 24 / avg_time_between_trades if avg_time_between_trades > 0 else 0
+            trades_per_day = (
+                24 / avg_time_between_trades if avg_time_between_trades > 0 else 0
+            )
         else:
             avg_time_between_trades = 0
             trades_per_day = 0
@@ -295,7 +314,9 @@ class PerformanceAnalyzer:
 
         # Gas efficiency
         avg_gas_cost = (
-            type_data["gas_cost_usd"].mean() if "gas_cost_usd" in type_data.columns else 0
+            type_data["gas_cost_usd"].mean()
+            if "gas_cost_usd" in type_data.columns
+            else 0
         )
         gas_efficiency = total_pnl / avg_gas_cost if avg_gas_cost > 0 else float("inf")
 
@@ -321,7 +342,9 @@ class PerformanceAnalyzer:
                 "sharpe_ratio": sharpe_ratio,
                 "sortino_ratio": sortino_ratio,
                 "calmar_ratio": calmar_ratio,
-                "value_at_risk_95": np.percentile(pnl_values, 5) if len(pnl_values) > 0 else 0,
+                "value_at_risk_95": np.percentile(pnl_values, 5)
+                if len(pnl_values) > 0
+                else 0,
             },
             "timing_metrics": {
                 "avg_holding_time_hours": avg_holding_time,
@@ -361,7 +384,9 @@ class PerformanceAnalyzer:
         rankings = {}
         for metric in ["win_rate", "total_pnl", "sharpe_ratio", "profit_factor"]:
             sorted_types = sorted(
-                comparison_data.keys(), key=lambda x: comparison_data[x][metric], reverse=True
+                comparison_data.keys(),
+                key=lambda x: comparison_data[x][metric],
+                reverse=True,
             )
             rankings[metric] = {
                 wallet_type: rank + 1 for rank, wallet_type in enumerate(sorted_types)
@@ -375,22 +400,29 @@ class PerformanceAnalyzer:
                     comparison_data.keys(), key=lambda x: comparison_data[x]["win_rate"]
                 ),
                 "highest_total_pnl": max(
-                    comparison_data.keys(), key=lambda x: comparison_data[x]["total_pnl"]
+                    comparison_data.keys(),
+                    key=lambda x: comparison_data[x]["total_pnl"],
                 ),
                 "highest_sharpe_ratio": max(
-                    comparison_data.keys(), key=lambda x: comparison_data[x]["sharpe_ratio"]
+                    comparison_data.keys(),
+                    key=lambda x: comparison_data[x]["sharpe_ratio"],
                 ),
                 "highest_profit_factor": max(
-                    comparison_data.keys(), key=lambda x: comparison_data[x]["profit_factor"]
+                    comparison_data.keys(),
+                    key=lambda x: comparison_data[x]["profit_factor"],
                 ),
             },
         }
 
-    def _perform_statistical_tests(self, wallet_type_metrics: Dict[str, Any]) -> Dict[str, Any]:
+    def _perform_statistical_tests(
+        self, wallet_type_metrics: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Perform statistical significance tests between wallet types."""
 
         if len(wallet_type_metrics) < 2:
-            return {"insufficient_data": "Need at least 2 wallet types for statistical testing"}
+            return {
+                "insufficient_data": "Need at least 2 wallet types for statistical testing"
+            }
 
         # Extract return distributions for testing
         return_distributions = {}
@@ -406,7 +438,9 @@ class PerformanceAnalyzer:
         # T-test between top two performing wallet types
         sorted_types = sorted(
             wallet_type_metrics.keys(),
-            key=lambda x: wallet_type_metrics[x]["profit_loss_metrics"]["total_pnl_usd"],
+            key=lambda x: wallet_type_metrics[x]["profit_loss_metrics"][
+                "total_pnl_usd"
+            ],
             reverse=True,
         )
 
@@ -441,7 +475,9 @@ class PerformanceAnalyzer:
         if not end_date:
             end_date = datetime.now()
         if not start_date:
-            start_date = end_date - timedelta(days=self.analysis_config["performance_window_days"])
+            start_date = end_date - timedelta(
+                days=self.analysis_config["performance_window_days"]
+            )
 
         filtered_data = []
         for record in self.performance_data:
@@ -512,7 +548,9 @@ class PerformanceAnalyzer:
         }
 
         # Core performance metrics
-        report["wallet_type_performance"] = self.calculate_wallet_type_metrics(start_date, end_date)
+        report["wallet_type_performance"] = self.calculate_wallet_type_metrics(
+            start_date, end_date
+        )
 
         if report_type in ["detailed", "comprehensive"]:
             # Attribution analysis
@@ -521,11 +559,15 @@ class PerformanceAnalyzer:
             )
 
             # Benchmarking
-            report["benchmarking"] = self.calculate_benchmark_performance(start_date, end_date)
+            report["benchmarking"] = self.calculate_benchmark_performance(
+                start_date, end_date
+            )
 
         if report_type == "comprehensive":
             # Optimization recommendations
-            report["optimization_recommendations"] = self.generate_optimization_recommendations()
+            report["optimization_recommendations"] = (
+                self.generate_optimization_recommendations()
+            )
 
             # Risk analysis
             report["risk_analysis"] = self.perform_risk_analysis(start_date, end_date)
@@ -551,7 +593,12 @@ class PerformanceAnalyzer:
             .round(2)
         )
 
-        profit_attribution.columns = ["total_pnl", "avg_pnl", "trade_count", "winning_trades"]
+        profit_attribution.columns = [
+            "total_pnl",
+            "avg_pnl",
+            "trade_count",
+            "winning_trades",
+        ]
         profit_attribution["win_rate"] = (
             profit_attribution["winning_trades"] / profit_attribution["trade_count"]
         ).round(3)
@@ -631,7 +678,9 @@ class PerformanceAnalyzer:
 
         return benchmarks
 
-    def _calculate_portfolio_metrics(self, portfolio_data: pd.DataFrame) -> Dict[str, Any]:
+    def _calculate_portfolio_metrics(
+        self, portfolio_data: pd.DataFrame
+    ) -> Dict[str, Any]:
         """Calculate performance metrics for a portfolio."""
 
         pnl_values = portfolio_data["pnl_usd"].values
@@ -640,8 +689,12 @@ class PerformanceAnalyzer:
             "total_return": pnl_values.sum(),
             "total_trades": len(pnl_values),
             "win_rate": (pnl_values > 0).sum() / len(pnl_values),
-            "avg_win": pnl_values[pnl_values > 0].mean() if (pnl_values > 0).any() else 0,
-            "avg_loss": abs(pnl_values[pnl_values < 0].mean()) if (pnl_values < 0).any() else 0,
+            "avg_win": pnl_values[pnl_values > 0].mean()
+            if (pnl_values > 0).any()
+            else 0,
+            "avg_loss": abs(pnl_values[pnl_values < 0].mean())
+            if (pnl_values < 0).any()
+            else 0,
             "volatility": np.std(pnl_values),
             "sharpe_ratio": self._calculate_sharpe_ratio(pnl_values),
             "max_drawdown": self._calculate_max_drawdown(pnl_values),
@@ -735,7 +788,11 @@ class PerformanceAnalyzer:
             "risk_concentration_index": hhi,
             "risk_distribution": concentration_weights.to_dict(),
             "most_concentrated_type": concentration_weights.idxmax(),
-            "concentration_level": "high" if hhi > 0.6 else "moderate" if hhi > 0.3 else "low",
+            "concentration_level": "high"
+            if hhi > 0.6
+            else "moderate"
+            if hhi > 0.3
+            else "low",
         }
 
     def generate_optimization_recommendations(self) -> Dict[str, Any]:
@@ -760,13 +817,16 @@ class PerformanceAnalyzer:
             profit_factor_score = min(
                 metrics["profit_loss_metrics"]["profit_factor"] / 3, 1.0
             )  # Cap at 3
-            sharpe_score = max(0, metrics["risk_metrics"]["sharpe_ratio"] / 2)  # Scale down
+            sharpe_score = max(
+                0, metrics["risk_metrics"]["sharpe_ratio"] / 2
+            )  # Scale down
 
             composite_score = (
                 win_rate_score * 0.4
                 + profit_factor_score * 0.3
                 + sharpe_score * 0.2
-                + (1 - metrics["risk_metrics"]["max_drawdown_usd"] / 1000) * 0.1  # Risk adjustment
+                + (1 - metrics["risk_metrics"]["max_drawdown_usd"] / 1000)
+                * 0.1  # Risk adjustment
             )
 
             performance_scores[wallet_type] = composite_score
@@ -788,7 +848,9 @@ class PerformanceAnalyzer:
         if total_score > 0:
             for wallet_type in sorted_types:
                 allocation = performance_scores[wallet_type] / total_score
-                recommendations["recommended_allocation"][wallet_type] = round(allocation, 3)
+                recommendations["recommended_allocation"][wallet_type] = round(
+                    allocation, 3
+                )
 
         # Identify underperforming types
         avg_score = np.mean(list(performance_scores.values()))
@@ -872,7 +934,9 @@ class PerformanceAnalyzer:
 
         # Calculate portfolio weights (by trade count as proxy for allocation)
         total_trades = type_performance["trade_count"].sum()
-        type_performance["portfolio_weight"] = type_performance["trade_count"] / total_trades
+        type_performance["portfolio_weight"] = (
+            type_performance["trade_count"] / total_trades
+        )
 
         # Benchmark performance (equal weight portfolio)
         equal_weight_return = type_performance["pnl_per_trade"].mean()
@@ -893,13 +957,17 @@ class PerformanceAnalyzer:
             selection_effect = benchmark_weight * (type_return - benchmark_return)
 
             # Interaction effect: (weight - benchmark_weight) * (type_return - benchmark_return)
-            interaction_effect = (weight - benchmark_weight) * (type_return - benchmark_return)
+            interaction_effect = (weight - benchmark_weight) * (
+                type_return - benchmark_return
+            )
 
             attribution[wallet_type] = {
                 "allocation_effect": allocation_effect,
                 "selection_effect": selection_effect,
                 "interaction_effect": interaction_effect,
-                "total_attribution": allocation_effect + selection_effect + interaction_effect,
+                "total_attribution": allocation_effect
+                + selection_effect
+                + interaction_effect,
             }
 
         return {
@@ -907,7 +975,9 @@ class PerformanceAnalyzer:
             "portfolio_summary": type_performance.to_dict(),
             "attribution_effects": attribution,
             "total_portfolio_return": type_performance["total_pnl"].sum(),
-            "attributed_return": sum([attr["total_attribution"] for attr in attribution.values()]),
+            "attributed_return": sum(
+                [attr["total_attribution"] for attr in attribution.values()]
+            ),
             "unattributed_return": type_performance["total_pnl"].sum()
             - sum([attr["total_attribution"] for attr in attribution.values()]),
         }
@@ -938,19 +1008,24 @@ class PerformanceAnalyzer:
             for col in market_data.select_dtypes(include=[np.number]).columns:
                 if market_data[col].std() > 0:  # Only for variable factors
                     factor_return = (
-                        np.corrcoef(market_data[col], df["pnl_usd"])[0, 1] * df["pnl_usd"].std()
+                        np.corrcoef(market_data[col], df["pnl_usd"])[0, 1]
+                        * df["pnl_usd"].std()
                     )
                     factors[f"market_{col}"] = factor_return
 
         # Timing factor (hour of day)
         df["hour"] = pd.to_datetime(df["timestamp"]).dt.hour
         timing_factors = df.groupby("hour")["pnl_usd"].mean()
-        factors["timing_factor"] = timing_factors.std()  # Variability in timing performance
+        factors["timing_factor"] = (
+            timing_factors.std()
+        )  # Variability in timing performance
 
         # Risk factor (position size impact)
         if df["position_size_usd"].std() > 0:
             risk_exposure = df["position_size_usd"] / df["position_size_usd"].mean()
-            risk_factor = np.corrcoef(risk_exposure, df["pnl_usd"])[0, 1] * df["pnl_usd"].std()
+            risk_factor = (
+                np.corrcoef(risk_exposure, df["pnl_usd"])[0, 1] * df["pnl_usd"].std()
+            )
             factors["risk_factor"] = risk_factor
 
         # Calculate factor contributions
@@ -985,7 +1060,9 @@ class PerformanceAnalyzer:
 
         # Calculate daily performance by wallet type
         df["date"] = pd.to_datetime(df["timestamp"]).dt.date
-        daily_performance = df.groupby(["date", "wallet_type"])["pnl_usd"].sum().unstack().fillna(0)
+        daily_performance = (
+            df.groupby(["date", "wallet_type"])["pnl_usd"].sum().unstack().fillna(0)
+        )
 
         # Calculate portfolio weights over time
         trade_counts = df.groupby(["date", "wallet_type"]).size().unstack().fillna(0)
@@ -1003,13 +1080,17 @@ class PerformanceAnalyzer:
 
         for wallet_type in daily_performance.columns:
             # Selection effect: weight difference * return difference
-            weight_diff = portfolio_weights[wallet_type] - benchmark_weights[wallet_type]
-            return_diff = daily_performance[wallet_type] - daily_performance.mean(axis=1)
+            weight_diff = (
+                portfolio_weights[wallet_type] - benchmark_weights[wallet_type]
+            )
+            return_diff = daily_performance[wallet_type] - daily_performance.mean(
+                axis=1
+            )
 
             attribution[f"{wallet_type}_selection"] = weight_diff * return_diff
-            attribution[f"{wallet_type}_allocation"] = benchmark_weights[wallet_type] * (
-                daily_performance[wallet_type] - daily_performance.mean(axis=1)
-            )
+            attribution[f"{wallet_type}_allocation"] = benchmark_weights[
+                wallet_type
+            ] * (daily_performance[wallet_type] - daily_performance.mean(axis=1))
 
         # Summarize total attribution
         total_attribution = attribution.sum()
@@ -1052,7 +1133,9 @@ class PerformanceAnalyzer:
         df["date"] = pd.to_datetime(df["timestamp"]).dt.date
 
         # Aggregate returns by day and wallet type
-        daily_returns = df.groupby(["date", "wallet_type"])["pnl_usd"].sum().unstack().fillna(0)
+        daily_returns = (
+            df.groupby(["date", "wallet_type"])["pnl_usd"].sum().unstack().fillna(0)
+        )
 
         if daily_returns.shape[1] < 2:
             return {"error": "Need at least 2 wallet types for correlation analysis"}
@@ -1085,7 +1168,9 @@ class PerformanceAnalyzer:
                                 else (
                                     "moderate"
                                     if abs(corr_value) > 0.4
-                                    else "weak" if abs(corr_value) > 0.2 else "very_weak"
+                                    else "weak"
+                                    if abs(corr_value) > 0.2
+                                    else "very_weak"
                                 )
                             )
                         ),
@@ -1120,7 +1205,9 @@ class PerformanceAnalyzer:
                 np.triu_indices_from(corr_matrix.values, k=1)
             ].mean(),
             "correlation_diversity_score": 1
-            - abs(corr_matrix.values[np.triu_indices_from(corr_matrix.values, k=1)]).mean(),
+            - abs(
+                corr_matrix.values[np.triu_indices_from(corr_matrix.values, k=1)]
+            ).mean(),
         }
 
     def analyze_opportunity_cost(
@@ -1142,7 +1229,9 @@ class PerformanceAnalyzer:
 
         # Group by date and wallet type
         df["date"] = pd.to_datetime(df["timestamp"]).dt.date
-        daily_performance = df.groupby(["date", "wallet_type"])["pnl_usd"].sum().unstack().fillna(0)
+        daily_performance = (
+            df.groupby(["date", "wallet_type"])["pnl_usd"].sum().unstack().fillna(0)
+        )
 
         # Calculate optimal strategy (always choose best performer each day)
         optimal_daily_returns = []
@@ -1168,7 +1257,9 @@ class PerformanceAnalyzer:
 
         # Days where optimal choice would have helped
         profitable_deviations = sum(
-            1 for opt, act in zip(optimal_daily_returns, actual_daily_returns) if opt > act
+            1
+            for opt, act in zip(optimal_daily_returns, actual_daily_returns)
+            if opt > act
         )
         opportunity_days_pct = profitable_deviations / len(optimal_daily_returns) * 100
 
@@ -1183,7 +1274,9 @@ class PerformanceAnalyzer:
                 if actual_cumulative[-1] != 0
                 else float("inf")
             ),
-            "best_wallet_type_days": daily_performance.idxmax(axis=1).value_counts().to_dict(),
+            "best_wallet_type_days": daily_performance.idxmax(axis=1)
+            .value_counts()
+            .to_dict(),
             "recommendation": (
                 "High opportunity cost suggests dynamic wallet selection could significantly improve returns"
                 if abs(total_opportunity_cost) > abs(actual_cumulative[-1]) * 0.2
@@ -1230,7 +1323,9 @@ class PerformanceAnalyzer:
         # High-Frequency Trader Only Portfolio
         hft_data = df[df["wallet_type"] == "high_frequency_trader"]
         if not hft_data.empty:
-            benchmarks["high_frequency_only"] = self._calculate_portfolio_metrics(hft_data)
+            benchmarks["high_frequency_only"] = self._calculate_portfolio_metrics(
+                hft_data
+            )
 
         # Hybrid Current (all data)
         benchmarks["hybrid_current"] = self._calculate_portfolio_metrics(df)
@@ -1263,8 +1358,12 @@ class PerformanceAnalyzer:
         return {
             "benchmarks": benchmarks,
             "comparison": benchmark_comparison,
-            "best_performing": max(benchmarks.keys(), key=lambda x: benchmarks[x]["total_return"]),
-            "recommendations": self._generate_benchmark_recommendations(benchmark_comparison),
+            "best_performing": max(
+                benchmarks.keys(), key=lambda x: benchmarks[x]["total_return"]
+            ),
+            "recommendations": self._generate_benchmark_recommendations(
+                benchmark_comparison
+            ),
         }
 
     def _simulate_equal_weight_portfolio(self, df: pd.DataFrame) -> np.ndarray:
@@ -1272,7 +1371,9 @@ class PerformanceAnalyzer:
 
         # Group by date
         df["date"] = pd.to_datetime(df["timestamp"]).dt.date
-        daily_performance = df.groupby(["date", "wallet_type"])["pnl_usd"].sum().unstack().fillna(0)
+        daily_performance = (
+            df.groupby(["date", "wallet_type"])["pnl_usd"].sum().unstack().fillna(0)
+        )
 
         # Equal weight returns (average across wallet types)
         equal_weight_returns = daily_performance.mean(axis=1).values
@@ -1284,7 +1385,9 @@ class PerformanceAnalyzer:
 
         # Group by date
         df["date"] = pd.to_datetime(df["timestamp"]).dt.date
-        daily_performance = df.groupby(["date", "wallet_type"])["pnl_usd"].sum().unstack().fillna(0)
+        daily_performance = (
+            df.groupby(["date", "wallet_type"])["pnl_usd"].sum().unstack().fillna(0)
+        )
 
         # Calculate volatility for each wallet type
         type_volatilities = daily_performance.std()
@@ -1294,11 +1397,15 @@ class PerformanceAnalyzer:
         risk_parity_weights = (1 / type_volatilities) / total_inverse_vol
 
         # Calculate weighted returns
-        risk_parity_returns = (daily_performance * risk_parity_weights).sum(axis=1).values
+        risk_parity_returns = (
+            (daily_performance * risk_parity_weights).sum(axis=1).values
+        )
 
         return risk_parity_returns
 
-    def _calculate_portfolio_metrics_from_returns(self, returns: np.ndarray) -> Dict[str, Any]:
+    def _calculate_portfolio_metrics_from_returns(
+        self, returns: np.ndarray
+    ) -> Dict[str, Any]:
         """Calculate portfolio metrics from return series."""
 
         if len(returns) == 0:
@@ -1358,7 +1465,9 @@ class PerformanceAnalyzer:
 
         return comparison
 
-    def _generate_benchmark_recommendations(self, comparison: Dict[str, Any]) -> List[str]:
+    def _generate_benchmark_recommendations(
+        self, comparison: Dict[str, Any]
+    ) -> List[str]:
         """Generate recommendations based on benchmark comparison."""
 
         recommendations = []
@@ -1385,7 +1494,10 @@ class PerformanceAnalyzer:
                 )
 
         # Specific recommendations
-        if "market_maker_only" in perf_rankings and perf_rankings["market_maker_only"] <= 2:
+        if (
+            "market_maker_only" in perf_rankings
+            and perf_rankings["market_maker_only"] <= 2
+        ):
             recommendations.append(
                 "🎯 **Market Maker Focus**: Pure market maker strategy shows strong performance - consider increasing MM allocation"
             )
@@ -1438,7 +1550,9 @@ class PerformanceAnalyzer:
                 with open(performance_file, "r", encoding="utf-8") as f:
                     self.performance_data = json.load(f)
 
-                logger.info(f"📊 Loaded {len(self.performance_data)} performance records")
+                logger.info(
+                    f"📊 Loaded {len(self.performance_data)} performance records"
+                )
 
             config_file = data_dir / "analysis_config.json"
             if config_file.exists():

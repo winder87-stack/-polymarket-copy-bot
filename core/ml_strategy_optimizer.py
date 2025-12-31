@@ -25,7 +25,11 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import joblib
 import numpy as np
-from sklearn.ensemble import GradientBoostingRegressor, RandomForestClassifier, VotingClassifier
+from sklearn.ensemble import (
+    GradientBoostingRegressor,
+    RandomForestClassifier,
+    VotingClassifier,
+)
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
@@ -163,7 +167,9 @@ class MLStrategyOptimizer:
                 )
 
             # Feature engineering
-            features = await self._extract_features(wallet_address, wallet_data, market_conditions)
+            features = await self._extract_features(
+                wallet_address, wallet_data, market_conditions
+            )
 
             if not features:
                 prediction_result["fallback_reason"] = "Feature extraction failed"
@@ -176,7 +182,9 @@ class MLStrategyOptimizer:
 
             # Strategy prediction
             if self.strategy_predictor:
-                strategy_probs = self.strategy_predictor.predict_proba(scaled_features)[0]
+                strategy_probs = self.strategy_predictor.predict_proba(scaled_features)[
+                    0
+                ]
 
                 # Map probabilities to available strategies
                 strategy_probabilities = {}
@@ -188,17 +196,25 @@ class MLStrategyOptimizer:
                 # Select highest probability strategy
                 if strategy_probabilities:
                     best_strategy = max(
-                        strategy_probabilities.keys(), key=lambda x: strategy_probabilities[x]
+                        strategy_probabilities.keys(),
+                        key=lambda x: strategy_probabilities[x],
                     )
                     prediction_result["recommended_strategy"] = best_strategy
-                    prediction_result["confidence_score"] = strategy_probabilities[best_strategy]
-                    prediction_result["prediction_probabilities"] = strategy_probabilities
+                    prediction_result["confidence_score"] = strategy_probabilities[
+                        best_strategy
+                    ]
+                    prediction_result["prediction_probabilities"] = (
+                        strategy_probabilities
+                    )
 
                     # Get feature importance if available
                     if hasattr(self.strategy_predictor, "feature_importances_"):
                         feature_names = list(features.keys())
                         importance_dict = dict(
-                            zip(feature_names, self.strategy_predictor.feature_importances_)
+                            zip(
+                                feature_names,
+                                self.strategy_predictor.feature_importances_,
+                            )
                         )
                         prediction_result["feature_importance"] = importance_dict
 
@@ -207,13 +223,17 @@ class MLStrategyOptimizer:
                     )
 
                 else:
-                    prediction_result["fallback_reason"] = "No matching strategies in prediction"
+                    prediction_result["fallback_reason"] = (
+                        "No matching strategies in prediction"
+                    )
                     return self._fallback_prediction(
                         wallet_data, available_strategies, prediction_result
                     )
 
             else:
-                prediction_result["fallback_reason"] = "Strategy predictor not available"
+                prediction_result["fallback_reason"] = (
+                    "Strategy predictor not available"
+                )
                 return self._fallback_prediction(
                     wallet_data, available_strategies, prediction_result
                 )
@@ -222,7 +242,9 @@ class MLStrategyOptimizer:
             logger.error(f"Error in strategy prediction for {wallet_address}: {e}")
             prediction_result["error"] = str(e)
             prediction_result["fallback_reason"] = f"Prediction error: {e}"
-            return self._fallback_prediction(wallet_data, available_strategies, prediction_result)
+            return self._fallback_prediction(
+                wallet_data, available_strategies, prediction_result
+            )
 
         return prediction_result
 
@@ -260,7 +282,9 @@ class MLStrategyOptimizer:
         # Check if fallback strategy is available
         if fallback_strategy in available_strategies:
             prediction_result["recommended_strategy"] = fallback_strategy
-            prediction_result["confidence_score"] = 0.5  # Moderate confidence for fallback
+            prediction_result["confidence_score"] = (
+                0.5  # Moderate confidence for fallback
+            )
         else:
             # Default to first available strategy
             prediction_result["recommended_strategy"] = (
@@ -273,7 +297,10 @@ class MLStrategyOptimizer:
         return prediction_result
 
     async def _extract_features(
-        self, wallet_address: str, wallet_data: Dict[str, Any], market_conditions: Dict[str, Any]
+        self,
+        wallet_address: str,
+        wallet_data: Dict[str, Any],
+        market_conditions: Dict[str, Any],
     ) -> Dict[str, float]:
         """
         Extract comprehensive features for ML prediction.
@@ -289,9 +316,13 @@ class MLStrategyOptimizer:
             confidence_score = wallet_data.get("confidence_score", 0.0)
 
             features["is_market_maker"] = 1.0 if wallet_type == "market_maker" else 0.0
-            features["is_directional"] = 1.0 if wallet_type == "directional_trader" else 0.0
+            features["is_directional"] = (
+                1.0 if wallet_type == "directional_trader" else 0.0
+            )
             features["is_arbitrage"] = 1.0 if wallet_type == "arbitrage_trader" else 0.0
-            features["is_high_frequency"] = 1.0 if wallet_type == "high_frequency_trader" else 0.0
+            features["is_high_frequency"] = (
+                1.0 if wallet_type == "high_frequency_trader" else 0.0
+            )
             features["confidence_score"] = confidence_score
 
             # Behavioral features from wallet data
@@ -303,7 +334,9 @@ class MLStrategyOptimizer:
 
             features["trade_frequency_24h"] = trade_count_24h
             features["trade_frequency_7d"] = trade_count_7d
-            features["avg_trades_per_hour"] = trade_count_24h / 24 if trade_count_24h > 0 else 0
+            features["avg_trades_per_hour"] = (
+                trade_count_24h / 24 if trade_count_24h > 0 else 0
+            )
 
             # Buy/sell behavior
             buy_sell_ratio = behavior_metrics.get("buy_sell_ratio", 1.0)
@@ -312,7 +345,9 @@ class MLStrategyOptimizer:
 
             # Position sizing
             avg_position_size = behavior_metrics.get("avg_position_size", 0)
-            position_size_volatility = behavior_metrics.get("position_size_volatility", 0)
+            position_size_volatility = behavior_metrics.get(
+                "position_size_volatility", 0
+            )
 
             features["avg_position_size"] = avg_position_size
             features["position_size_volatility"] = position_size_volatility
@@ -336,7 +371,9 @@ class MLStrategyOptimizer:
             features["profit_factor"] = profit_factor
             features["max_drawdown"] = max_drawdown
             features["sharpe_ratio"] = sharpe_ratio
-            features["risk_adjusted_return"] = win_rate * profit_factor / (max_drawdown + 0.01)
+            features["risk_adjusted_return"] = (
+                win_rate * profit_factor / (max_drawdown + 0.01)
+            )
 
             # Market condition features
             volatility_index = market_conditions.get("volatility_index", 0.2)
@@ -359,7 +396,9 @@ class MLStrategyOptimizer:
             features["is_business_hours"] = 1.0 if 9 <= current_hour <= 17 else 0.0
 
             # Cross-sectional features
-            features["volatility_adjusted_frequency"] = trade_count_24h / (volatility_index + 0.1)
+            features["volatility_adjusted_frequency"] = trade_count_24h / (
+                volatility_index + 0.1
+            )
             features["liquidity_adjusted_profit"] = profit_factor * liquidity_score
             features["gas_adjusted_win_rate"] = win_rate / (gas_multiplier**0.5)
 
@@ -388,7 +427,9 @@ class MLStrategyOptimizer:
 
             if freq_24h > 0:
                 freq_consistency = (
-                    min(freq_1h * 24 / freq_24h, freq_24h * 7 / freq_7d) if freq_7d > 0 else 0.5
+                    min(freq_1h * 24 / freq_24h, freq_24h * 7 / freq_7d)
+                    if freq_7d > 0
+                    else 0.5
                 )
                 freq_consistency = min(freq_consistency, 1.0)
             else:
@@ -409,7 +450,9 @@ class MLStrategyOptimizer:
             return 0.5
 
     async def train_strategy_predictor(
-        self, training_data: Optional[List[Dict[str, Any]]] = None, force_retrain: bool = False
+        self,
+        training_data: Optional[List[Dict[str, Any]]] = None,
+        force_retrain: bool = False,
     ) -> Dict[str, Any]:
         """
         Train the strategy prediction model using historical data.
@@ -443,7 +486,10 @@ class MLStrategyOptimizer:
             if training_data:
                 self.training_data.extend(training_data)
 
-            if len(self.training_data) < self.training_params["min_samples_for_training"]:
+            if (
+                len(self.training_data)
+                < self.training_params["min_samples_for_training"]
+            ):
                 training_results["reason"] = (
                     f"Insufficient training data: {len(self.training_data)} < {self.training_params['min_samples_for_training']}"
                 )
@@ -460,7 +506,9 @@ class MLStrategyOptimizer:
             training_results["feature_count"] = X.shape[1]
 
             # Split data for validation
-            split_idx = int(len(X) * (1 - self.training_params["validation_split_ratio"]))
+            split_idx = int(
+                len(X) * (1 - self.training_params["validation_split_ratio"])
+            )
             X_train, X_val = X[:split_idx], X[split_idx:]
             y_train, y_val = y[:split_idx], y[split_idx:]
 
@@ -470,13 +518,19 @@ class MLStrategyOptimizer:
                     (
                         "rf",
                         RandomForestClassifier(
-                            n_estimators=100, max_depth=10, min_samples_split=20, random_state=42
+                            n_estimators=100,
+                            max_depth=10,
+                            min_samples_split=20,
+                            random_state=42,
                         ),
                     ),
                     (
                         "gb",
                         GradientBoostingRegressor(
-                            n_estimators=100, max_depth=6, learning_rate=0.1, random_state=42
+                            n_estimators=100,
+                            max_depth=6,
+                            learning_rate=0.1,
+                            random_state=42,
                         ),
                     ),
                     ("lr", LogisticRegression(random_state=42, max_iter=1000)),
@@ -532,7 +586,9 @@ class MLStrategyOptimizer:
 
         return training_results
 
-    async def _prepare_training_data(self) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
+    async def _prepare_training_data(
+        self,
+    ) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
         """Prepare training data from historical strategy decisions."""
 
         try:
@@ -563,7 +619,9 @@ class MLStrategyOptimizer:
             logger.error(f"Error preparing training data: {e}")
             return None, None
 
-    async def _validate_model(self, X_val: np.ndarray, y_val: np.ndarray) -> Dict[str, Any]:
+    async def _validate_model(
+        self, X_val: np.ndarray, y_val: np.ndarray
+    ) -> Dict[str, Any]:
         """Validate trained model performance."""
 
         validation_metrics = {}
@@ -587,8 +645,12 @@ class MLStrategyOptimizer:
             validation_metrics["precision"] = precision_score(
                 y_val_encoded, y_pred, average="weighted"
             )
-            validation_metrics["recall"] = recall_score(y_val_encoded, y_pred, average="weighted")
-            validation_metrics["f1_score"] = f1_score(y_val_encoded, y_pred, average="weighted")
+            validation_metrics["recall"] = recall_score(
+                y_val_encoded, y_pred, average="weighted"
+            )
+            validation_metrics["f1_score"] = f1_score(
+                y_val_encoded, y_pred, average="weighted"
+            )
 
             # Confusion matrix
             cm = confusion_matrix(y_val_encoded, y_pred)
@@ -596,13 +658,18 @@ class MLStrategyOptimizer:
 
             # Class-specific metrics
             class_report = classification_report(
-                y_val_encoded, y_pred, target_names=self.label_encoder.classes_, output_dict=True
+                y_val_encoded,
+                y_pred,
+                target_names=self.label_encoder.classes_,
+                output_dict=True,
             )
             validation_metrics["class_report"] = class_report
 
             # Prediction confidence analysis
             prediction_confidences = np.max(y_pred_proba, axis=1)
-            validation_metrics["avg_prediction_confidence"] = np.mean(prediction_confidences)
+            validation_metrics["avg_prediction_confidence"] = np.mean(
+                prediction_confidences
+            )
             validation_metrics["confidence_std"] = np.std(prediction_confidences)
             validation_metrics["high_confidence_predictions"] = np.mean(
                 prediction_confidences > 0.8
@@ -702,7 +769,9 @@ class MLStrategyOptimizer:
 
             training_results["r2_score"] = r2_score(y_test, y_pred)
             training_results["rmse"] = np.sqrt(mean_squared_error(y_test, y_pred))
-            training_results["explained_variance"] = explained_variance_score(y_test, y_pred)
+            training_results["explained_variance"] = explained_variance_score(
+                y_test, y_pred
+            )
 
             training_results["training_successful"] = True
 
@@ -829,7 +898,9 @@ class MLStrategyOptimizer:
         return update_results
 
     async def detect_model_drift(
-        self, recent_predictions: List[Dict[str, Any]], performance_threshold: float = 0.7
+        self,
+        recent_predictions: List[Dict[str, Any]],
+        performance_threshold: float = 0.7,
     ) -> Dict[str, Any]:
         """
         Detect model drift using recent prediction performance.
@@ -853,7 +924,9 @@ class MLStrategyOptimizer:
 
         try:
             if len(recent_predictions) < 50:
-                drift_results["reason"] = "Insufficient recent predictions for drift detection"
+                drift_results["reason"] = (
+                    "Insufficient recent predictions for drift detection"
+                )
                 return drift_results
 
             # Calculate recent performance
@@ -862,7 +935,11 @@ class MLStrategyOptimizer:
 
             for pred in recent_predictions[-100:]:  # Last 100 predictions
                 if "actual_outcome" in pred and "predicted_strategy" in pred:
-                    accuracy = 1.0 if pred["predicted_strategy"] == pred["actual_outcome"] else 0.0
+                    accuracy = (
+                        1.0
+                        if pred["predicted_strategy"] == pred["actual_outcome"]
+                        else 0.0
+                    )
                     recent_accuracies.append(accuracy)
 
                 if "confidence_score" in pred:
@@ -873,11 +950,15 @@ class MLStrategyOptimizer:
                 return drift_results
 
             recent_accuracy = np.mean(recent_accuracies)
-            recent_confidence = np.mean(recent_confidences) if recent_confidences else 0.5
+            recent_confidence = (
+                np.mean(recent_confidences) if recent_confidences else 0.5
+            )
 
             # Compare to baseline performance
             baseline_accuracy = self.prediction_accuracy.get("baseline_accuracy", 0.7)
-            baseline_confidence = self.prediction_accuracy.get("baseline_confidence", 0.7)
+            baseline_confidence = self.prediction_accuracy.get(
+                "baseline_confidence", 0.7
+            )
 
             accuracy_decline = baseline_accuracy - recent_accuracy
             confidence_decline = baseline_confidence - recent_confidence
@@ -943,7 +1024,9 @@ class MLStrategyOptimizer:
             explanation["feature_importance_breakdown"] = feature_importance
 
             # Get top contributing features
-            sorted_features = sorted(feature_importance.items(), key=lambda x: x[1], reverse=True)
+            sorted_features = sorted(
+                feature_importance.items(), key=lambda x: x[1], reverse=True
+            )
             explanation["top_contributing_features"] = sorted_features[:5]
 
             # Generate decision factors
@@ -976,7 +1059,9 @@ class MLStrategyOptimizer:
             confidence_level = (
                 "high"
                 if explanation.get("confidence_score", 0) > 0.8
-                else "medium" if explanation.get("confidence_score", 0) > 0.6 else "low"
+                else "medium"
+                if explanation.get("confidence_score", 0) > 0.6
+                else "low"
             )
             explanation["confidence_interpretation"] = (
                 f"The model's {confidence_level} confidence in this prediction is based on strong alignment with historical patterns."
@@ -1031,18 +1116,24 @@ class MLStrategyOptimizer:
         if self.model_performance_history:
             latest_training = self.model_performance_history[-1]
             health_status["last_training"] = latest_training.get("training_timestamp")
-            health_status["performance_metrics"] = latest_training.get("performance_metrics", {})
+            health_status["performance_metrics"] = latest_training.get(
+                "performance_metrics", {}
+            )
 
         # Get model versions
-        if self.strategy_predictor and hasattr(self.strategy_predictor, "_model_version"):
-            health_status["model_versions"][
-                "strategy_predictor"
-            ] = self.strategy_predictor._model_version
+        if self.strategy_predictor and hasattr(
+            self.strategy_predictor, "_model_version"
+        ):
+            health_status["model_versions"]["strategy_predictor"] = (
+                self.strategy_predictor._model_version
+            )
 
-        if self.performance_predictor and hasattr(self.performance_predictor, "_model_version"):
-            health_status["model_versions"][
-                "performance_predictor"
-            ] = self.performance_predictor._model_version
+        if self.performance_predictor and hasattr(
+            self.performance_predictor, "_model_version"
+        ):
+            health_status["model_versions"]["performance_predictor"] = (
+                self.performance_predictor._model_version
+            )
 
         # Drift status
         if self.model_health_metrics.get("drift_severity", 0) > 0.2:
@@ -1099,10 +1190,12 @@ class MLStrategyOptimizer:
                 ],  # Last 5 training sessions
             }
 
-            if self.strategy_predictor and hasattr(self.strategy_predictor, "_model_version"):
-                metadata["model_versions"][
-                    "strategy_predictor"
-                ] = self.strategy_predictor._model_version
+            if self.strategy_predictor and hasattr(
+                self.strategy_predictor, "_model_version"
+            ):
+                metadata["model_versions"]["strategy_predictor"] = (
+                    self.strategy_predictor._model_version
+                )
 
             metadata_path = model_dir / "model_metadata.json"
             with open(metadata_path, "w") as f:
@@ -1199,7 +1292,10 @@ class MLStrategyOptimizer:
                         await self.train_strategy_predictor(force_retrain=True)
 
                 # Check if retraining is needed based on data size
-                if len(self.training_data) >= self.training_params["min_samples_for_training"] * 2:
+                if (
+                    len(self.training_data)
+                    >= self.training_params["min_samples_for_training"] * 2
+                ):
                     # Retrain with expanded dataset
                     await self.train_strategy_predictor(force_retrain=True)
 

@@ -1,0 +1,103 @@
+name: Code Quality Check
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install autopep8 flake8 mypy bandit pydocstyle isort
+          pip install pre-commit
+
+      - name: Run autopep8 check
+        run: |
+          echo "Checking code formatting with autopep8..."
+          autopep8 --diff --aggressive --aggressive --max-line-length=100 --recursive . \
+            --exclude=venv,__pycache__,.venv,build,dist,.git || exit 1
+          echo "✅ Code formatting check passed"
+
+      - name: Run PEP 8 linting
+        run: |
+          echo "Running PEP 8 linting with flake8..."
+          flake8 . \
+            --max-line-length=100 \
+            --extend-ignore=E203,W503 \
+            --exclude=venv,__pycache__,.venv,build,dist,.git \
+            --count \
+            --statistics || exit 1
+          echo "✅ PEP 8 linting passed"
+
+      - name: Run type checking
+        run: |
+          echo "Running type checking with mypy..."
+          mypy . \
+            --ignore-missing-imports \
+            --no-strict-optional \
+            --warn-return-any \
+            --exclude=venv|__pycache__|.venv|build|dist|tests \
+            || exit 1
+          echo "✅ Type checking passed"
+
+      - name: Run import sorting check
+        run: |
+          echo "Checking import sorting with isort..."
+          isort . \
+            --profile=black \
+            --line-length=100 \
+            --check-only \
+            --diff \
+            --skip=venv,__pycache__,.venv,build,dist || exit 1
+          echo "✅ Import sorting check passed"
+
+      - name: Run security checks
+        run: |
+          echo "Running security checks with bandit..."
+          bandit -r . \
+            -ll \
+            -i \
+            -x venv,__pycache__,.venv,build,dist,tests \
+            || exit 1
+          echo "✅ Security checks passed"
+
+      - name: Run docstring checks
+        run: |
+          echo "Checking docstrings with pydocstyle..."
+          pydocstyle . \
+            --convention=google \
+            --add-ignore=D100,D104 \
+            --match='(?!test_).*\.py' \
+            --exclude=venv,__pycache__,.venv,build,dist,tests \
+            || exit 1
+          echo "✅ Docstring checks passed"
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ All code quality checks passed!'
+            })

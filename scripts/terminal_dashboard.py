@@ -222,7 +222,9 @@ class TerminalDashboard:
         header = "🚀 Polymarket Copy Bot - Monitoring Dashboard"
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        self.stdscr.addstr(y, 0, header.ljust(width - 20), self.COLOR_HEADER | curses.A_BOLD)
+        self.stdscr.addstr(
+            y, 0, header.ljust(width - 20), self.COLOR_HEADER | curses.A_BOLD
+        )
         self.stdscr.addstr(y, width - 19, timestamp, self.COLOR_INFO)
 
         # View indicator
@@ -288,7 +290,11 @@ class TerminalDashboard:
             self.COLOR_INFO,
         )
         self._draw_metric(
-            y + 6, 2, "Processes", str(sys_metrics.get("process_count", 0)), self.COLOR_INFO
+            y + 6,
+            2,
+            "Processes",
+            str(sys_metrics.get("process_count", 0)),
+            self.COLOR_INFO,
         )
 
         # Application metrics summary
@@ -306,14 +312,18 @@ class TerminalDashboard:
             width // 2 + 3,
             "Success Rate",
             f"{app_metrics.get('success_rate_percent', 0):.1f}%",
-            self._get_metric_color(100 - app_metrics.get("success_rate_percent", 100), 20, 10),
+            self._get_metric_color(
+                100 - app_metrics.get("success_rate_percent", 100), 20, 10
+            ),
         )
         self._draw_metric(
             y + 3,
             width // 2 + 3,
             "Avg Latency",
             f"{app_metrics.get('average_latency_ms', 0):.0f}ms",
-            self._get_metric_color(app_metrics.get("average_latency_ms", 0), 5000, 10000),
+            self._get_metric_color(
+                app_metrics.get("average_latency_ms", 0), 5000, 10000
+            ),
         )
         self._draw_metric(
             y + 4,
@@ -326,7 +336,9 @@ class TerminalDashboard:
             y + 5,
             width // 2 + 3,
             "Circuit Breaker",
-            "ACTIVE" if app_metrics.get("circuit_breaker_active", False) else "INACTIVE",
+            "ACTIVE"
+            if app_metrics.get("circuit_breaker_active", False)
+            else "INACTIVE",
             (
                 self.COLOR_CRITICAL
                 if app_metrics.get("circuit_breaker_active", False)
@@ -347,9 +359,13 @@ class TerminalDashboard:
         if self.data.active_alerts:
             for i, alert in enumerate(self.data.active_alerts[:4]):
                 if alert_y + i + 1 < height - 4:
-                    severity_color = self._get_severity_color(alert.get("severity", "INFO"))
+                    severity_color = self._get_severity_color(
+                        alert.get("severity", "INFO")
+                    )
                     alert_text = f"{alert.get('severity', 'INFO')}: {alert.get('title', 'Unknown')}"
-                    self.stdscr.addstr(alert_y + i + 1, 2, alert_text[: width - 4], severity_color)
+                    self.stdscr.addstr(
+                        alert_y + i + 1, 2, alert_text[: width - 4], severity_color
+                    )
         else:
             self.stdscr.addstr(alert_y + 1, 2, "No active alerts", self.COLOR_SUCCESS)
 
@@ -388,13 +404,18 @@ class TerminalDashboard:
                 f"{sys_metrics.get('file_descriptors_used', 0)} / {sys_metrics.get('file_descriptors_limit', 0)}",
             ),
             ("Process Count", str(sys_metrics.get("process_count", 0))),
-            ("System Uptime", self._format_uptime(sys_metrics.get("uptime_seconds", 0))),
+            (
+                "System Uptime",
+                self._format_uptime(sys_metrics.get("uptime_seconds", 0)),
+            ),
         ]
 
         for i, (label, value) in enumerate(metrics):
             if y + i + 1 < height - 4:
                 self.stdscr.addstr(y + i + 1, 2, f"{label}:".ljust(25), self.COLOR_INFO)
-                self.stdscr.addstr(y + i + 1, 28, value, self._get_metric_color_value(label, value))
+                self.stdscr.addstr(
+                    y + i + 1, 28, value, self._get_metric_color_value(label, value)
+                )
 
     def _draw_application_view(self, y: int, width: int, height: int) -> None:
         """Draw detailed application metrics view"""
@@ -414,7 +435,9 @@ class TerminalDashboard:
             ("API Rate Limit Usage", f"{app_metrics.get('api_rate_limit_usage', 0)}%"),
             (
                 "Circuit Breaker Status",
-                "ACTIVE" if app_metrics.get("circuit_breaker_active", False) else "INACTIVE",
+                "ACTIVE"
+                if app_metrics.get("circuit_breaker_active", False)
+                else "INACTIVE",
             ),
         ]
 
@@ -442,7 +465,9 @@ class TerminalDashboard:
                 timestamp = alert.get("timestamp", datetime.now()).strftime("%H:%M:%S")
                 alert_line = f"[{timestamp}] {alert.get('severity', 'INFO')}: {alert.get('title', 'Unknown')}"
 
-                self.stdscr.addstr(y + i + 1, 2, alert_line[: width - 4], severity_color)
+                self.stdscr.addstr(
+                    y + i + 1, 2, alert_line[: width - 4], severity_color
+                )
 
                 # Show message on next line if space
                 if y + i + 2 < height - 4 and alert.get("message"):
@@ -471,10 +496,8 @@ class TerminalDashboard:
 
     def _draw_footer(self, y: int, width: int) -> None:
         """Draw dashboard footer with controls"""
-        controls = (
-            "[O]verview [S]ystem [A]pplication [L]erts [G]ogs [Q]uit | Last Update: {}".format(
-                self.data.last_update.strftime("%H:%M:%S")
-            )
+        controls = "[O]verview [S]ystem [A]pplication [L]erts [G]ogs [Q]uit | Last Update: {}".format(
+            self.data.last_update.strftime("%H:%M:%S")
         )
 
         self.stdscr.addstr(y, 0, "─" * width, self.COLOR_ACCENT)
@@ -497,7 +520,9 @@ class TerminalDashboard:
             self.stdscr.addstr(y + i, x + width - 1, "│", self.COLOR_ACCENT)
 
         # Bottom border
-        self.stdscr.addstr(y + height - 1, x, "└" + "─" * (width - 2) + "┘", self.COLOR_ACCENT)
+        self.stdscr.addstr(
+            y + height - 1, x, "└" + "─" * (width - 2) + "┘", self.COLOR_ACCENT
+        )
 
     def _draw_metric(self, y: int, x: int, label: str, value: str, color: int) -> None:
         """Draw a metric with label and value"""
@@ -545,17 +570,23 @@ class TerminalDashboard:
         try:
             if "CPU" in label or "Memory" in label or "Disk" in label:
                 numeric_value = float(
-                    "".join(filter(lambda x: x.isdigit() or x == ".", value.split("%")[0]))
+                    "".join(
+                        filter(lambda x: x.isdigit() or x == ".", value.split("%")[0])
+                    )
                 )
                 if "CPU" in label:
                     return self._get_metric_color(numeric_value, 80, 90)
                 elif "Memory" in label or "Disk" in label:
                     return self._get_metric_color(numeric_value, 85, 95)
             elif "Latency" in label:
-                numeric_value = float("".join(filter(lambda x: x.isdigit() or x == ".", value)))
+                numeric_value = float(
+                    "".join(filter(lambda x: x.isdigit() or x == ".", value))
+                )
                 return self._get_metric_color(numeric_value, 5000, 10000)
             elif "Rate" in label and "%" in value:
-                numeric_value = float("".join(filter(lambda x: x.isdigit() or x == ".", value)))
+                numeric_value = float(
+                    "".join(filter(lambda x: x.isdigit() or x == ".", value))
+                )
                 return self._get_metric_color(
                     100 - numeric_value, 20, 10
                 )  # Invert for success rate
@@ -604,7 +635,9 @@ def main():
         print("  G - Live logs")
         print("  Q - Quit")
         print("")
-        print("The dashboard updates automatically and shows real-time monitoring data.")
+        print(
+            "The dashboard updates automatically and shows real-time monitoring data."
+        )
         return
 
     def run_dashboard(stdscr):

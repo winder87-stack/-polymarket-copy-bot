@@ -55,7 +55,7 @@ class EnvironmentSwitch:
 class MultiEnvironmentManager:
     """Multi-environment management functionality"""
 
-    def __init__(self, project_root: Optional[Path] = None):
+    def __init__(self, project_root: Optional[Path] = None) -> None:
         self.project_root = project_root or Path(__file__).parent.parent
         self.env_manager = EnvironmentManager(self.project_root)
         self.dep_manager = DependencyManager(self.project_root)
@@ -125,13 +125,16 @@ class MultiEnvironmentManager:
         if self.current_env_file.exists():
             try:
                 return self.current_env_file.read_text().strip()
-            except Exception:
+            except (IOError, OSError, UnicodeDecodeError) as e:
+                logger.debug(f"Failed to read environment file: {e}")
                 pass
 
         # Fallback: check environment variable
         return os.environ.get("POLYMARKET_ENV")
 
-    def switch_environment(self, target_env: str, backup_current: bool = True) -> EnvironmentSwitch:
+    def switch_environment(
+        self, target_env: str, backup_current: bool = True
+    ) -> EnvironmentSwitch:
         """Switch to a different environment"""
         current_env = self.get_current_environment()
 
@@ -153,7 +156,9 @@ class MultiEnvironmentManager:
             if backup_current and current_env:
                 backup_path = self._backup_environment_state(current_env)
                 if backup_path:
-                    switch.actions_taken.append(f"Backed up {current_env} to {backup_path}")
+                    switch.actions_taken.append(
+                        f"Backed up {current_env} to {backup_path}"
+                    )
                 else:
                     switch.warnings.append("Failed to backup current environment")
 
@@ -166,7 +171,9 @@ class MultiEnvironmentManager:
             health = self.env_manager.validate_environment(target_env)
             if not health.is_healthy:
                 switch.warnings.extend(health.issues)
-                switch.actions_taken.append("Target environment has issues, attempting repair")
+                switch.actions_taken.append(
+                    "Target environment has issues, attempting repair"
+                )
 
                 # Attempt automatic repair
                 from env_repair import EnvironmentRepair
@@ -175,7 +182,9 @@ class MultiEnvironmentManager:
                 repair_result = repair.diagnose_and_repair(target_env, auto_repair=True)
 
                 if repair_result.success:
-                    switch.actions_taken.append("Successfully repaired target environment")
+                    switch.actions_taken.append(
+                        "Successfully repaired target environment"
+                    )
                 else:
                     switch.warnings.extend(repair_result.errors)
                     switch.actions_taken.append("Repair completed with warnings")
@@ -229,13 +238,13 @@ class MultiEnvironmentManager:
         """Stop services for an environment"""
         try:
             if sys.platform.startswith("linux"):
-                service_name = (
-                    f"polymarket-bot{'-' + environment if environment != 'production' else ''}"
-                )
+                service_name = f"polymarket-bot{'-' + environment if environment != 'production' else ''}"
                 import subprocess
 
                 subprocess.run(
-                    ["systemctl", "stop", service_name], capture_output=True, check=False
+                    ["systemctl", "stop", service_name],
+                    capture_output=True,
+                    check=False,
                 )
         except Exception as e:
             logger.warning(f"Failed to stop services for {environment}: {e}")
@@ -244,13 +253,13 @@ class MultiEnvironmentManager:
         """Start services for an environment"""
         try:
             if sys.platform.startswith("linux"):
-                service_name = (
-                    f"polymarket-bot{'-' + environment if environment != 'production' else ''}"
-                )
+                service_name = f"polymarket-bot{'-' + environment if environment != 'production' else ''}"
                 import subprocess
 
                 subprocess.run(
-                    ["systemctl", "start", service_name], capture_output=True, check=False
+                    ["systemctl", "start", service_name],
+                    capture_output=True,
+                    check=False,
                 )
         except Exception as e:
             logger.warning(f"Failed to start services for {environment}: {e}")
@@ -294,12 +303,21 @@ class MultiEnvironmentManager:
 
     def validate_network_compatibility(self, environment: str) -> Dict[str, Any]:
         """Validate network compatibility for an environment"""
-        result = {"compatible": True, "network": None, "issues": [], "recommendations": []}
+        result = {
+            "compatible": True,
+            "network": None,
+            "issues": [],
+            "recommendations": [],
+        }
+
+        # Type hints for mypy
+        issues: list = result["issues"]
+        recommendations: list = result["recommendations"]
 
         network = self.get_environment_network(environment)
         if not network:
             result["compatible"] = False
-            result["issues"].append(f"No network configuration for environment: {environment}")
+            issues.append(f"No network configuration for environment: {environment}")
             return result
 
         result["network"] = {
@@ -318,9 +336,14 @@ class MultiEnvironmentManager:
 
                 # Check for network-specific settings
                 if network.is_testnet:
-                    if "CLOB_HOST" not in env_content or "clob.polymarket.com" in env_content:
-                        result["issues"].append("Testnet environment should use testnet CLOB host")
-                        result["recommendations"].append(
+                    if (
+                        "CLOB_HOST" not in env_content
+                        or "clob.polymarket.com" in env_content
+                    ):
+                        issues.append(
+                            "Testnet environment should use testnet CLOB host"
+                        )
+                        recommendations.append(
                             "Set CLOB_HOST=https://clob.polymarket.com (testnet)"
                         )
                 else:
@@ -328,7 +351,7 @@ class MultiEnvironmentManager:
                         "mainnet" not in env_content.lower()
                         and "production" not in env_content.lower()
                     ):
-                        result["issues"].append(
+                        issues.append(
                             "Mainnet environment should be clearly marked as production"
                         )
 
@@ -444,7 +467,7 @@ class MultiEnvironmentManager:
             return False
 
 
-def main():
+def main() -> int:
     """CLI interface for multi-environment management"""
     import argparse
 
@@ -463,7 +486,9 @@ def main():
         ],
     )
     parser.add_argument("--env", help="Target environment name")
-    parser.add_argument("--no-backup", action="store_true", help="Skip backup during switch")
+    parser.add_argument(
+        "--no-backup", action="store_true", help="Skip backup during switch"
+    )
 
     args = parser.parse_args()
 
@@ -475,10 +500,14 @@ def main():
     if args.action == "switch":
         if not args.env:
             print("❌ Target environment required")
-            sys.exit(1)
+            return 1
 
-        switch_result = manager.switch_environment(args.env, backup_current=not args.no_backup)
-        print(f"Environment switch {'successful' if switch_result.success else 'failed'}")
+        switch_result = manager.switch_environment(
+            args.env, backup_current=not args.no_backup
+        )
+        print(
+            f"Environment switch {'successful' if switch_result.success else 'failed'}"
+        )
         print(f"From: {switch_result.from_env} → To: {switch_result.to_env}")
         print(f"Actions: {switch_result.actions_taken}")
         if switch_result.warnings:
@@ -503,7 +532,7 @@ def main():
     elif args.action == "validate-network":
         if not args.env:
             print("❌ Environment required")
-            sys.exit(1)
+            return 1
 
         validation = manager.validate_network_compatibility(args.env)
         print(
@@ -521,7 +550,7 @@ def main():
     elif args.action == "create-template":
         if not args.env:
             print("❌ Environment required")
-            sys.exit(1)
+            return 1
 
         template_path = manager.create_environment_template(args.env)
         if template_path:
@@ -532,11 +561,13 @@ def main():
     elif args.action == "quick-switch":
         if not args.env:
             print("❌ Target environment required")
-            sys.exit(1)
+            return 1
 
         success = manager.quick_switch(args.env)
         print(f"Quick switch {'successful' if success else 'failed'}")
 
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

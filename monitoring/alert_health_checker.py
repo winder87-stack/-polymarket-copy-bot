@@ -16,6 +16,7 @@ Generates health reports and alerts about alert system issues.
 import asyncio
 import json
 import logging
+import os
 import time
 from datetime import datetime, timedelta
 from typing import Any, Dict, List
@@ -29,7 +30,7 @@ logger = logging.getLogger(__name__)
 class AlertHealthChecker:
     """Health checker for alert systems"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.config = monitoring_config.alerts
         self.health_history = []
         self.alerts = []
@@ -149,9 +150,7 @@ class AlertHealthChecker:
 
             # Send test message if configured
             if settings.alerts.telegram_chat_id and self.config.test_alert_enabled:
-                test_message = (
-                    f"🔍 Alert System Health Check - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-                )
+                test_message = f"🔍 Alert System Health Check - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
 
                 try:
                     message = await bot.send_message(
@@ -193,7 +192,10 @@ class AlertHealthChecker:
 
     async def _check_email_health(self) -> Dict[str, Any]:
         """Check email alert system health"""
-        result = {"status": "not_implemented", "note": "Email alerting not currently implemented"}
+        result = {
+            "status": "not_implemented",
+            "note": "Email alerting not currently implemented",
+        }
 
         # Placeholder for future email health checking
         # Would include SMTP connectivity tests, delivery confirmation, etc.
@@ -202,7 +204,10 @@ class AlertHealthChecker:
 
     async def _check_webhook_health(self) -> Dict[str, Any]:
         """Check webhook alert system health"""
-        result = {"status": "not_implemented", "note": "Webhook alerting not currently implemented"}
+        result = {
+            "status": "not_implemented",
+            "note": "Webhook alerting not currently implemented",
+        }
 
         # Placeholder for future webhook health checking
         # Would include HTTP connectivity tests, response validation, etc.
@@ -289,19 +294,26 @@ class AlertHealthChecker:
         overall_health = results.get("overall_health", "unknown")
 
         if overall_health in ["critical", "degraded"]:
-            recommendations.append("🚨 Address critical alert system issues immediately")
+            recommendations.append(
+                "🚨 Address critical alert system issues immediately"
+            )
 
         # Check individual components
         telegram_result = checks.get("telegram", {})
         if telegram_result.get("status") == "failed":
             recommendations.append("🔧 Fix Telegram bot configuration and connectivity")
         elif telegram_result.get("status") == "slow":
-            recommendations.append("⚡ Investigate and optimize Telegram API response times")
+            recommendations.append(
+                "⚡ Investigate and optimize Telegram API response times"
+            )
 
         if not any(
-            check.get("status") in ["healthy", "not_configured"] for check in checks.values()
+            check.get("status") in ["healthy", "not_configured"]
+            for check in checks.values()
         ):
-            recommendations.append("📱 Consider implementing backup alert mechanisms (email, SMS)")
+            recommendations.append(
+                "📱 Consider implementing backup alert mechanisms (email, SMS)"
+            )
 
         # General recommendations
         if not recommendations:
@@ -428,7 +440,9 @@ class AlertHealthChecker:
 
         # Calculate averages
         if successful_checks > 0:
-            summary["average_response_time_ms"] = total_response_time / successful_checks
+            summary["average_response_time_ms"] = (
+                total_response_time / successful_checks
+            )
             summary["success_rate"] = successful_checks / len(history)
 
         # Find most common issues

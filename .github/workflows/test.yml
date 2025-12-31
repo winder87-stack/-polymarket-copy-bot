@@ -1,0 +1,284 @@
+name: Testing Workflow
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  critical-tests:
+    name: Run Critical Tests
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        module:
+          - core.trade_executor
+          - core.circuit_breaker
+          - scanners.market_analyzer
+          - core.wallet_monitor
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-cov pytest-mock pytest-timeout
+          pip install ruff mypy
+
+      - name: Lint with Ruff
+        run: |
+          ruff check . --output-format=github
+        continue-on-error: true
+
+      - name: Type check with MyPy
+        run: |
+          mypy core/ utils/ scanners/ --ignore-missing-imports || true
+        continue-on-error: true
+
+      - name: Run tests
+        env:
+          TESTING_SERVER_ENABLED: "true"
+          COVERAGE_TARGET: "0.85"
+          RUN_ON_COMMIT: "true"
+          RUN_ON_PR: "true"
+          ALERT_ON_COVERAGE_DROP: "true"
+        run: |
+          pytest tests/ -v --tb=short --cov=${{ matrix.module }} --cov-report=xml --cov-report=term-missing --cov-fail-under=85
+        timeout-minutes: 10
+
+      - name: Upload coverage reports
+        if: always()
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          flags: ${{ matrix.module }}
+          name: codecov-${{ matrix.module }}
+          fail_ci_if_error: false
+
+  integration-tests:
+    name: Run Integration Tests
+    runs-on: ubuntu-latest
+    needs: critical-tests
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-cov
+
+      - name: Run integration tests
+        env:
+          TESTING_SERVER_ENABLED: "true"
+        run: |
+          pytest tests/integration/ -v --tb=short --cov=integration --cov-report=xml --cov-report=term-missing
+        timeout-minutes: 15
+
+      - name: Upload integration coverage
+        if: always()
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          flags: integration
+          name: codecov-integration
+          fail_ci_if_error: false
+
+  coverage-report:
+    name: Generate Coverage Report
+    runs-on: ubuntu-latest
+    needs: [critical-tests, integration-tests]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install coverage
+
+      - name: Combine coverage reports
+        run: |
+          coverage combine --rcfile=.coveragerc -o coverage.combined.xml
+
+      - name: Generate coverage summary
+        run: |
+          coverage report --rcfile=.coveragerc --skip-covered | tee coverage-summary.txt
+
+      - name: Check coverage threshold
+        run: |
+          COVERAGE=$(coverage report --rcfile=.coveragerc | grep TOTAL | awk '{print $4}' | sed 's/%//')
+          THRESHOLD=85
+
+          if (( $(echo "$COVERAGE < $THRESHOLD" | bc -l) )); then
+            echo "::warning::Coverage is ${COVERAGE}%, below threshold of ${THRESHOLD}%"
+            exit 1
+          fi
+
+      - name: Upload coverage summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            coverage-summary.txt
+            coverage.combined.xml
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install security tools
+        run: |
+          pip install bandit safety
+
+      - name: Run Bandit security scan
+        run: |
+          bandit -r core/ utils/ scanners/ -f json -o bandit-report.json || true
+        continue-on-error: true
+
+      - name: Check for known vulnerabilities
+        run: |
+          safety check --json > safety-report.json || true
+        continue-on-error: true
+
+      - name: Upload security reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+            safety-report.json
+
+  performance-test:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest-benchmark pytest-asyncio
+
+      - name: Run performance benchmarks
+        run: |
+          pytest tests/performance/ -v --benchmark-only --benchmark-json=benchmark.json
+        timeout-minutes: 20
+
+      - name: Upload benchmark results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: benchmark.json
+
+  notify-test-results:
+    name: Notify Test Results
+    runs-on: ubuntu-latest
+    needs: [critical-tests, integration-tests, coverage-report]
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Send test results
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python scripts/notify_test_results.py \
+            --workflow ${{ github.workflow }} \
+            --run-id ${{ github.run_id }} \
+            --status ${{ job.status }} \
+            --branch ${{ github.ref_name }}
+        continue-on-error: true
+
+  circuit-breaker-check:
+    name: Circuit Breaker Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Check circuit breaker state
+        run: |
+          python -c "
+          from pathlib import Path
+          import json
+
+          state_file = Path('data/circuit_breaker_state.json')
+          if state_file.exists():
+              with open(state_file, 'r') as f:
+                  state = json.load(f)
+                  print(f'Circuit breaker active: {state.get(\"active\", False)}')
+                  print(f'Daily loss: ${state.get(\"daily_loss\", 0):.2f}')
+                  print(f'Consecutive losses: {state.get(\"consecutive_losses\", 0)}')
+          else:
+              print('No circuit breaker state file found')
+          "
+
+      - name: Fail if circuit breaker is active
+        run: |
+          python -c "
+          from pathlib import Path
+          import json
+
+          state_file = Path('data/circuit_breaker_state.json')
+          if state_file.exists():
+              with open(state_file, 'r') as f:
+                  state = json.load(f)
+                  if state.get('active', False):
+                      print('Circuit breaker is active - failing workflow')
+                      exit(1)
+          "

@@ -4,10 +4,9 @@
 import asyncio
 import time
 import sys
-from unittest.mock import AsyncMock, patch
 
 # Add project root to path
-sys.path.insert(0, '.')
+sys.path.insert(0, ".")
 
 from utils.rate_limited_client import RateLimitedPolygonscanClient
 
@@ -29,7 +28,6 @@ async def test_rate_limiting_enforces_delays():
     client = RateLimitedPolygonscanClient("test_key")
 
     # Make first call
-    start_time = time.time()
     await client._wait_for_rate_limit()
     first_call_time = time.time()
 
@@ -39,7 +37,9 @@ async def test_rate_limiting_enforces_delays():
 
     # Second call should be delayed by at least min_interval
     delay = second_call_time - first_call_time
-    assert delay >= client._min_interval - 0.01, f"Delay {delay} should be >= {client._min_interval}"
+    assert delay >= client._min_interval - 0.01, (
+        f"Delay {delay} should be >= {client._min_interval}"
+    )
 
     print("✅ Rate limiting delay test passed")
 
@@ -61,7 +61,9 @@ async def test_concurrent_requests_limited():
     # Should take at least (3-1) * min_interval due to queuing
     total_time = end_time - start_time
     expected_min_time = (len(tasks) - 1) * client._min_interval
-    assert total_time >= expected_min_time - 0.01, f"Total time {total_time} should be >= {expected_min_time}"
+    assert total_time >= expected_min_time - 0.01, (
+        f"Total time {total_time} should be >= {expected_min_time}"
+    )
 
     print("✅ Concurrent request limiting test passed")
 
@@ -79,7 +81,9 @@ async def test_timing_precision():
         # Should not execute immediately if we're within the rate limit window
         if round_num > 0:  # Skip first call
             elapsed = call_time - start_time
-            assert elapsed >= client._min_interval - 0.01, f"Round {round_num}: elapsed {elapsed} should be >= {client._min_interval}"
+            assert elapsed >= client._min_interval - 0.01, (
+                f"Round {round_num}: elapsed {elapsed} should be >= {client._min_interval}"
+            )
 
     print("✅ Timing precision test passed")
 
@@ -100,7 +104,9 @@ async def test_rate_limiting_with_simulated_api():
     # First call should be fast, subsequent calls should be delayed
     assert call_times[0] < 0.01, "First call should be very fast"
     for i in range(1, len(call_times)):
-        assert call_times[i] >= client._min_interval - 0.01, f"Call {i} should be delayed"
+        assert call_times[i] >= client._min_interval - 0.01, (
+            f"Call {i} should be delayed"
+        )
 
     print("✅ Simulated API rate limiting test passed")
 
@@ -120,5 +126,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ Test failed: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

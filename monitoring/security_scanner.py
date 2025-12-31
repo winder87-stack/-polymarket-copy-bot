@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 class SecurityScanner:
     """Automated security scanner for the trading bot"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.config = monitoring_config.security
         self.scan_results = {}
         self.vulnerabilities_found = []
@@ -102,7 +102,10 @@ class SecurityScanner:
             # Run safety check
             cmd = ["safety", "check", "--json"]
             process = await asyncio.create_subprocess_exec(
-                *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, cwd="."
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                cwd=".",
             )
             stdout, stderr = await process.communicate()
 
@@ -127,10 +130,15 @@ class SecurityScanner:
                         elif severity == "low":
                             result["low_count"] += 1
 
-                    logger.warning(f"⚠️ Found {len(vulnerabilities)} dependency vulnerabilities")
+                    logger.warning(
+                        f"⚠️ Found {len(vulnerabilities)} dependency vulnerabilities"
+                    )
 
                     # Generate alerts for critical issues
-                    if result["critical_count"] > self.config.critical_vulnerabilities_threshold:
+                    if (
+                        result["critical_count"]
+                        > self.config.critical_vulnerabilities_threshold
+                    ):
                         self.alerts.append(
                             {
                                 "level": "critical",
@@ -145,7 +153,9 @@ class SecurityScanner:
                     result["error"] = "Failed to parse safety output"
 
         except FileNotFoundError:
-            logger.warning("Safety tool not installed. Install with: pip install safety")
+            logger.warning(
+                "Safety tool not installed. Install with: pip install safety"
+            )
             result["status"] = "tool_missing"
             result["error"] = "Safety tool not installed"
 
@@ -212,7 +222,9 @@ class SecurityScanner:
             result["files_scanned"] = files_scanned
 
             if secrets_found:
-                logger.warning(f"⚠️ Found potential secrets in {len(secrets_found)} locations")
+                logger.warning(
+                    f"⚠️ Found potential secrets in {len(secrets_found)} locations"
+                )
 
                 if len(secrets_found) > self.config.secrets_found_threshold:
                     self.alerts.append(
@@ -221,7 +233,8 @@ class SecurityScanner:
                             "title": "Potential Secrets Exposed",
                             "message": f"Found {len(secrets_found)} potential secrets in codebase",
                             "details": [
-                                {"file": s["file"], "pattern": s["pattern"]} for s in secrets_found
+                                {"file": s["file"], "pattern": s["pattern"]}
+                                for s in secrets_found
                             ],
                         }
                     )
@@ -259,7 +272,10 @@ class SecurityScanner:
                     permissions = oct(stat_info.st_mode)[-3:]
 
                     # Alert on overly permissive files
-                    if config_file.startswith((".env", "config/")) and permissions != "600":
+                    if (
+                        config_file.startswith((".env", "config/"))
+                        and permissions != "600"
+                    ):
                         issues.append(
                             {
                                 "file": config_file,
@@ -319,7 +335,10 @@ class SecurityScanner:
                 cmd.extend(["--exclude", exclude_dir])
 
             process = await asyncio.create_subprocess_exec(
-                *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, cwd="."
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                cwd=".",
             )
             stdout, stderr = await process.communicate()
 
@@ -338,14 +357,18 @@ class SecurityScanner:
                         severity = issue.get("issue_severity", "unknown")
                         severity_counts[severity] = severity_counts.get(severity, 0) + 1
 
-                    logger.warning(f"⚠️ Found {len(result['issues'])} code security issues")
+                    logger.warning(
+                        f"⚠️ Found {len(result['issues'])} code security issues"
+                    )
 
                 except json.JSONDecodeError:
                     logger.error("Failed to parse bandit output")
                     result["error"] = "Failed to parse bandit output"
 
         except FileNotFoundError:
-            logger.warning("Bandit tool not installed. Install with: pip install bandit")
+            logger.warning(
+                "Bandit tool not installed. Install with: pip install bandit"
+            )
             result["status"] = "tool_missing"
             result["error"] = "Bandit tool not installed"
 
@@ -410,9 +433,13 @@ class SecurityScanner:
         # Dependency recommendations
         dep_result = results.get("dependency_scan", {})
         if dep_result.get("critical_count", 0) > 0:
-            recommendations.append("🚨 Update critical dependency vulnerabilities immediately")
+            recommendations.append(
+                "🚨 Update critical dependency vulnerabilities immediately"
+            )
         if dep_result.get("high_count", 0) > 0:
-            recommendations.append("⚠️ Review and update high-severity dependency vulnerabilities")
+            recommendations.append(
+                "⚠️ Review and update high-severity dependency vulnerabilities"
+            )
 
         # Secrets recommendations
         secrets_result = results.get("secrets_scan", {})
@@ -433,11 +460,15 @@ class SecurityScanner:
         code_result = results.get("code_scan", {})
         code_issues = code_result.get("issues", [])
         if code_issues:
-            recommendations.append("💻 Address code security issues identified by static analysis")
+            recommendations.append(
+                "💻 Address code security issues identified by static analysis"
+            )
 
         # General recommendations
         if not recommendations:
-            recommendations.append("✅ Security posture is good - continue regular scanning")
+            recommendations.append(
+                "✅ Security posture is good - continue regular scanning"
+            )
 
         return recommendations
 
@@ -467,7 +498,9 @@ async def run_daily_security_scan() -> Dict[str, Any]:
 
     # Log summary
     summary = report.get("summary", {})
-    logger.info(f"🔒 Security Scan Summary: {summary.get('overall_status', 'unknown').upper()}")
+    logger.info(
+        f"🔒 Security Scan Summary: {summary.get('overall_status', 'unknown').upper()}"
+    )
     logger.info(f"   Total Issues: {summary.get('total_issues', 0)}")
     logger.info(f"   Critical: {summary.get('critical_issues', 0)}")
     logger.info(f"   High: {summary.get('high_issues', 0)}")

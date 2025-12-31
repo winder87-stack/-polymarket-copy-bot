@@ -97,9 +97,19 @@ class ApplicationMonitor:
         self.wallet_metrics: List[WalletMetrics] = []
 
         # Current metrics state
-        self.current_trade_counts = {"total": 0, "successful": 0, "failed": 0, "pending": 0}
+        self.current_trade_counts = {
+            "total": 0,
+            "successful": 0,
+            "failed": 0,
+            "pending": 0,
+        }
         self.trade_latencies: List[float] = []
-        self.api_call_counts = {"total": 0, "successful": 0, "failed": 0, "rate_limited": 0}
+        self.api_call_counts = {
+            "total": 0,
+            "successful": 0,
+            "failed": 0,
+            "rate_limited": 0,
+        }
         self.api_response_times: List[float] = []
 
         # Circuit breaker state
@@ -144,7 +154,9 @@ class ApplicationMonitor:
         if pending:
             self.current_trade_counts["pending"] += 1
         elif success:
-            self.current_trade_counts["pending"] = max(0, self.current_trade_counts["pending"] - 1)
+            self.current_trade_counts["pending"] = max(
+                0, self.current_trade_counts["pending"] - 1
+            )
 
         if latency_ms > 0:
             self.trade_latencies.append(latency_ms)
@@ -191,11 +203,15 @@ class ApplicationMonitor:
         successful_trades = self.current_trade_counts["successful"]
 
         # Calculate success rate
-        success_rate = (successful_trades / total_trades * 100) if total_trades > 0 else 0.0
+        success_rate = (
+            (successful_trades / total_trades * 100) if total_trades > 0 else 0.0
+        )
 
         # Calculate latency statistics
         avg_latency = (
-            sum(self.trade_latencies) / len(self.trade_latencies) if self.trade_latencies else 0.0
+            sum(self.trade_latencies) / len(self.trade_latencies)
+            if self.trade_latencies
+            else 0.0
         )
         min_latency = min(self.trade_latencies) if self.trade_latencies else 0.0
         max_latency = max(self.trade_latencies) if self.trade_latencies else 0.0
@@ -204,7 +220,8 @@ class ApplicationMonitor:
         trades_per_minute = total_trades / max(
             1,
             (
-                datetime.now() - datetime.today().replace(hour=0, minute=0, second=0, microsecond=0)
+                datetime.now()
+                - datetime.today().replace(hour=0, minute=0, second=0, microsecond=0)
             ).seconds
             / 60,
         )
@@ -356,9 +373,12 @@ def main():
     """CLI interface for application monitoring"""
     import argparse
 
-    parser = argparse.ArgumentParser(description="Application Monitor for Polymarket Copy Bot")
+    parser = argparse.ArgumentParser(
+        description="Application Monitor for Polymarket Copy Bot"
+    )
     parser.add_argument(
-        "action", choices=["snapshot", "monitor", "alerts", "trades", "api", "circuit-breaker"]
+        "action",
+        choices=["snapshot", "monitor", "alerts", "trades", "api", "circuit-breaker"],
     )
     parser.add_argument(
         "--interval", type=float, default=10.0, help="Monitoring interval in seconds"
@@ -391,7 +411,9 @@ def main():
             print(
                 f"  API: {api_metrics.total_requests} requests, {api_metrics.current_rate_limit_usage}% rate limit"
             )
-            print(f"  Circuit Breaker: {'ACTIVE' if cb_metrics.is_active else 'INACTIVE'}")
+            print(
+                f"  Circuit Breaker: {'ACTIVE' if cb_metrics.is_active else 'INACTIVE'}"
+            )
 
     elif args.action == "monitor":
         print("Starting application monitoring... (Ctrl+C to stop)")
@@ -435,7 +457,7 @@ def main():
             print("API Metrics:")
             print(f"  Total Requests: {metrics.total_requests}")
             print(
-                f"  Success Rate: {(metrics.successful_requests/metrics.total_requests*100):.1f}%"
+                f"  Success Rate: {(metrics.successful_requests / metrics.total_requests * 100):.1f}%"
                 if metrics.total_requests > 0
                 else 0
             )

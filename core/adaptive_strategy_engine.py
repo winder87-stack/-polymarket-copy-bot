@@ -20,6 +20,7 @@ import logging
 from collections import defaultdict
 from datetime import datetime, timedelta
 from enum import Enum
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from core.market_maker_detector import MarketMakerDetector
@@ -84,7 +85,9 @@ class AdaptiveStrategyEngine:
 
         # State tracking
         self.current_strategies: Dict[str, StrategyType] = {}  # wallet -> strategy
-        self.strategy_performance: Dict[str, Dict[str, Any]] = {}  # strategy -> performance metrics
+        self.strategy_performance: Dict[
+            str, Dict[str, Any]
+        ] = {}  # strategy -> performance metrics
         self.market_conditions = self._get_default_market_conditions()
         self.daily_strategy_changes = 0
         self.last_rebalancing = datetime.now()
@@ -298,7 +301,9 @@ class AdaptiveStrategyEngine:
             self.market_conditions["last_update"] = datetime.now()
 
         # Get wallet information
-        wallet_info = await self.detector.get_wallet_classification_report(wallet_address)
+        wallet_info = await self.detector.get_wallet_classification_report(
+            wallet_address
+        )
 
         if "error" in wallet_info:
             # Default to passive strategy for unknown wallets
@@ -324,7 +329,9 @@ class AdaptiveStrategyEngine:
         # Score each candidate strategy
         strategy_scores = {}
         for strategy in candidate_strategies:
-            score = self._score_strategy_for_wallet(strategy, wallet_info, self.market_conditions)
+            score = self._score_strategy_for_wallet(
+                strategy, wallet_info, self.market_conditions
+            )
             strategy_scores[strategy] = score
 
         # Select best strategy
@@ -387,7 +394,10 @@ class AdaptiveStrategyEngine:
         return candidates
 
     def _score_strategy_for_wallet(
-        self, strategy: StrategyType, wallet_info: Dict[str, Any], market_conditions: Dict[str, Any]
+        self,
+        strategy: StrategyType,
+        wallet_info: Dict[str, Any],
+        market_conditions: Dict[str, Any],
     ) -> float:
         """
         Score how well a strategy fits a wallet under current conditions.
@@ -507,7 +517,9 @@ class AdaptiveStrategyEngine:
 
         return {"should_switch": False, "reason": ".3f"}
 
-    def _is_strategy_underperforming(self, wallet_address: str, strategy: StrategyType) -> bool:
+    def _is_strategy_underperforming(
+        self, wallet_address: str, strategy: StrategyType
+    ) -> bool:
         """Check if strategy is underperforming for this wallet."""
 
         # Get recent performance for this wallet-strategy combination
@@ -521,7 +533,6 @@ class AdaptiveStrategyEngine:
                 and record.get("wallet_address") == wallet_address
                 and record.get("strategy") == strategy.value
             ):
-
                 recent_trades.append(record)
 
         if len(recent_trades) < 3:
@@ -531,8 +542,12 @@ class AdaptiveStrategyEngine:
         wins = sum(1 for t in recent_trades if t.get("pnl_usd", 0) > 0)
         win_rate = wins / len(recent_trades)
 
-        profits = sum(t.get("pnl_usd", 0) for t in recent_trades if t.get("pnl_usd", 0) > 0)
-        losses = abs(sum(t.get("pnl_usd", 0) for t in recent_trades if t.get("pnl_usd", 0) < 0))
+        profits = sum(
+            t.get("pnl_usd", 0) for t in recent_trades if t.get("pnl_usd", 0) > 0
+        )
+        losses = abs(
+            sum(t.get("pnl_usd", 0) for t in recent_trades if t.get("pnl_usd", 0) < 0)
+        )
 
         profit_factor = profits / losses if losses > 0 else float("inf")
 
@@ -555,7 +570,10 @@ class AdaptiveStrategyEngine:
             self.daily_strategy_changes = 0
             self._last_change_reset = today
 
-        return self.daily_strategy_changes >= self.adaptive_params["max_strategy_changes_per_day"]
+        return (
+            self.daily_strategy_changes
+            >= self.adaptive_params["max_strategy_changes_per_day"]
+        )
 
     def _create_strategy_decision(
         self,
@@ -590,13 +608,18 @@ class AdaptiveStrategyEngine:
             "decision_timestamp": datetime.now().isoformat(),
         }
 
-    def update_strategy_performance(self, strategy: str, performance_metrics: Dict[str, Any]):
+    def update_strategy_performance(
+        self, strategy: str, performance_metrics: Dict[str, Any]
+    ):
         """Update performance tracking for a strategy."""
 
         self.strategy_performance[strategy] = {
             **performance_metrics,
             "last_update": datetime.now().isoformat(),
-            "update_count": self.strategy_performance.get(strategy, {}).get("update_count", 0) + 1,
+            "update_count": self.strategy_performance.get(strategy, {}).get(
+                "update_count", 0
+            )
+            + 1,
         }
 
     def get_strategy_recommendations(
@@ -609,7 +632,9 @@ class AdaptiveStrategyEngine:
         recommendations = []
 
         # Base case
-        base_decision = await self.select_strategy_for_wallet(wallet_address, market_conditions)
+        base_decision = await self.select_strategy_for_wallet(
+            wallet_address, market_conditions
+        )
         recommendations.append(
             {
                 "scenario": "current_conditions",
@@ -635,7 +660,9 @@ class AdaptiveStrategyEngine:
                     "scenario": "high_volatility",
                     "strategy": high_vol_decision["selected_strategy"],
                     "confidence": "medium",
-                    "expected_return": high_vol_decision["expected_performance"]["win_rate"]
+                    "expected_return": high_vol_decision["expected_performance"][
+                        "win_rate"
+                    ]
                     * high_vol_decision["expected_performance"]["profit_factor"]
                     * 0.8,
                 }
@@ -656,7 +683,9 @@ class AdaptiveStrategyEngine:
                     "scenario": "low_liquidity",
                     "strategy": low_liq_decision["selected_strategy"],
                     "confidence": "medium",
-                    "expected_return": low_liq_decision["expected_performance"]["win_rate"]
+                    "expected_return": low_liq_decision["expected_performance"][
+                        "win_rate"
+                    ]
                     * low_liq_decision["expected_performance"]["profit_factor"]
                     * 0.7,
                 }
@@ -677,7 +706,9 @@ class AdaptiveStrategyEngine:
                     "scenario": "high_gas",
                     "strategy": high_gas_decision["selected_strategy"],
                     "confidence": "low",
-                    "expected_return": high_gas_decision["expected_performance"]["win_rate"]
+                    "expected_return": high_gas_decision["expected_performance"][
+                        "win_rate"
+                    ]
                     * high_gas_decision["expected_performance"]["profit_factor"]
                     * 0.5,
                 }
@@ -697,7 +728,8 @@ class AdaptiveStrategyEngine:
         recent_decisions = [
             d
             for d in self.decision_log
-            if datetime.fromisoformat(d["timestamp"]) > datetime.now() - timedelta(hours=24)
+            if datetime.fromisoformat(d["timestamp"])
+            > datetime.now() - timedelta(hours=24)
         ]
 
         return {

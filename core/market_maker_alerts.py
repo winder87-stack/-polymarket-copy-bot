@@ -15,14 +15,13 @@ Features:
 """
 
 import asyncio
-import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Set
 
 from config.settings import settings
 from core.market_maker_detector import MarketMakerDetector
 
-logger = logging.getLogger(__name__)
+from loguru import logger
 
 
 class MarketMakerAlertSystem:
@@ -33,7 +32,7 @@ class MarketMakerAlertSystem:
     trading pattern anomalies with intelligent alert prioritization.
     """
 
-    def __init__(self, market_maker_detector: MarketMakerDetector):
+    def __init__(self, market_maker_detector: MarketMakerDetector) -> None:
         self.detector = market_maker_detector
 
         # Alert configuration
@@ -142,11 +141,21 @@ class MarketMakerAlertSystem:
                             "message": f"Changed from '{change['previous_classification'].replace('_', ' ')}' to '{change['current_classification'].replace('_', ' ')}'",
                             "details": {
                                 "wallet_address": change["wallet_address"],
-                                "previous_classification": change["previous_classification"],
-                                "current_classification": change["current_classification"],
-                                "mm_probability_change": round(change["mm_probability_change"], 3),
-                                "hours_since_change": round(change["hours_since_change"], 1),
-                                "confidence_current": round(change["confidence_current"], 3),
+                                "previous_classification": change[
+                                    "previous_classification"
+                                ],
+                                "current_classification": change[
+                                    "current_classification"
+                                ],
+                                "mm_probability_change": round(
+                                    change["mm_probability_change"], 3
+                                ),
+                                "hours_since_change": round(
+                                    change["hours_since_change"], 1
+                                ),
+                                "confidence_current": round(
+                                    change["confidence_current"], 3
+                                ),
                             },
                             "timestamp": datetime.now().isoformat(),
                             "alert_key": alert_key,
@@ -183,8 +192,12 @@ class MarketMakerAlertSystem:
                                 "details": {
                                     "wallet_address": wallet_address,
                                     "mm_probability": mm_probability,
-                                    "classification": classification_data.get("classification"),
-                                    "confidence_score": classification_data.get("confidence_score"),
+                                    "classification": classification_data.get(
+                                        "classification"
+                                    ),
+                                    "confidence_score": classification_data.get(
+                                        "confidence_score"
+                                    ),
                                     "threshold": threshold,
                                 },
                                 "timestamp": datetime.now().isoformat(),
@@ -246,7 +259,9 @@ class MarketMakerAlertSystem:
                                     "wallet_address": wallet_address,
                                     "anomaly_type": anomaly,
                                     "metrics": metrics,
-                                    "classification": classification_data.get("classification"),
+                                    "classification": classification_data.get(
+                                        "classification"
+                                    ),
                                 },
                                 "timestamp": datetime.now().isoformat(),
                                 "alert_key": alert_key,
@@ -285,7 +300,9 @@ class MarketMakerAlertSystem:
                                 "details": {
                                     "wallet_address": wallet_address,
                                     "breach_count": breaches,
-                                    "net_position_drift": risk_metrics.get("net_position_drift", 0),
+                                    "net_position_drift": risk_metrics.get(
+                                        "net_position_drift", 0
+                                    ),
                                     "risk_assessment": classification_data.get(
                                         "risk_assessment", {}
                                     ),
@@ -310,8 +327,12 @@ class MarketMakerAlertSystem:
                                 "details": {
                                     "wallet_address": wallet_address,
                                     "avg_price_impact": price_impact,
-                                    "max_price_impact": risk_metrics.get("max_price_impact", 0),
-                                    "classification": classification_data.get("classification"),
+                                    "max_price_impact": risk_metrics.get(
+                                        "max_price_impact", 0
+                                    ),
+                                    "classification": classification_data.get(
+                                        "classification"
+                                    ),
                                 },
                                 "timestamp": datetime.now().isoformat(),
                                 "alert_key": alert_key,
@@ -351,8 +372,12 @@ class MarketMakerAlertSystem:
                                     "wallet_address": wallet_address,
                                     "trades_per_hour": trades_per_hour,
                                     "threshold": threshold,
-                                    "classification": classification_data.get("classification"),
-                                    "burst_events": temporal.get("burst_trading_events", 0),
+                                    "classification": classification_data.get(
+                                        "classification"
+                                    ),
+                                    "burst_events": temporal.get(
+                                        "burst_trading_events", 0
+                                    ),
                                 },
                                 "timestamp": datetime.now().isoformat(),
                                 "alert_key": alert_key,
@@ -419,12 +444,16 @@ class MarketMakerAlertSystem:
                 f"Unusual trading pattern detected: {anomaly}",
             )
 
-    def _filter_and_prioritize_alerts(self, alerts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _filter_and_prioritize_alerts(
+        self, alerts: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """Filter and prioritize alerts to prevent spam"""
 
         # Remove alerts that are on cooldown
         filtered_alerts = [
-            alert for alert in alerts if not self._is_alert_on_cooldown(alert.get("alert_key", ""))
+            alert
+            for alert in alerts
+            if not self._is_alert_on_cooldown(alert.get("alert_key", ""))
         ]
 
         # Rate limiting: max alerts per hour
@@ -437,7 +466,9 @@ class MarketMakerAlertSystem:
 
         if len(recent_alerts_this_hour) >= self.max_alerts_per_hour:
             # Keep only critical alerts if rate limit exceeded
-            filtered_alerts = [alert for alert in filtered_alerts if alert["level"] == "critical"]
+            filtered_alerts = [
+                alert for alert in filtered_alerts if alert["level"] == "critical"
+            ]
 
         # Sort by priority (critical > warning > error > info)
         priority_order = {"critical": 0, "error": 1, "warning": 2, "info": 3}
@@ -546,7 +577,9 @@ class MarketMakerAlertSystem:
                         # Multiple alerts of same level
                         emoji = self._get_level_emoji(level)
                         message = f"{emoji} <b>{len(level_alerts)} {level.upper()} Alerts</b>\n\n"
-                        for i, alert in enumerate(level_alerts[:5], 1):  # Max 5 alerts in summary
+                        for i, alert in enumerate(
+                            level_alerts[:5], 1
+                        ):  # Max 5 alerts in summary
                             message += f"{i}. {alert['title']}: {alert['message']}\n"
 
                         if len(level_alerts) > 5:
@@ -560,9 +593,13 @@ class MarketMakerAlertSystem:
                         "disable_web_page_preview": True,
                     }
 
-                    async with session.post(f"{base_url}/sendMessage", json=payload) as response:
+                    async with session.post(
+                        f"{base_url}/sendMessage", json=payload
+                    ) as response:
                         if response.status != 200:
-                            logger.error(f"Failed to send Telegram alert: {response.status}")
+                            logger.error(
+                                f"Failed to send Telegram alert: {response.status}"
+                            )
 
         except Exception as e:
             logger.error(f"Error sending Telegram alerts: {e}")
@@ -625,7 +662,9 @@ class MarketMakerAlertSystem:
             "alerts_by_type": type_counts,
             "period_hours": hours_back,
             "most_recent_alert": recent_alerts[-1] if recent_alerts else None,
-            "critical_alerts": [alert for alert in recent_alerts if alert["level"] == "critical"],
+            "critical_alerts": [
+                alert for alert in recent_alerts if alert["level"] == "critical"
+            ],
         }
 
     def update_alert_thresholds(self, new_thresholds: Dict[str, Any]):
@@ -665,11 +704,11 @@ async def run_market_maker_alerts(detector: MarketMakerDetector):
     alerts = await alert_system.check_for_alerts()
 
     if alerts:
-        print(f"🚨 Generated {len(alerts)} market maker alerts:")
+        logger.info(f"🚨 Generated {len(alerts)} market maker alerts:")
         for alert in alerts:
-            print(f"  {alert['level'].upper()}: {alert['title']}")
+            logger.info(f"  {alert['level'].upper()}: {alert['title']}")
     else:
-        print("✅ No market maker alerts at this time")
+        logger.info("✅ No market maker alerts at this time")
 
     return alerts
 

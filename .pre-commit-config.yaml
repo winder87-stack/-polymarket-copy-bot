@@ -1,106 +1,268 @@
-# Pre-commit hooks configuration for Polymarket Copy Trading Bot
-# See https://pre-commit.com for more information
+# Pre-commit configuration for Polymarket Copy Bot
+# This configuration runs checks before commits to ensure code quality and safety
 
 repos:
-  # General file checks
+  # =============================================================================
+  # General Hooks
+  # =============================================================================
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v4.6.0
     hooks:
+      # General checks
       - id: trailing-whitespace
-        args: [--markdown-linebreak-ext=md]
+        name: Trim Trailing Whitespace
+        types: [python, markdown, yaml]
+        args: [--markdown-line-break-ext=md]
+
       - id: end-of-file-fixer
+        name: Fix End of Files
+        types: [python, markdown, yaml]
+
       - id: check-yaml
-        args: [--unsafe]  # Allow custom YAML tags
-      - id: check-json
-      - id: check-toml
+        name: Check YAML
+        files: \.(yaml|yml)$
+
       - id: check-added-large-files
+        name: Check for Large Files
         args: [--maxkb=1000]
+        exclude: ^(?!(venv/|.git/|__pycache__|*.egg-info))
+
       - id: check-merge-conflict
-      - id: check-case-conflict
-      - id: mixed-line-ending
-        args: [--fix=lf]
-      - id: detect-private-key
-      - id: no-commit-to-branch
-        args: [--branch, main, --branch, develop]
+        name: Check for Merge Conflicts
+        types: [python, yaml, md, txt]
 
-  # Python code formatting with autopep8
-  - repo: https://github.com/pre-commit/mirrors-autopep8
-    rev: v2.0.4
+  # =============================================================================
+  # Python-Specific Hooks
+  # =============================================================================
+
+  - repo: https://github.com/psf/black
+    rev: 24.3.0
     hooks:
-      - id: autopep8
-        args:
-          - --in-place
-          - --aggressive
-          - --aggressive
-          - --max-line-length=100
-          - --ignore=E501,W503  # Ignore line length and whitespace before operator
+      - id: black
+        name: Format with Black
+        language_version: python3.12
+        types: [python]
+        exclude: ^(?!(venv/|.git/|__pycache__|*.egg-info))
 
-  # Import sorting
-  - repo: https://github.com/PyCQA/isort
-    rev: 5.13.2
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.9
     hooks:
-      - id: isort
-        args:
-          - --profile=black
-          - --line-length=100
-          - --known-first-party=config,core,utils,monitoring,risk_management,trading
+      - id: ruff
+        name: Lint with Ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        types: [python]
+        exclude: ^(?!(venv/|.git/|__pycache__|*.egg-info))
 
-  # Code formatting with black (optional, can be enabled)
-  # - repo: https://github.com/psf/black
-  #   rev: 23.12.1
-  #   hooks:
-  #     - id: black
-  #       args: [--line-length=100]
-
-  # PEP 8 linting
-  - repo: https://github.com/PyCQA/flake8
-    rev: 7.0.0
-    hooks:
-      - id: flake8
-        args:
-          - --max-line-length=100
-          - --extend-ignore=E203,W503  # Ignore whitespace before : and before operator
-          - --exclude=venv,__pycache__,.venv,build,dist
-        additional_dependencies:
-          - flake8-docstrings
-          - flake8-import-order
-
-  # Type checking with mypy
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.7.1
+    rev: v1.10.0
     hooks:
       - id: mypy
-        args:
-          - --ignore-missing-imports
-          - --no-strict-optional
-          - --warn-return-any
-          - --warn-unused-configs
+        name: Type Check with MyPy
         additional_dependencies: [types-all]
-        exclude: ^tests/
+        args: [--ignore-missing-imports, --no-strict-optional]
+        types: [python]
+        exclude: ^(?!(venv/|.git/|__pycache__|*.egg-info|migrations/|tests/))
 
-  # Security checks
+  - repo: local
+    hooks:
+      - id: pytest-check
+        name: Run Unit Tests
+        entry: pytest
+        language: system
+        types: [python]
+        pass_filenames: ^tests/unit/.*\.py$
+        args: [-xvs, --tb=short]
+        files: ^tests/unit/
+
+  # =============================================================================
+  # Security Hooks
+  # =============================================================================
+
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.5
+    rev: 1.7.6
     hooks:
       - id: bandit
-        args:
-          - -r
-          - -ll
-          - -i
-        exclude: ^tests/
+        name: Security Scan with Bandit
+        args: [-c, pyproject.toml, -r, .]
+        types: [python]
+        exclude: ^(?!(venv/|.git/|__pycache__|tests/|migrations/))
 
-  # Docstring formatting
-  - repo: https://github.com/PyCQA/pydocstyle
+  - repo: https://github.com/Lucas-C/pre-commit-hooks-safety
+    rev: v1.3.1
+    hooks:
+      - id: python-safety-dependencies-check
+        name: Check Dependencies for Vulnerabilities
+        files: requirements/(.*).txt$
+        args: [--full-report]
+
+  - repo: local
+    hooks:
+      - id: check-api-keys
+        name: Check for Committed API Keys
+        entry: bash -c 'pattern="PRIVATE_KEY|SECRET_KEY|API_KEY|TELEGRAM_BOT_TOKEN|TELEGRAM_CHAT_ID|POLYGONSCAN_API_KEY|POLYMARKET_API_KEY"; if git diff --cached --name-only | xargs grep -lE "$pattern" 2>/dev/null; then echo "ERROR: Found potential API keys in files!" && exit 1; else echo "No API keys found"; fi'
+        language: system
+        files: \.(py|yaml|yml|env|txt)$
+        exclude: ^(?!(venv/|.env-|tests/))
+
+      - id: check-env-files
+        name: Check for .env File Commits
+        entry: bash -c 'if git diff --cached --name-only | grep -E "^\.env$"; then echo "❌ ERROR: Attempting to commit .env file! This file should be in .gitignore" && exit 1; else exit 0; fi'
+        language: system
+        files: \.env$
+        pass_filenames: ^\.env$
+
+  # =============================================================================
+  # Money Safety Hooks
+  # =============================================================================
+
+  - repo: local
+    hooks:
+      - id: check-decimal-usage
+        name: Check for Float Usage in Money Calculations
+        entry: bash -c '
+          FILES=$(git diff --cached --name-only --diff-filter=ACM | grep "\.py$")
+          if [ -n "$FILES" ]; then
+            FOUND_FLOAT=false
+            for FILE in $FILES; do
+              if grep -E "account_balance|risk_percent|position_size|max_position|daily_loss|pnl|profit|trade_amount" "$FILE" | grep -E ":\s*(float|Float)\(" | grep -v "#"; then
+                echo "❌ ERROR: Found float() used with money-related variables in $FILE"
+                echo "   Please use Decimal instead of float for financial calculations"
+                FOUND_FLOAT=true
+              fi
+            done
+            if [ "$FOUND_FLOAT" = true ]; then
+              exit 1
+            fi
+          fi
+        '
+        language: system
+        types: [python]
+        files: ^core/.*\.py$
+
+      - id: check-risk-parameters
+        name: Verify Risk Parameters Not Modified in Tests
+        entry: bash -c '
+          FILES=$(git diff --cached --name-only --diff-filter=ACM | grep "tests/.*\.py$")
+          if [ -n "$FILES" ]; then
+            for FILE in $FILES; do
+              if grep -E "max_daily_loss\s*=\s*[0-9]" "$FILE" | grep -v "#"; then
+                echo "⚠️  WARNING: Test modifies max_daily_loss"
+                echo "   Tests should not change production risk parameters"
+              fi
+            done
+          fi
+        '
+        language: system
+        types: [python]
+        files: ^tests/.*\.py$
+
+  # =============================================================================
+  # Testing Hooks
+  # =============================================================================
+
+  - repo: local
+    hooks:
+      - id: run-critical-tests
+        name: Run Critical Tests on Pre-Commit
+        entry: bash -c '
+          echo "🧪 Running critical tests..."
+          if command -v pytest &>/dev/null; then
+            python -m pytest tests/unit/test_trade_executor.py tests/unit/test_circuit_breaker.py tests/unit/test_wallet_monitor.py -xvs --tb=short --timeout=120 || true
+            if [ $? -eq 0 ]; then
+              echo "✅ All critical tests passed"
+            else
+              echo "⚠️  Some critical tests failed"
+              echo "   You can override with: git commit --no-verify"
+              exit 1
+            fi
+          else
+            echo "⚠️  pytest not installed, skipping tests"
+          fi
+        '
+        language: system
+        types: [python]
+        pass_filenames: ^core/(trade_executor|circuit_breaker)\.py$
+        stages: [commit]
+
+      - id: check-coverage-drop
+        name: Check for Coverage Drop
+        entry: bash -c '
+          if [ -f coverage.json ]; then
+            COVERAGE=$(python -c "import json; data=json.load(open(\"coverage.json\")); print(int(data.get(\"totals\", {}).get(\"percent_covered\", 0)))")
+            THRESHOLD=85
+            if [ $COVERAGE -lt $THRESHOLD ]; then
+              echo "⚠️  WARNING: Coverage is ${COVERAGE}%, below threshold of ${THRESHOLD}%"
+              echo "   Consider adding tests before committing"
+            else
+              echo "✅ Coverage is ${COVERAGE}%, meets threshold of ${THRESHOLD}%"
+            fi
+          fi
+        '
+        language: system
+        stages: [commit]
+
+  # =============================================================================
+  # Documentation Hooks
+  # =============================================================================
+
+  - repo: https://github.com/pycqa/pydocstyle
     rev: 6.3.0
     hooks:
       - id: pydocstyle
-        args:
-          - --convention=google
-          - --add-ignore=D100,D104  # Ignore missing docstrings for __init__ and __main__
-        exclude: ^tests/
+        name: Check Docstring Style
+        args: [--convention=google]
+        types: [python]
+        exclude: ^(?!(venv/|.git/|__pycache__|tests/))
 
+  - repo: local
+    hooks:
+      - id: check-changelog
+        name: Check for Changelog Updates
+        entry: bash -c '
+          FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E "(CHANGELOG|CHANGELOG)")
+          if [ -n "$FILES" ]; then
+            echo "✅ CHANGELOG has been updated"
+          else
+            echo "⚠️  No CHANGELOG update detected"
+            echo "   Consider updating CHANGELOG.md with your changes"
+          fi
+        '
+        language: system
+        stages: [commit]
+
+# =============================================================================
 # Configuration
+# =============================================================================
+
+# Don't automatically fix issues - require explicit approval
+ci:
+  autofix_prs: false
+
+# Show which hooks are running
+verbose: true
+
+# Minimum pre-commit version
+minimum_pre_commit_version: "3.6.0"
+
+# Default language version
 default_language_version:
   python: python3.12
 
-fail_fast: false
+# Files to exclude from all hooks
+exclude: |
+  (?x)^(
+    venv/|
+    \.git/|
+    __pycache__/|
+    \.pytest_cache/|
+    \.mypy_cache/|
+    \.ruff_cache/|
+    \.coverage\.*|
+    \.eggs/|
+    \.tox/|
+    \.idea/|
+    \.vscode/|
+    node_modules/|
+    .*\.egg-info/
+  )

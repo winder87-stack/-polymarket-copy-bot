@@ -69,7 +69,9 @@ class HealthChecker:
                 self.results[check_name] = result
 
                 if result.get("status") == "error":
-                    self.errors.append(f"{check_name}: {result.get('message', 'Unknown error')}")
+                    self.errors.append(
+                        f"{check_name}: {result.get('message', 'Unknown error')}"
+                    )
                 elif result.get("status") == "warning":
                     self.warnings.append(
                         f"{check_name}: {result.get('message', 'Unknown warning')}"
@@ -130,7 +132,9 @@ class HealthChecker:
 
             if missing_files:
                 result["status"] = "error"
-                result["message"] = f"Missing required files: {', '.join(missing_files)}"
+                result["message"] = (
+                    f"Missing required files: {', '.join(missing_files)}"
+                )
             else:
                 result["message"] = "All configuration files present and valid"
 
@@ -157,7 +161,9 @@ class HealthChecker:
 
             if failed_imports:
                 result["status"] = "error"
-                result["message"] = f"Missing critical dependencies: {', '.join(failed_imports)}"
+                result["message"] = (
+                    f"Missing critical dependencies: {', '.join(failed_imports)}"
+                )
             else:
                 result["message"] = "All critical dependencies available"
 
@@ -169,11 +175,19 @@ class HealthChecker:
 
     async def _check_network_connectivity(self) -> Dict[str, Any]:
         """Check network connectivity to required services"""
-        result = {"status": "healthy", "timestamp": datetime.now().isoformat(), "services": {}}
+        result = {
+            "status": "healthy",
+            "timestamp": datetime.now().isoformat(),
+            "services": {},
+        }
 
         services_to_check = [
             ("polygon_rpc", settings.network.polygon_rpc_url, 443),
-            ("polymarket_clob", settings.network.clob_host.replace("https://", ""), 443),
+            (
+                "polymarket_clob",
+                settings.network.clob_host.replace("https://", ""),
+                443,
+            ),
         ]
 
         all_healthy = True
@@ -251,7 +265,6 @@ class HealthChecker:
         result = {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
         try:
-
             # Check service status
             cmd = ["systemctl", "is-active", "polymarket-bot"]
             process = await asyncio.create_subprocess_exec(
@@ -328,7 +341,9 @@ class HealthChecker:
                 stat_info = os.stat(".env")
                 permissions = oct(stat_info.st_mode)[-3:]
                 if permissions != "600":
-                    issues.append(f"Insecure .env permissions: {permissions} (should be 600)")
+                    issues.append(
+                        f"Insecure .env permissions: {permissions} (should be 600)"
+                    )
 
             # Check for obvious security issues
             env_file = Path(".env")
@@ -410,7 +425,10 @@ class HealthChecker:
         ):
             recommendations.append("🔧 Fix configuration issues before proceeding")
 
-        if "network" in self.results and self.results["network"].get("status") == "error":
+        if (
+            "network" in self.results
+            and self.results["network"].get("status") == "error"
+        ):
             recommendations.append("🌐 Resolve network connectivity issues")
 
         if "wallet" in self.results and self.results["wallet"].get("status") == "error":
@@ -435,7 +453,9 @@ async def main():
 
     # Setup logging
     log_level = logging.DEBUG if args.verbose else logging.INFO
-    logging.basicConfig(level=log_level, format="%(asctime)s - %(levelname)s - %(message)s")
+    logging.basicConfig(
+        level=log_level, format="%(asctime)s - %(levelname)s - %(message)s"
+    )
 
     try:
         checker = HealthChecker(verbose=args.verbose)
@@ -447,7 +467,9 @@ async def main():
             # Pretty console output
             health_emoji = {"healthy": "✅", "warning": "⚠️", "critical": "🚨"}
 
-            print(f"\n{health_emoji.get(report['overall_health'], '❓')} Health Check Results")
+            print(
+                f"\n{health_emoji.get(report['overall_health'], '❓')} Health Check Results"
+            )
             print("=" * 50)
             print(f"Status: {report['overall_health'].upper()}")
             print(f"Duration: {report['duration_seconds']:.1f}s")

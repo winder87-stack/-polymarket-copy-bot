@@ -11,7 +11,7 @@ Tests cover:
 
 import asyncio
 import time
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -39,7 +39,6 @@ class TestRateLimiter:
     async def test_rate_limiting_enforces_delays(self, rate_limited_client):
         """Test that rate limiter actually enforces delays between calls"""
         # Make first call
-        start_time = time.time()
         await rate_limited_client._wait_for_rate_limit()
         first_call_time = time.time()
 
@@ -49,7 +48,9 @@ class TestRateLimiter:
 
         # Second call should be delayed by at least min_interval
         delay = second_call_time - first_call_time
-        assert delay >= rate_limited_client._min_interval - 0.01  # Allow small timing tolerance
+        assert (
+            delay >= rate_limited_client._min_interval - 0.01
+        )  # Allow small timing tolerance
 
     @pytest.mark.asyncio
     async def test_concurrent_requests_limited(self, rate_limited_client):
@@ -126,7 +127,7 @@ class TestRateLimiter:
     async def test_rate_limit_error_handling(self, rate_limited_client):
         """Test error handling during rate limiting operations"""
         # Mock time.time to raise exception
-        with patch('utils.rate_limited_client.time') as mock_time:
+        with patch("utils.rate_limited_client.time") as mock_time:
             mock_time.side_effect = [0.0, OSError("Time error")]
 
             # Should handle time errors gracefully
@@ -136,6 +137,7 @@ class TestRateLimiter:
     @pytest.mark.asyncio
     async def test_lock_prevents_race_conditions(self, rate_limited_client):
         """Test that lock prevents race conditions in timing updates"""
+
         # Create many concurrent operations
         async def concurrent_operation(op_id):
             await rate_limited_client._wait_for_rate_limit()
@@ -200,7 +202,7 @@ class TestRateLimiter:
     async def test_api_call_integration(self, rate_limited_client):
         """Test that API calls properly use rate limiting"""
         # Mock aiohttp session
-        with patch('utils.rate_limited_client.aiohttp.ClientSession') as mock_session:
+        with patch("utils.rate_limited_client.aiohttp.ClientSession") as mock_session:
             mock_response = AsyncMock()
             mock_response.status = 200
             mock_response.json = AsyncMock(return_value={"status": "1", "result": []})
@@ -208,7 +210,6 @@ class TestRateLimiter:
             mock_session.return_value.__aenter__.return_value.get.return_value.__aenter__.return_value = mock_response
 
             # Make multiple API calls
-            start_time = time.time()
             await rate_limited_client.get_wallet_transactions("0x123")
             first_call_end = time.time()
 
@@ -222,11 +223,13 @@ class TestRateLimiter:
     @pytest.mark.asyncio
     async def test_rate_limit_error_propagation(self, rate_limited_client):
         """Test that rate limit errors are properly handled"""
-        with patch('utils.rate_limited_client.aiohttp.ClientSession') as mock_session:
+        with patch("utils.rate_limited_client.aiohttp.ClientSession") as mock_session:
             # Mock rate limit response
             mock_response = AsyncMock()
             mock_response.status = 429  # Too Many Requests
-            mock_response.json = AsyncMock(return_value={"message": "Rate limit exceeded"})
+            mock_response.json = AsyncMock(
+                return_value={"message": "Rate limit exceeded"}
+            )
 
             mock_session.return_value.__aenter__.return_value.get.return_value.__aenter__.return_value = mock_response
 

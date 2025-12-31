@@ -194,13 +194,17 @@ class TestRateLimitingSecurity:
         wallet = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
 
         # Set very recent last trade
-        mock_wallet_monitor.wallet_last_trade_time[wallet] = datetime.now() - timedelta(minutes=5)
+        mock_wallet_monitor.wallet_last_trade_time[wallet] = datetime.now() - timedelta(
+            minutes=5
+        )
 
         should_monitor = await mock_wallet_monitor.should_monitor_wallet(wallet)
         assert not should_monitor  # Should be rate limited
 
         # Set old last trade
-        mock_wallet_monitor.wallet_last_trade_time[wallet] = datetime.now() - timedelta(hours=2)
+        mock_wallet_monitor.wallet_last_trade_time[wallet] = datetime.now() - timedelta(
+            hours=2
+        )
 
         should_monitor = await mock_wallet_monitor.should_monitor_wallet(wallet)
         assert should_monitor  # Should not be rate limited
@@ -229,7 +233,9 @@ class TestCircuitBreakerSecurity:
         assert "Daily loss limit reached" in mock_trade_executor.circuit_breaker_reason
 
     @pytest.mark.asyncio
-    async def test_circuit_breaker_blocks_trading(self, mock_trade_executor, sample_trade):
+    async def test_circuit_breaker_blocks_trading(
+        self, mock_trade_executor, sample_trade
+    ):
         """Test that circuit breaker blocks trading."""
         mock_trade_executor.circuit_breaker_active = True
 
@@ -288,7 +294,9 @@ class TestUnauthorizedAccessPrevention:
         assert isinstance(masked, dict)
 
         # Test with deeply nested structures
-        deep_nested = {"level1": {"level2": {"level3": {"level4": {"level5": "value"}}}}}
+        deep_nested = {
+            "level1": {"level2": {"level3": {"level4": {"level5": "value"}}}}
+        }
         for i in range(100):  # Create deep nesting
             deep_nested = {"nested": deep_nested}
 
@@ -468,7 +476,9 @@ class TestMemorySafety:
                 "value": "0",
                 "gasUsed": "150000",
                 "gasPrice": "50000000000",
-                "timeStamp": str(int((datetime.now() - timedelta(hours=i)).timestamp())),
+                "timeStamp": str(
+                    int((datetime.now() - timedelta(hours=i)).timestamp())
+                ),
                 "input": f"0x1234567890abcdef{i:016x}",
                 "blockNumber": str(50000000 + i),
             }
@@ -487,13 +497,17 @@ class TestMemorySafety:
 
         # Add many trades to history
         for i in range(200):  # More than the 100 limit
-            trade = {"tx_hash": f"0x{i:064x}", "timestamp": datetime.now(), "amount": 10.0}
+            trade = {
+                "tx_hash": f"0x{i:064x}",
+                "timestamp": datetime.now(),
+                "amount": 10.0,
+            }
             mock_wallet_monitor.wallet_trade_history[wallet].append(trade)
 
         # Simulate the cleanup that happens in monitor_wallets
-        mock_wallet_monitor.wallet_trade_history[wallet] = mock_wallet_monitor.wallet_trade_history[
-            wallet
-        ][-100:]
+        mock_wallet_monitor.wallet_trade_history[wallet] = (
+            mock_wallet_monitor.wallet_trade_history[wallet][-100:]
+        )
 
         # Should be limited to 100 trades
         assert len(mock_wallet_monitor.wallet_trade_history[wallet]) <= 100

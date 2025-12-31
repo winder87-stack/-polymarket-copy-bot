@@ -14,13 +14,14 @@ from core.clob_client import PolymarketClient
 class TestPolymarketClientInitialization:
     """Test PolymarketClient initialization."""
 
-    def test_client_initialization_success(self, mock_web3, mock_clob_client, test_settings):
+    def test_client_initialization_success(
+        self, mock_web3, mock_clob_client, test_settings
+    ):
         """Test successful client initialization."""
         with (
             patch("core.clob_client.Web3", return_value=mock_web3),
             patch("core.clob_client.ClobClient", return_value=mock_clob_client),
         ):
-
             client = PolymarketClient()
 
             assert client.private_key == test_settings.trading.private_key
@@ -34,9 +35,11 @@ class TestPolymarketClientInitialization:
         """Test client initialization when CLOB client fails."""
         with (
             patch("core.clob_client.Web3", return_value=mock_web3),
-            patch("core.clob_client.ClobClient", side_effect=Exception("CLOB connection failed")),
+            patch(
+                "core.clob_client.ClobClient",
+                side_effect=Exception("CLOB connection failed"),
+            ),
         ):
-
             with pytest.raises(Exception, match="CLOB connection failed"):
                 PolymarketClient()
 
@@ -49,7 +52,6 @@ class TestPolymarketClientInitialization:
             patch("core.clob_client.ClobClient", return_value=mock_clob_client),
             patch("config.settings.settings") as mock_settings,
         ):
-
             mock_settings.trading.private_key = (
                 "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
             )
@@ -80,7 +82,9 @@ class TestPolymarketClientBalanceOperations:
         assert balance is None
         mock_clob_client.get_balance.assert_called_once()
 
-    async def test_get_balance_with_retry(self, mock_polymarket_client, mock_clob_client):
+    async def test_get_balance_with_retry(
+        self, mock_polymarket_client, mock_clob_client
+    ):
         """Test balance retrieval with retry on failure."""
         mock_clob_client.get_balance.side_effect = [
             ConnectionError("Connection failed"),
@@ -131,7 +135,10 @@ class TestPolymarketClientMarketOperations:
         """Test market cache expiry."""
         # Pre-populate cache with old timestamp
         old_time = time.time() - 400  # Older than TTL
-        mock_polymarket_client._market_cache["test-condition-id"] = (sample_market_data, old_time)
+        mock_polymarket_client._market_cache["test-condition-id"] = (
+            sample_market_data,
+            old_time,
+        )
         mock_clob_client.get_market.return_value = {"fresh": "data"}
 
         market = await mock_polymarket_client.get_market("test-condition-id")
@@ -171,13 +178,17 @@ class TestPolymarketClientTokenOperations:
             1000000000  # 1000 USDC in wei
         )
 
-        with patch.object(mock_polymarket_client.web3.eth, "contract", return_value=mock_contract):
+        with patch.object(
+            mock_polymarket_client.web3.eth, "contract", return_value=mock_contract
+        ):
             balance = await mock_polymarket_client.get_token_balance("0xUSDC_ADDRESS")
 
             assert balance == 1000.0  # Should be converted to USDC
             mock_contract.functions.balanceOf.assert_called_once()
 
-    async def test_get_token_balance_web3_disconnected(self, mock_polymarket_client, mock_web3):
+    async def test_get_token_balance_web3_disconnected(
+        self, mock_polymarket_client, mock_web3
+    ):
         """Test token balance retrieval when Web3 is disconnected."""
         mock_web3.is_connected.return_value = False
 
@@ -185,12 +196,16 @@ class TestPolymarketClientTokenOperations:
 
         assert balance == 0.0
 
-    async def test_get_token_balance_contract_error(self, mock_polymarket_client, mock_web3):
+    async def test_get_token_balance_contract_error(
+        self, mock_polymarket_client, mock_web3
+    ):
         """Test token balance retrieval with contract error."""
         mock_contract = Mock()
         mock_contract.functions.balanceOf.side_effect = Exception("Contract error")
 
-        with patch.object(mock_polymarket_client.web3.eth, "contract", return_value=mock_contract):
+        with patch.object(
+            mock_polymarket_client.web3.eth, "contract", return_value=mock_contract
+        ):
             balance = await mock_polymarket_client.get_token_balance("0xUSDC_ADDRESS")
 
             assert balance == 0.0
@@ -219,7 +234,9 @@ class TestPolymarketClientOrderOperations:
         mock_clob_client.create_order.assert_called_once()
         mock_clob_client.post_order.assert_called_once()
 
-    async def test_place_order_invalid_amount(self, mock_polymarket_client, sample_trade):
+    async def test_place_order_invalid_amount(
+        self, mock_polymarket_client, sample_trade
+    ):
         """Test order placement with invalid amount."""
         result = await mock_polymarket_client.place_order(
             condition_id=sample_trade["condition_id"],
@@ -231,7 +248,9 @@ class TestPolymarketClientOrderOperations:
 
         assert result is None
 
-    async def test_place_order_invalid_price(self, mock_polymarket_client, sample_trade):
+    async def test_place_order_invalid_price(
+        self, mock_polymarket_client, sample_trade
+    ):
         """Test order placement with invalid price."""
         result = await mock_polymarket_client.place_order(
             condition_id=sample_trade["condition_id"],
@@ -316,7 +335,9 @@ class TestPolymarketClientOrderOperations:
         # 30 * 1.2 = 36 gwei, should not exceed max
         assert gas_price == 36
 
-    async def test_get_optimal_gas_price_capped(self, mock_polymarket_client, mock_web3):
+    async def test_get_optimal_gas_price_capped(
+        self, mock_polymarket_client, mock_web3
+    ):
         """Test optimal gas price capping."""
         mock_web3.eth.gas_price = 30000000000  # 30 gwei
         mock_polymarket_client.settings.trading.gas_price_multiplier = (
@@ -328,7 +349,9 @@ class TestPolymarketClientOrderOperations:
 
         assert gas_price == 100  # Should be capped
 
-    async def test_get_active_orders_success(self, mock_polymarket_client, mock_clob_client):
+    async def test_get_active_orders_success(
+        self, mock_polymarket_client, mock_clob_client
+    ):
         """Test successful active orders retrieval."""
         orders_data = [
             {"orderID": "order1", "status": "open"},
@@ -362,7 +385,9 @@ class TestPolymarketClientOrderOperations:
 class TestPolymarketClientTradeOperations:
     """Test trade history operations."""
 
-    async def test_get_trade_history_success(self, mock_polymarket_client, mock_clob_client):
+    async def test_get_trade_history_success(
+        self, mock_polymarket_client, mock_clob_client
+    ):
         """Test successful trade history retrieval."""
         trades_data = [
             {"tradeID": "trade1", "amount": 100, "price": 0.65},
@@ -375,7 +400,9 @@ class TestPolymarketClientTradeOperations:
         assert trades == trades_data
         mock_clob_client.get_trades.assert_called_once_with(market_id="market-123")
 
-    async def test_get_trade_history_no_market(self, mock_polymarket_client, mock_clob_client):
+    async def test_get_trade_history_no_market(
+        self, mock_polymarket_client, mock_clob_client
+    ):
         """Test trade history retrieval without market filter."""
         trades_data = [{"tradeID": "trade1"}]
         mock_clob_client.get_trades.return_value = trades_data
@@ -411,7 +438,9 @@ class TestPolymarketClientOrderBookOperations:
         # Should be midpoint of best bid (0.65) and best ask (0.66)
         assert price == 0.655
 
-    async def test_get_current_price_no_order_book(self, mock_polymarket_client, mock_clob_client):
+    async def test_get_current_price_no_order_book(
+        self, mock_polymarket_client, mock_clob_client
+    ):
         """Test current price calculation with empty order book."""
         mock_clob_client.get_order_book.return_value = {}
 
@@ -419,7 +448,9 @@ class TestPolymarketClientOrderBookOperations:
 
         assert price is None
 
-    async def test_get_current_price_missing_data(self, mock_polymarket_client, mock_clob_client):
+    async def test_get_current_price_missing_data(
+        self, mock_polymarket_client, mock_clob_client
+    ):
         """Test current price calculation with missing order book data."""
         mock_clob_client.get_order_book.return_value = {"bids": [], "asks": []}
 
@@ -452,7 +483,9 @@ class TestPolymarketClientCacheOperations:
 class TestPolymarketClientHealthCheck:
     """Test health check functionality."""
 
-    async def test_health_check_success(self, mock_polymarket_client, mock_clob_client, mock_web3):
+    async def test_health_check_success(
+        self, mock_polymarket_client, mock_clob_client, mock_web3
+    ):
         """Test successful health check."""
         mock_clob_client.get_balance.return_value = 1000.0
         mock_web3.is_connected.return_value = True
@@ -463,7 +496,9 @@ class TestPolymarketClientHealthCheck:
         assert healthy is True
         mock_clob_client.get_balance.assert_called_once()
 
-    async def test_health_check_balance_failure(self, mock_polymarket_client, mock_clob_client):
+    async def test_health_check_balance_failure(
+        self, mock_polymarket_client, mock_clob_client
+    ):
         """Test health check failure due to balance retrieval error."""
         mock_clob_client.get_balance.side_effect = Exception("API Error")
 
@@ -490,7 +525,9 @@ class TestPolymarketClientHealthCheck:
 class TestPolymarketClientErrorHandling:
     """Test error handling and retries."""
 
-    async def test_retry_on_connection_error(self, mock_polymarket_client, mock_clob_client):
+    async def test_retry_on_connection_error(
+        self, mock_polymarket_client, mock_clob_client
+    ):
         """Test retry behavior on connection errors."""
         mock_clob_client.get_balance.side_effect = [
             ConnectionError("Connection failed"),
@@ -505,16 +542,22 @@ class TestPolymarketClientErrorHandling:
 
     async def test_retry_exhaustion(self, mock_polymarket_client, mock_clob_client):
         """Test retry exhaustion."""
-        mock_clob_client.get_balance.side_effect = ConnectionError("Persistent connection failure")
+        mock_clob_client.get_balance.side_effect = ConnectionError(
+            "Persistent connection failure"
+        )
 
         balance = await mock_polymarket_client.get_balance()
 
         assert balance is None
         assert mock_clob_client.get_balance.call_count == 3  # Max attempts
 
-    async def test_contract_logic_error_no_retry(self, mock_polymarket_client, mock_clob_client):
+    async def test_contract_logic_error_no_retry(
+        self, mock_polymarket_client, mock_clob_client
+    ):
         """Test that ContractLogicError doesn't trigger retry."""
-        mock_clob_client.get_balance.side_effect = ContractLogicError("Contract logic error")
+        mock_clob_client.get_balance.side_effect = ContractLogicError(
+            "Contract logic error"
+        )
 
         balance = await mock_polymarket_client.get_balance()
 
@@ -589,7 +632,9 @@ class TestPolymarketClientIntegration:
         assert result == {"orderID": "test-order-123"}
 
         # Verify all expected calls were made
-        mock_clob_client.get_market.assert_called_once_with(sample_trade["condition_id"])
+        mock_clob_client.get_market.assert_called_once_with(
+            sample_trade["condition_id"]
+        )
         mock_clob_client.create_order.assert_called_once()
         mock_clob_client.post_order.assert_called_once()
 

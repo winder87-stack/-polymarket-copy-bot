@@ -51,7 +51,7 @@ class RepairResult:
 class EnvironmentRepair:
     """Automatic environment repair functionality"""
 
-    def __init__(self, project_root: Optional[Path] = None):
+    def __init__(self, project_root: Optional[Path] = None) -> None:
         self.project_root = project_root or Path(__file__).parent.parent
         self.env_manager = EnvironmentManager(self.project_root)
         self.dep_manager = DependencyManager(self.project_root)
@@ -87,9 +87,13 @@ class EnvironmentRepair:
                 # Just return the plan without executing
                 return RepairResult(
                     success=False,
-                    actions_taken=[f"Would repair: {action.issue}" for action in repair_plan],
+                    actions_taken=[
+                        f"Would repair: {action.issue}" for action in repair_plan
+                    ],
                     errors=[],
-                    requires_restart=any(action.requires_restart for action in repair_plan),
+                    requires_restart=any(
+                        action.requires_restart for action in repair_plan
+                    ),
                     timestamp=datetime.now(),
                 )
 
@@ -135,7 +139,9 @@ class EnvironmentRepair:
                 timestamp=datetime.now(),
             )
 
-    def _generate_repair_plan(self, health: EnvironmentHealth, max_risk: str) -> List[RepairAction]:
+    def _generate_repair_plan(
+        self, health: EnvironmentHealth, max_risk: str
+    ) -> List[RepairAction]:
         """Generate a repair plan based on health status"""
         plan = []
         risk_levels = {"low": 0, "medium": 1, "high": 2}
@@ -153,7 +159,10 @@ class EnvironmentRepair:
             )
 
         # Virtual environment issues
-        if not health.dependencies_ok or "Virtual environment not found" in health.issues:
+        if (
+            not health.dependencies_ok
+            or "Virtual environment not found" in health.issues
+        ):
             plan.append(
                 RepairAction(
                     issue="Virtual environment corrupted or missing",
@@ -172,7 +181,9 @@ class EnvironmentRepair:
                 RepairAction(
                     issue="Dependencies not properly installed",
                     action="Reinstall dependencies",
-                    python_function=lambda: self._repair_dependencies(health.environment_name),
+                    python_function=lambda: self._repair_dependencies(
+                        health.environment_name
+                    ),
                     risk_level="low",
                     requires_restart=True,
                 )
@@ -184,7 +195,9 @@ class EnvironmentRepair:
                 RepairAction(
                     issue="Configuration issues detected",
                     action="Validate and fix configuration",
-                    python_function=lambda: self._repair_configuration(health.environment_name),
+                    python_function=lambda: self._repair_configuration(
+                        health.environment_name
+                    ),
                     risk_level="low",
                     requires_restart=False,
                 )
@@ -196,7 +209,9 @@ class EnvironmentRepair:
                 RepairAction(
                     issue="Security vulnerabilities detected",
                     action="Update vulnerable packages",
-                    python_function=lambda: self._repair_security_issues(health.environment_name),
+                    python_function=lambda: self._repair_security_issues(
+                        health.environment_name
+                    ),
                     risk_level="medium",
                     requires_restart=True,
                 )
@@ -204,7 +219,9 @@ class EnvironmentRepair:
 
         # Filter by risk level
         filtered_plan = [
-            action for action in plan if risk_levels.get(action.risk_level, 0) <= max_risk_level
+            action
+            for action in plan
+            if risk_levels.get(action.risk_level, 0) <= max_risk_level
         ]
 
         return filtered_plan
@@ -246,7 +263,9 @@ class EnvironmentRepair:
             template_file = self.project_root / f"env-{environment}-template.txt"
             if template_file.exists():
                 shutil.copy(template_file, config.environment_file)
-                logger.info(f"Created environment file from template: {config.environment_file}")
+                logger.info(
+                    f"Created environment file from template: {config.environment_file}"
+                )
             else:
                 raise Exception(f"No template available for environment: {environment}")
 
@@ -336,9 +355,7 @@ class EnvironmentRepair:
         """Stop running services"""
         try:
             if sys.platform.startswith("linux"):
-                service_name = (
-                    f"polymarket-bot{'-' + environment if environment != 'production' else ''}"
-                )
+                service_name = f"polymarket-bot{'-' + environment if environment != 'production' else ''}"
                 subprocess.run(["systemctl", "stop", service_name], capture_output=True)
         except Exception as e:
             logger.warning(f"Failed to stop services: {e}")
@@ -347,10 +364,10 @@ class EnvironmentRepair:
         """Start services"""
         try:
             if sys.platform.startswith("linux"):
-                service_name = (
-                    f"polymarket-bot{'-' + environment if environment != 'production' else ''}"
+                service_name = f"polymarket-bot{'-' + environment if environment != 'production' else ''}"
+                subprocess.run(
+                    ["systemctl", "start", service_name], capture_output=True
                 )
-                subprocess.run(["systemctl", "start", service_name], capture_output=True)
         except Exception as e:
             logger.warning(f"Failed to start services: {e}")
 
@@ -416,18 +433,25 @@ class EnvironmentRepair:
             return False
 
 
-def main():
+def main() -> int:
     """CLI interface for environment repair"""
     import argparse
 
     parser = argparse.ArgumentParser(
         description="Environment Repair System for Polymarket Copy Bot"
     )
-    parser.add_argument("action", choices=["repair", "diagnose", "emergency", "backup", "restore"])
-    parser.add_argument("--env", default="production", help="Environment name")
-    parser.add_argument("--auto", action="store_true", help="Automatically apply repairs")
     parser.add_argument(
-        "--risk", choices=["low", "medium", "high"], default="medium", help="Maximum risk level"
+        "action", choices=["repair", "diagnose", "emergency", "backup", "restore"]
+    )
+    parser.add_argument("--env", default="production", help="Environment name")
+    parser.add_argument(
+        "--auto", action="store_true", help="Automatically apply repairs"
+    )
+    parser.add_argument(
+        "--risk",
+        choices=["low", "medium", "high"],
+        default="medium",
+        help="Maximum risk level",
     )
     parser.add_argument("--backup-path", help="Backup path for restore operation")
 
@@ -446,7 +470,9 @@ def main():
             print(f"  - {action}")
 
     elif args.action == "repair":
-        result = repair.diagnose_and_repair(args.env, auto_repair=args.auto, risk_level=args.risk)
+        result = repair.diagnose_and_repair(
+            args.env, auto_repair=args.auto, risk_level=args.risk
+        )
         print(f"Repair {'successful' if result.success else 'failed'}")
         print(f"Actions taken: {result.actions_taken}")
         if result.errors:
@@ -471,11 +497,13 @@ def main():
     elif args.action == "restore":
         if not args.backup_path:
             print("❌ Backup path required for restore")
-            sys.exit(1)
+            return 1
 
         success = repair.restore_backup(Path(args.backup_path), args.env)
         print(f"Restore {'successful' if success else 'failed'}")
 
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

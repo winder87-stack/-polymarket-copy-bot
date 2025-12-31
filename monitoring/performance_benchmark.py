@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 class PerformanceBenchmark:
     """Performance benchmarking system"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.config = monitoring_config.performance
         self.baseline_data = {}
         self.current_results = {}
@@ -42,13 +42,15 @@ class PerformanceBenchmark:
         # Load baseline data
         self._load_baseline()
 
-    def _load_baseline(self):
+    def _load_baseline(self) -> None:
         """Load performance baseline data"""
         if os.path.exists(self.config.baseline_file):
             try:
                 with open(self.config.baseline_file, "r") as f:
                     self.baseline_data = json.load(f)
-                logger.info(f"✅ Loaded performance baseline from {self.config.baseline_file}")
+                logger.info(
+                    f"✅ Loaded performance baseline from {self.config.baseline_file}"
+                )
             except Exception as e:
                 logger.error(f"❌ Failed to load baseline: {e}")
                 self.baseline_data = {}
@@ -95,7 +97,10 @@ class PerformanceBenchmark:
                 logger.info(f"✅ {scenario_name} benchmark completed")
             except Exception as e:
                 logger.error(f"❌ {scenario_name} benchmark failed: {e}")
-                results["scenarios"][scenario_name] = {"error": str(e), "status": "failed"}
+                results["scenarios"][scenario_name] = {
+                    "error": str(e),
+                    "status": "failed",
+                }
 
         # Collect system metrics
         results["system_metrics"] = await self._collect_system_metrics()
@@ -153,7 +158,9 @@ class PerformanceBenchmark:
             total_time = end_time - start_time
             result["latency_samples"] = latencies
             result["avg_latency_ms"] = statistics.mean(latencies) * 1000
-            result["p95_latency_ms"] = sorted(latencies)[int(len(latencies) * 0.95)] * 1000
+            result["p95_latency_ms"] = (
+                sorted(latencies)[int(len(latencies) * 0.95)] * 1000
+            )
             result["throughput_tps"] = len(latencies) / total_time
             result["memory_delta_mb"] = end_memory - start_memory
 
@@ -261,7 +268,9 @@ class PerformanceBenchmark:
 
             # Calculate metrics
             result["response_times"] = response_times
-            result["success_rate"] = success_count / len(response_times) if response_times else 0
+            result["success_rate"] = (
+                success_count / len(response_times) if response_times else 0
+            )
             result["avg_response_time_ms"] = (
                 statistics.mean(response_times) * 1000 if response_times else 0
             )
@@ -332,7 +341,9 @@ class PerformanceBenchmark:
                             "message": f"Potential memory leak detected: {first_avg:.1f}MB → {second_avg:.1f}MB",
                             "details": {
                                 "trend": "increasing",
-                                "increase_percent": ((second_avg / first_avg - 1) * 100),
+                                "increase_percent": (
+                                    (second_avg / first_avg - 1) * 100
+                                ),
                             },
                         }
                     )
@@ -374,7 +385,9 @@ class PerformanceBenchmark:
                 "process_cpu_percent": process.cpu_percent(interval=1),
                 "load_average": os.getloadavg() if hasattr(os, "getloadavg") else None,
                 "network_connections": len(psutil.net_connections()),
-                "open_files": len(process.open_files()) if hasattr(process, "open_files") else None,
+                "open_files": len(process.open_files())
+                if hasattr(process, "open_files")
+                else None,
             }
         except Exception as e:
             logger.error(f"Failed to collect system metrics: {e}")
@@ -404,7 +417,9 @@ class PerformanceBenchmark:
 
             for result_path, metric_name, direction in comparisons:
                 current_value = self._get_nested_value(results, result_path.split("."))
-                baseline_value = self._get_nested_value(self.baseline_data, result_path.split("."))
+                baseline_value = self._get_nested_value(
+                    self.baseline_data, result_path.split(".")
+                )
 
                 if current_value is not None and baseline_value is not None:
                     if direction == "lower" and current_value > baseline_value * (
@@ -415,7 +430,8 @@ class PerformanceBenchmark:
                                 "metric": metric_name,
                                 "current": current_value,
                                 "baseline": baseline_value,
-                                "change_percent": ((current_value / baseline_value) - 1) * 100,
+                                "change_percent": ((current_value / baseline_value) - 1)
+                                * 100,
                                 "direction": "worse",
                             }
                         )
@@ -427,7 +443,8 @@ class PerformanceBenchmark:
                                 "metric": metric_name,
                                 "current": current_value,
                                 "baseline": baseline_value,
-                                "change_percent": ((current_value / baseline_value) - 1) * 100,
+                                "change_percent": ((current_value / baseline_value) - 1)
+                                * 100,
                                 "direction": "worse",
                             }
                         )
@@ -435,15 +452,18 @@ class PerformanceBenchmark:
                         abs(current_value / baseline_value - 1)
                         > self.config.baseline_update_threshold
                     ):
-                        if (direction == "lower" and current_value < baseline_value) or (
-                            direction == "higher" and current_value > baseline_value
-                        ):
+                        if (
+                            direction == "lower" and current_value < baseline_value
+                        ) or (direction == "higher" and current_value > baseline_value):
                             comparison["improvements"].append(
                                 {
                                     "metric": metric_name,
                                     "current": current_value,
                                     "baseline": baseline_value,
-                                    "change_percent": ((current_value / baseline_value) - 1) * 100,
+                                    "change_percent": (
+                                        (current_value / baseline_value) - 1
+                                    )
+                                    * 100,
                                     "direction": "better",
                                 }
                             )
@@ -466,7 +486,9 @@ class PerformanceBenchmark:
 
         return comparison
 
-    def _get_nested_value(self, data: Dict[str, Any], keys: List[str]) -> Optional[float]:
+    def _get_nested_value(
+        self, data: Dict[str, Any], keys: List[str]
+    ) -> Optional[float]:
         """Get nested value from dictionary"""
         try:
             current = data
@@ -512,7 +534,9 @@ class PerformanceBenchmark:
         ]
 
         if len(key_improvements) >= 2:  # At least 2 key improvements
-            logger.info("🎉 Significant performance improvements detected, updating baseline")
+            logger.info(
+                "🎉 Significant performance improvements detected, updating baseline"
+            )
 
             # Create new baseline
             new_baseline = {

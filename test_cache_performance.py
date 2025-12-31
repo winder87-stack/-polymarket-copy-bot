@@ -89,7 +89,9 @@ class EfficientTTLCache:
             self._cache[key] = (value, now, heap_index)
             import heapq
 
-            heapq.heappush(self._expiration_heap, (now + self.ttl_seconds, counter, key))
+            heapq.heappush(
+                self._expiration_heap, (now + self.ttl_seconds, counter, key)
+            )
 
             # Check memory limits
             await self._check_memory_limits()
@@ -103,7 +105,7 @@ class EfficientTTLCache:
             await self._cleanup_expired_entries()
             await self._evict_oldest(entries_to_remove)
             print(
-                f"💾 Cache memory limit exceeded ({memory_usage/1024/1024:.1f}MB), "
+                f"💾 Cache memory limit exceeded ({memory_usage / 1024 / 1024:.1f}MB), "
                 f"evicted {entries_to_remove} entries"
             )
 
@@ -160,7 +162,9 @@ class EfficientTTLCache:
                         self._evictions += 1
 
             # Clean up None entries (removed items)
-            self._expiration_heap = [entry for entry in self._expiration_heap if entry is not None]
+            self._expiration_heap = [
+                entry for entry in self._expiration_heap if entry is not None
+            ]
 
             # Rebuild heap indices after cleanup
             for i, entry in enumerate(self._expiration_heap):
@@ -171,13 +175,17 @@ class EfficientTTLCache:
 
             new_count = len(self._cache)
             if original_count != new_count:
-                print(f"🧹 Cleaned up {original_count - new_count} expired cache entries")
+                print(
+                    f"🧹 Cleaned up {original_count - new_count} expired cache entries"
+                )
 
     def _estimate_memory_usage(self) -> int:
         """Estimate memory usage of cache in bytes"""
         # Rough estimation: each entry ~1KB + key size
         base_memory = len(self._cache) * 1024  # 1KB per entry
-        key_memory = sum(len(str(k)) for k in self._cache.keys()) * 2  # 2 bytes per char
+        key_memory = (
+            sum(len(str(k)) for k in self._cache.keys()) * 2
+        )  # 2 bytes per char
         heap_memory = len(self._expiration_heap) * 32  # ~32 bytes per heap entry
         return base_memory + key_memory + heap_memory
 
@@ -189,7 +197,9 @@ class EfficientTTLCache:
         oldest_timestamp = float("inf")
         for _, timestamp, _ in self._cache.values():
             oldest_timestamp = min(oldest_timestamp, timestamp)
-        oldest_timestamp = time.time() - oldest_timestamp if oldest_timestamp != float("inf") else 0
+        oldest_timestamp = (
+            time.time() - oldest_timestamp if oldest_timestamp != float("inf") else 0
+        )
 
         return {
             "size": len(self._cache),
@@ -352,7 +362,9 @@ async def run_performance_tests():
 
     # Test 1: Standard performance with 1000+ requests
     print("\n📈 Test 1: Standard Performance (1000+ requests)")
-    cache = EfficientTTLCache(ttl_seconds=5, max_memory_mb=50)  # Shorter TTL for testing
+    cache = EfficientTTLCache(
+        ttl_seconds=5, max_memory_mb=50
+    )  # Shorter TTL for testing
 
     results = await simulate_market_requests(cache, num_requests=1000)
 
@@ -383,10 +395,12 @@ async def run_performance_tests():
     # Overall assessment
     print("\n🎯 Performance Assessment:")
     success_criteria = {
-        "O(1) Operations": results["requests_per_second"] > 500,  # Should handle >500 req/sec
+        "O(1) Operations": results["requests_per_second"]
+        > 500,  # Should handle >500 req/sec
         "Cache Hit Ratio > 20%": results["cache_stats"]["hit_ratio"] > 0.20,
         "Memory Under Control": results["memory_usage_mb"] < 60,  # Under 60MB
-        "Memory Limits Work": memory_results["memory_usage_mb"] < 60,  # Memory management working
+        "Memory Limits Work": memory_results["memory_usage_mb"]
+        < 60,  # Memory management working
         "TTL Expiration Works": ttl_results["entries_expired"] > 0,
     }
 

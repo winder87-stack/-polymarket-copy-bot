@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 class MonitoringDashboard:
     """Monitoring dashboard generator"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.monitoring_dir = Path("monitoring")
         self.reports_dir = self.monitoring_dir / "reports"
         self.dashboard_dir = self.monitoring_dir / "dashboard"
@@ -45,9 +45,16 @@ class MonitoringDashboard:
 
         # Load all monitoring data
         dashboard_data["sections"]["system_status"] = await self._get_system_status()
-        dashboard_data["sections"]["security_overview"] = await self._get_security_overview()
-        dashboard_data["sections"]["performance_metrics"] = await self._get_performance_metrics()
+        dashboard_data["sections"][
+            "security_overview"
+        ] = await self._get_security_overview()
+        dashboard_data["sections"][
+            "performance_metrics"
+        ] = await self._get_performance_metrics()
         dashboard_data["sections"]["alert_health"] = await self._get_alert_health()
+        dashboard_data["sections"][
+            "arbitrage_metrics"
+        ] = await self._get_arbitrage_metrics()
         dashboard_data["sections"]["trends"] = await self._get_trends_analysis()
 
         # Generate HTML dashboard
@@ -70,7 +77,11 @@ class MonitoringDashboard:
 
     async def _get_system_status(self) -> Dict[str, Any]:
         """Get current system status"""
-        status = {"services": {}, "resources": {}, "last_updated": datetime.now().isoformat()}
+        status = {
+            "services": {},
+            "resources": {},
+            "last_updated": datetime.now().isoformat(),
+        }
 
         # Check service status (would need to run system commands)
         # For now, return placeholder
@@ -102,7 +113,9 @@ class MonitoringDashboard:
                 overview["latest_scan"] = {
                     "timestamp": scan_data.get("timestamp"),
                     "status": scan_data.get("summary", {}).get("overall_status"),
-                    "critical_issues": scan_data.get("summary", {}).get("critical_issues", 0),
+                    "critical_issues": scan_data.get("summary", {}).get(
+                        "critical_issues", 0
+                    ),
                     "high_issues": scan_data.get("summary", {}).get("high_issues", 0),
                     "total_issues": scan_data.get("summary", {}).get("total_issues", 0),
                 }
@@ -162,6 +175,60 @@ class MonitoringDashboard:
 
         return health
 
+    async def _get_arbitrage_metrics(self) -> Dict[str, Any]:
+        """Get cross-market arbitrage metrics overview"""
+        metrics = {
+            "opportunities_detected": 0,
+            "opportunities_executed": 0,
+            "total_profit": 0.0,
+            "total_loss": 0.0,
+            "net_profit": 0.0,
+            "success_rate": 0.0,
+            "average_edge": 0.0,
+            "by_category": {},
+            "top_correlations": [],
+            "recent_opportunities": [],
+            "risk_level_distribution": {"low": 0, "medium": 0, "high": 0},
+        }
+
+        # Load arbitrage statistics if available
+        arb_stats_file = self.monitoring_dir / "arbitrage_stats.json"
+        if arb_stats_file.exists():
+            try:
+                with open(arb_stats_file, "r") as f:
+                    arb_data = json.load(f)
+                    metrics["opportunities_detected"] = arb_data.get(
+                        "opportunities_detected", 0
+                    )
+                    metrics["opportunities_executed"] = arb_data.get(
+                        "arbitrages_executed", 0
+                    )
+                    metrics["total_profit"] = arb_data.get("total_profit", 0.0)
+                    metrics["total_loss"] = arb_data.get("total_loss", 0.0)
+                    metrics["net_profit"] = (
+                        metrics["total_profit"] - metrics["total_loss"]
+                    )
+
+                    if metrics["opportunities_detected"] > 0:
+                        metrics["success_rate"] = (
+                            metrics["opportunities_executed"]
+                            / metrics["opportunities_detected"]
+                        )
+
+                    metrics["average_edge"] = arb_data.get("average_edge_percent", 0.0)
+                    metrics["by_category"] = arb_data.get("pnl_by_category", {})
+                    metrics["top_correlations"] = arb_data.get("top_correlations", [])
+                    metrics["recent_opportunities"] = arb_data.get(
+                        "recent_opportunities", []
+                    )
+                    metrics["risk_level_distribution"] = arb_data.get(
+                        "risk_level_distribution", {"low": 0, "medium": 0, "high": 0}
+                    )
+            except Exception as e:
+                logger.error(f"Error loading arbitrage stats: {e}")
+
+        return metrics
+
     async def _get_trends_analysis(self) -> Dict[str, Any]:
         """Analyze trends across monitoring data"""
         trends = {
@@ -179,7 +246,10 @@ class MonitoringDashboard:
                     with open(report_file, "r") as f:
                         run_data = json.load(f)
                         recent_runs.append(run_data)
-                except Exception:
+                except (json.JSONDecodeError, IOError, OSError, ValueError) as e:
+                    logger.debug(
+                        f"Skipping invalid report file {report_file.name}: {e}"
+                    )
                     continue
 
         if recent_runs:
@@ -246,17 +316,17 @@ class MonitoringDashboard:
     <div class="container">
         <div class="header">
             <h1>🔍 Polymarket Bot Monitoring Dashboard</h1>
-            <p>Generated: {data['generated_at'][:19].replace('T', ' ')} | Period: Last {data['period_days']} days</p>
+            <p>Generated: {data["generated_at"][:19].replace("T", " ")} | Period: Last {data["period_days"]} days</p>
         </div>
 
         <!-- System Status -->
         <div class="section">
             <h2>🔧 System Status</h2>
-            <div class="metric">Main Bot: <span class="{self._get_status_class(data['sections']['system_status']['services']['main_bot']['status'])}">{data['sections']['system_status']['services']['main_bot']['status'].upper()}</span></div>
-            <div class="metric">Monitoring: <span class="{self._get_status_class(data['sections']['system_status']['services']['monitoring']['status'])}">{data['sections']['system_status']['services']['monitoring']['status'].upper()}</span></div>
-            <div class="metric">Alerts: <span class="{self._get_status_class(data['sections']['system_status']['services']['alerts']['status'])}">{data['sections']['system_status']['services']['alerts']['status'].upper()}</span></div>
-            <div class="metric">CPU: {data['sections']['system_status']['resources']['cpu_percent']}%</div>
-            <div class="metric">Memory: {data['sections']['system_status']['resources']['memory_percent']}%</div>
+            <div class="metric">Main Bot: <span class="{self._get_status_class(data["sections"]["system_status"]["services"]["main_bot"]["status"])}">{data["sections"]["system_status"]["services"]["main_bot"]["status"].upper()}</span></div>
+            <div class="metric">Monitoring: <span class="{self._get_status_class(data["sections"]["system_status"]["services"]["monitoring"]["status"])}">{data["sections"]["system_status"]["services"]["monitoring"]["status"].upper()}</span></div>
+            <div class="metric">Alerts: <span class="{self._get_status_class(data["sections"]["system_status"]["services"]["alerts"]["status"])}">{data["sections"]["system_status"]["services"]["alerts"]["status"].upper()}</span></div>
+            <div class="metric">CPU: {data["sections"]["system_status"]["resources"]["cpu_percent"]}%</div>
+            <div class="metric">Memory: {data["sections"]["system_status"]["resources"]["memory_percent"]}%</div>
         </div>
 
         <!-- Security Overview -->
@@ -267,11 +337,11 @@ class MonitoringDashboard:
         security = data["sections"]["security_overview"]
         if security["latest_scan"]:
             html += f"""
-            <p><strong>Latest Scan:</strong> {security['latest_scan']['timestamp'][:19].replace('T', ' ')}</p>
-            <div class="metric">Status: <span class="{self._get_status_class(security['latest_scan']['status'])}">{security['latest_scan']['status'].upper()}</span></div>
-            <div class="metric">Critical Issues: <span class="status-critical">{security['latest_scan']['critical_issues']}</span></div>
-            <div class="metric">High Issues: <span class="status-warning">{security['latest_scan']['high_issues']}</span></div>
-            <div class="metric">Total Issues: {security['latest_scan']['total_issues']}</div>
+            <p><strong>Latest Scan:</strong> {security["latest_scan"]["timestamp"][:19].replace("T", " ")}</p>
+            <div class="metric">Status: <span class="{self._get_status_class(security["latest_scan"]["status"])}">{security["latest_scan"]["status"].upper()}</span></div>
+            <div class="metric">Critical Issues: <span class="status-critical">{security["latest_scan"]["critical_issues"]}</span></div>
+            <div class="metric">High Issues: <span class="status-warning">{security["latest_scan"]["high_issues"]}</span></div>
+            <div class="metric">Total Issues: {security["latest_scan"]["total_issues"]}</div>
 """
 
             if security["critical_issues"]:
@@ -290,25 +360,23 @@ class MonitoringDashboard:
         performance = data["sections"]["performance_metrics"]
         if performance["latest_benchmark"]:
             html += f"""
-            <p><strong>Latest Benchmark:</strong> {performance['latest_benchmark']['timestamp'][:19].replace('T', ' ')}</p>
-            <div class="metric">Scenarios Run: {performance['latest_benchmark']['scenarios_run']}</div>
-            <div class="metric">Duration: {performance['latest_benchmark']['duration_minutes']} minutes</div>
+            <p><strong>Latest Benchmark:</strong> {performance["latest_benchmark"]["timestamp"][:19].replace("T", " ")}</p>
+            <div class="metric">Scenarios Run: {performance["latest_benchmark"]["scenarios_run"]}</div>
+            <div class="metric">Duration: {performance["latest_benchmark"]["duration_minutes"]} minutes</div>
 """
 
             if performance["regressions"]:
-                html += f"<h3>⚠️ Regressions ({len(performance['regressions'])}):</h3><ul>"
+                html += (
+                    f"<h3>⚠️ Regressions ({len(performance['regressions'])}):</h3><ul>"
+                )
                 for reg in performance["regressions"][:3]:
-                    html += (
-                        f'<li><strong>{reg["metric"]}</strong>: {reg["change_percent"]:+.1f}%</li>'
-                    )
+                    html += f"<li><strong>{reg['metric']}</strong>: {reg['change_percent']:+.1f}%</li>"
                 html += "</ul>"
 
             if performance["improvements"]:
                 html += f"<h3>✅ Improvements ({len(performance['improvements'])}):</h3><ul>"
                 for imp in performance["improvements"][:3]:
-                    html += (
-                        f'<li><strong>{imp["metric"]}</strong>: {imp["change_percent"]:+.1f}%</li>'
-                    )
+                    html += f"<li><strong>{imp['metric']}</strong>: {imp['change_percent']:+.1f}%</li>"
                 html += "</ul>"
 
         html += """
@@ -322,9 +390,9 @@ class MonitoringDashboard:
         alert_health = data["sections"]["alert_health"]
         if alert_health["latest_check"]:
             html += f"""
-            <div class="metric">Last Check: {alert_health['latest_check']['timestamp'][:19].replace('T', ' ')}</div>
-            <div class="metric">Overall Health: <span class="{self._get_status_class(alert_health['latest_check']['overall_health'])}">{alert_health['latest_check']['overall_health'].upper()}</span></div>
-            <div class="metric">Issues: {alert_health['latest_check']['issues_count']}</div>
+            <div class="metric">Last Check: {alert_health["latest_check"]["timestamp"][:19].replace("T", " ")}</div>
+            <div class="metric">Overall Health: <span class="{self._get_status_class(alert_health["latest_check"]["overall_health"])}">{alert_health["latest_check"]["overall_health"].upper()}</span></div>
+            <div class="metric">Issues: {alert_health["latest_check"]["issues_count"]}</div>
 """
 
             if alert_health["issues"]:
@@ -342,9 +410,9 @@ class MonitoringDashboard:
 
         trends = data["sections"]["trends"]
         html += f"""
-            <div class="metric">Security Trend: <span class="trend-{trends['security_trend']}">{trends['security_trend'].upper()}</span></div>
-            <div class="metric">Performance Trend: <span class="trend-{trends['performance_trend']}">{trends['performance_trend'].upper()}</span></div>
-            <div class="metric">Alert Reliability: {(trends['alert_reliability'] * 100):.1f}%</div>
+            <div class="metric">Security Trend: <span class="trend-{trends["security_trend"]}">{trends["security_trend"].upper()}</span></div>
+            <div class="metric">Performance Trend: <span class="trend-{trends["performance_trend"]}">{trends["performance_trend"].upper()}</span></div>
+            <div class="metric">Alert Reliability: {(trends["alert_reliability"] * 100):.1f}%</div>
 """
 
         if trends["insights"]:
@@ -368,8 +436,8 @@ class MonitoringDashboard:
 🔍 Polymarket Bot Monitoring Dashboard
 =======================================
 
-Generated: {data['generated_at'][:19].replace('T', ' ')}
-Period: Last {data['period_days']} days
+Generated: {data["generated_at"][:19].replace("T", " ")}
+Period: Last {data["period_days"]} days
 
 🔧 System Status:
 """
@@ -380,9 +448,9 @@ Period: Last {data['period_days']} days
 
         summary += f"""
 📊 Resources:
-  CPU: {system['resources']['cpu_percent']}%
-  Memory: {system['resources']['memory_percent']}%
-  Disk: {system['resources']['disk_percent']}%
+  CPU: {system["resources"]["cpu_percent"]}%
+  Memory: {system["resources"]["memory_percent"]}%
+  Disk: {system["resources"]["disk_percent"]}%
 
 🔒 Security Overview:
 """
@@ -390,10 +458,10 @@ Period: Last {data['period_days']} days
         security = data["sections"]["security_overview"]
         if security["latest_scan"]:
             scan = security["latest_scan"]
-            summary += f"""  Status: {scan['status'].upper()}
-  Critical Issues: {scan['critical_issues']}
-  High Issues: {scan['high_issues']}
-  Total Issues: {scan['total_issues']}
+            summary += f"""  Status: {scan["status"].upper()}
+  Critical Issues: {scan["critical_issues"]}
+  High Issues: {scan["high_issues"]}
+  Total Issues: {scan["total_issues"]}
 """
 
         summary += """
@@ -403,9 +471,9 @@ Period: Last {data['period_days']} days
         performance = data["sections"]["performance_metrics"]
         if performance["latest_benchmark"]:
             bench = performance["latest_benchmark"]
-            summary += f"""  Scenarios Run: {bench['scenarios_run']}
-  Regressions: {len(performance['regressions'])}
-  Improvements: {len(performance['improvements'])}
+            summary += f"""  Scenarios Run: {bench["scenarios_run"]}
+  Regressions: {len(performance["regressions"])}
+  Improvements: {len(performance["improvements"])}
 """
 
         summary += """
@@ -415,8 +483,8 @@ Period: Last {data['period_days']} days
         alert_health = data["sections"]["alert_health"]
         if alert_health["latest_check"]:
             check = alert_health["latest_check"]
-            summary += f"""  Overall Health: {check['overall_health'].upper()}
-  Issues: {check['issues_count']}
+            summary += f"""  Overall Health: {check["overall_health"].upper()}
+  Issues: {check["issues_count"]}
 """
 
         summary += """
@@ -424,9 +492,9 @@ Period: Last {data['period_days']} days
 """
 
         trends = data["sections"]["trends"]
-        summary += f"""  Security: {trends['security_trend'].upper()}
-  Performance: {trends['performance_trend'].upper()}
-  Alert Reliability: {(trends['alert_reliability'] * 100):.1f}%
+        summary += f"""  Security: {trends["security_trend"].upper()}
+  Performance: {trends["performance_trend"].upper()}
+  Alert Reliability: {(trends["alert_reliability"] * 100):.1f}%
 """
 
         if trends["insights"]:
@@ -449,7 +517,7 @@ Period: Last {data['period_days']} days
             return "status-warning"
 
 
-async def generate_dashboard():
+async def generate_dashboard() -> None:
     """Generate monitoring dashboard"""
     dashboard = MonitoringDashboard()
     await dashboard.generate_dashboard()

@@ -7,8 +7,10 @@ from datetime import datetime, timedelta
 
 def mock_approx(value, rel=0.1):
     """Simple approximation check"""
+
     def check(expected):
         return abs(value - expected) / max(abs(value), abs(expected)) <= rel
+
     return check
 
 
@@ -21,22 +23,36 @@ class MockTradeValidator:
             return False
 
         # Check required fields
-        required_fields = ["tx_hash", "timestamp", "wallet_address", "condition_id", "side", "amount", "price"]
+        required_fields = [
+            "tx_hash",
+            "timestamp",
+            "wallet_address",
+            "condition_id",
+            "side",
+            "amount",
+            "price",
+        ]
         for field in required_fields:
             if field not in trade:
                 return False
 
         # Validate data types
-        if not isinstance(trade["tx_hash"], str) or not trade["tx_hash"].startswith("0x"):
+        if not isinstance(trade["tx_hash"], str) or not trade["tx_hash"].startswith(
+            "0x"
+        ):
             return False
 
         if not isinstance(trade["timestamp"], datetime):
             return False
 
-        if not isinstance(trade["wallet_address"], str) or not trade["wallet_address"].startswith("0x"):
+        if not isinstance(trade["wallet_address"], str) or not trade[
+            "wallet_address"
+        ].startswith("0x"):
             return False
 
-        if not isinstance(trade["condition_id"], str) or not trade["condition_id"].startswith("0x"):
+        if not isinstance(trade["condition_id"], str) or not trade[
+            "condition_id"
+        ].startswith("0x"):
             return False
 
         if trade["side"] not in ["BUY", "SELL"]:
@@ -50,7 +66,9 @@ class MockTradeValidator:
 
         # Check timestamp is not in future and not too old
         now = datetime.now()
-        if trade["timestamp"] > now + timedelta(minutes=1):  # Allow 1 minute future tolerance
+        if trade["timestamp"] > now + timedelta(
+            minutes=1
+        ):  # Allow 1 minute future tolerance
             return False
 
         if trade["timestamp"] < now - timedelta(hours=24):  # Max 24 hours old
@@ -59,7 +77,11 @@ class MockTradeValidator:
         # Check confidence score if provided
         if "confidence_score" in trade:
             confidence = trade["confidence_score"]
-            if not isinstance(confidence, (int, float)) or confidence < 0 or confidence > 1:
+            if (
+                not isinstance(confidence, (int, float))
+                or confidence < 0
+                or confidence > 1
+            ):
                 return False
 
         return True
@@ -101,7 +123,15 @@ def test_missing_required_fields():
         "price": 0.5,
     }
 
-    required_fields = ["tx_hash", "timestamp", "wallet_address", "condition_id", "side", "amount", "price"]
+    required_fields = [
+        "tx_hash",
+        "timestamp",
+        "wallet_address",
+        "condition_id",
+        "side",
+        "amount",
+        "price",
+    ]
 
     for field in required_fields:
         test_trade = valid_trade.copy()
@@ -244,5 +274,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ Test failed: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

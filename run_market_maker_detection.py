@@ -60,7 +60,10 @@ class MarketMakerDetectionRunner:
             if wallets_file.exists():
                 with open(wallets_file, "r") as f:
                     data = json.load(f)
-                    return [normalize_address(wallet) for wallet in data.get("target_wallets", [])]
+                    return [
+                        normalize_address(wallet)
+                        for wallet in data.get("target_wallets", [])
+                    ]
             else:
                 logger.warning("Wallets config file not found, using empty list")
                 return []
@@ -68,7 +71,9 @@ class MarketMakerDetectionRunner:
             logger.error(f"Error loading wallets: {e}")
             return []
 
-    def generate_mock_trade_data(self, wallet_address: str, days: int = 7) -> List[Dict[str, Any]]:
+    def generate_mock_trade_data(
+        self, wallet_address: str, days: int = 7
+    ) -> List[Dict[str, Any]]:
         """
         Generate realistic mock trade data for analysis demonstration.
 
@@ -136,7 +141,9 @@ class MarketMakerDetectionRunner:
             if i > 0:
                 # Market makers trade more evenly, others have bursts
                 if wallet_type == "market_maker":
-                    interval_minutes = random.expovariate(1 / (24 * 60 / trades_per_day))
+                    interval_minutes = random.expovariate(
+                        1 / (24 * 60 / trades_per_day)
+                    )
                 else:
                     interval_minutes = random.expovariate(
                         1 / (24 * 60 / trades_per_day)
@@ -222,16 +229,22 @@ class MarketMakerDetectionRunner:
             logger.error(f"❌ Error analyzing wallet {wallet_address}: {e}")
             return None
 
-    async def run_detection_on_all_wallets(self, use_mock_data: bool = True) -> Dict[str, Any]:
+    async def run_detection_on_all_wallets(
+        self, use_mock_data: bool = True
+    ) -> Dict[str, Any]:
         """Run detection analysis on all configured wallets"""
 
-        logger.info(f"🚀 Starting market maker detection for {len(self.wallets)} wallets...")
+        logger.info(
+            f"🚀 Starting market maker detection for {len(self.wallets)} wallets..."
+        )
 
         successful_analyses = 0
         failed_analyses = 0
 
         for i, wallet_address in enumerate(self.wallets, 1):
-            logger.info(f"🔍 Analyzing wallet {i}/{len(self.wallets)}: {wallet_address[:10]}...")
+            logger.info(
+                f"🔍 Analyzing wallet {i}/{len(self.wallets)}: {wallet_address[:10]}..."
+            )
 
             analysis = await self.run_detection_on_wallet(wallet_address, use_mock_data)
 
@@ -285,7 +298,9 @@ class MarketMakerDetectionRunner:
             "average_mm_probability": (
                 sum(probabilities) / len(probabilities) if probabilities else 0
             ),
-            "average_confidence": sum(confidences) / len(confidences) if confidences else 0,
+            "average_confidence": sum(confidences) / len(confidences)
+            if confidences
+            else 0,
             "market_maker_percentage": classifications.get("market_maker", 0)
             / len(self.analysis_results)
             * 100,
@@ -324,17 +339,27 @@ class MarketMakerDetectionRunner:
         results = summary.get("results_summary", {})
         if results:
             print("\n🎯 Results Summary:")
-            print(f"   Average MM Probability: {results.get('average_mm_probability', 0):.3f}")
+            print(
+                f"   Average MM Probability: {results.get('average_mm_probability', 0):.3f}"
+            )
             print(f"   Average Confidence: {results.get('average_confidence', 0):.3f}")
-            print(f"   Market Maker Percentage: {results.get('market_maker_percentage', 0):.1f}%")
+            print(
+                f"   Market Maker Percentage: {results.get('market_maker_percentage', 0):.1f}%"
+            )
             print(
                 f"   High Confidence Classifications: {results.get('high_confidence_classifications', 0)}"
             )
 
             print("\n📈 Classification Distribution:")
-            for classification, count in results.get("classification_distribution", {}).items():
-                percentage = count / sum(results["classification_distribution"].values()) * 100
-                print(f"   {classification.replace('_', ' ').title()}: {count} ({percentage:.1f}%)")
+            for classification, count in results.get(
+                "classification_distribution", {}
+            ).items():
+                percentage = (
+                    count / sum(results["classification_distribution"].values()) * 100
+                )
+                print(
+                    f"   {classification.replace('_', ' ').title()}: {count} ({percentage:.1f}%)"
+                )
 
         print(
             "\n📁 Dashboard generated at: monitoring/dashboard/market_maker/market_maker_dashboard.html"
@@ -349,7 +374,9 @@ async def main():
 
     import argparse
 
-    parser = argparse.ArgumentParser(description="Run market maker detection on configured wallets")
+    parser = argparse.ArgumentParser(
+        description="Run market maker detection on configured wallets"
+    )
     parser.add_argument(
         "--mock-data",
         action="store_true",
@@ -361,7 +388,9 @@ async def main():
         action="store_true",
         help="Generate dashboard from existing data only (skip analysis)",
     )
-    parser.add_argument("--no-dashboard", action="store_true", help="Skip dashboard generation")
+    parser.add_argument(
+        "--no-dashboard", action="store_true", help="Skip dashboard generation"
+    )
 
     args = parser.parse_args()
 
@@ -378,7 +407,9 @@ async def main():
             await runner.generate_dashboard()
         else:
             # Run full analysis
-            summary = await runner.run_detection_on_all_wallets(use_mock_data=args.mock_data)
+            summary = await runner.run_detection_on_all_wallets(
+                use_mock_data=args.mock_data
+            )
 
             # Print summary
             runner.print_analysis_summary(summary)

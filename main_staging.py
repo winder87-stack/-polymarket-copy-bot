@@ -76,7 +76,8 @@ class PolymarketStagingBot:
 
             # Initialize CLOB client (staging endpoint)
             self.clob_client = PolymarketClient(
-                host=self.settings.network.clob_host, private_key=self.settings.trading.private_key
+                host=self.settings.network.clob_host,
+                private_key=self.settings.trading.private_key,
             )
 
             # Initialize wallet monitor (staging wallets)
@@ -118,7 +119,9 @@ class PolymarketStagingBot:
 
             web3 = Web3(Web3.HTTPProvider(self.settings.network.polygon_rpc_url))
             block_number = web3.eth.block_number
-            logger.info(f"✅ Connected to Polygon Mumbai testnet (Block: {block_number})")
+            logger.info(
+                f"✅ Connected to Polygon Mumbai testnet (Block: {block_number})"
+            )
         except Exception as e:
             logger.warning(f"⚠️ RPC connection test failed: {e}")
 
@@ -151,7 +154,9 @@ class PolymarketStagingBot:
 
         try:
             # Send startup alert
-            await self._send_staging_alert("STARTUP", "Staging bot started successfully")
+            await self._send_staging_alert(
+                "STARTUP", "Staging bot started successfully"
+            )
 
             # Main monitoring loop
             await self.monitor_loop()
@@ -182,7 +187,9 @@ class PolymarketStagingBot:
                 detected_trades = await self.wallet_monitor.monitor_wallets()
 
                 if detected_trades:
-                    logger.info(f"🎯 Staging: Detected {len(detected_trades)} potential trades")
+                    logger.info(
+                        f"🎯 Staging: Detected {len(detected_trades)} potential trades"
+                    )
 
                     # Filter trades based on staging limits
                     allowed_trades = await self._filter_staging_trades(detected_trades)
@@ -309,7 +316,8 @@ class PolymarketStagingBot:
         health_status = {
             "timestamp": datetime.now().isoformat(),
             "environment": "staging",
-            "uptime_hours": (datetime.now() - self.staging_start_time).total_seconds() / 3600,
+            "uptime_hours": (datetime.now() - self.staging_start_time).total_seconds()
+            / 3600,
             "total_trades": self.staging_trade_count,
             "daily_trades": self.staging_daily_trades,
             "daily_limit": self.settings.staging.max_trades_per_day,
@@ -321,7 +329,9 @@ class PolymarketStagingBot:
 
             web3 = Web3(Web3.HTTPProvider(self.settings.network.polygon_rpc_url))
             health_status["rpc_connected"] = web3.is_connected()
-            health_status["current_block"] = web3.eth.block_number if web3.is_connected() else None
+            health_status["current_block"] = (
+                web3.eth.block_number if web3.is_connected() else None
+            )
 
             # Check wallet balance
             if hasattr(self, "clob_client") and self.clob_client:
@@ -355,9 +365,14 @@ class PolymarketStagingBot:
 
     async def _send_staging_alert(self, alert_type: str, message: str):
         """Send staging-specific alert"""
-        staging_message = f"{self.settings.alerts.staging_alert_prefix}{alert_type}: {message}"
+        staging_message = (
+            f"{self.settings.alerts.staging_alert_prefix}{alert_type}: {message}"
+        )
 
-        if self.settings.alerts.telegram_bot_token and self.settings.alerts.telegram_chat_id:
+        if (
+            self.settings.alerts.telegram_bot_token
+            and self.settings.alerts.telegram_chat_id
+        ):
             try:
                 await send_error_alert(
                     staging_message,

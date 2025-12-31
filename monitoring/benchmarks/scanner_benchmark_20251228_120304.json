@@ -1,0 +1,52 @@
+{
+  "timestamp": "2025-12-28T12:03:04.300901",
+  "test_configuration": {
+    "num_wallets": 1000,
+    "target_percentage": 0.05,
+    "batch_size": 50,
+    "concurrency": 50
+  },
+  "stage_performance": {
+    "stage1_avg_ms": 0.0023174285888671875,
+    "stage1_target_ms": 10.0,
+    "stage1_passed": true,
+    "stage2_avg_ms": 0.015292167663574219,
+    "stage2_target_ms": 50.0,
+    "stage2_passed": true,
+    "stage3_avg_ms": 0.035653114318847656,
+    "stage3_target_ms": 200.0,
+    "stage3_passed": true,
+    "total_avg_ms": 0.05326271057128906,
+    "total_target_ms": 25.0,
+    "total_passed": true
+  },
+  "batch_performance": {
+    "total_time_seconds": 1.160912275314331,
+    "wallets_per_minute": 51683.49174682839,
+    "wallets_per_minute_target": 1000.0,
+    "wallets_per_minute_passed": true,
+    "avg_time_per_wallet_ms": 1.160912275314331,
+    "avg_time_per_wallet_target_ms": 25.0,
+    "avg_time_per_wallet_passed": true,
+    "memory_peak_mb": 2.12109375,
+    "memory_target_mb": 500.0,
+    "memory_passed": true
+  },
+  "cache_performance": {
+    "cache_miss_time_ms": 0.05793571472167969,
+    "cache_hit_time_ms": 0.05078315734863281,
+    "speedup_factor": 1.1408450704225352
+  },
+  "scan_statistics": {
+    "total_wallets": 1000,
+    "stage1_rejected": 976,
+    "stage1_rejection_rate": 0.976,
+    "stage2_rejected": 17,
+    "stage2_rejection_rate": 0.017,
+    "stage3_rejected": 6,
+    "targets_found": 1,
+    "target_rate": 0.001,
+    "watchlist_found": 6
+  },
+  "overall_passed": true
+}

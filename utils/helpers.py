@@ -6,11 +6,15 @@ import logging
 import re
 from collections import OrderedDict
 from datetime import datetime, timedelta
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP, getcontext
 from time import time
-from typing import Any, Dict, Optional, Union
+from typing import Any, Callable, Dict, Optional, Union, cast
 
 logger = logging.getLogger(__name__)
+
+# Configure Decimal for financial calculations
+getcontext().prec = 28
+getcontext().rounding = ROUND_HALF_UP
 
 
 def normalize_address(address: str) -> str:
@@ -31,10 +35,34 @@ def normalize_address(address: str) -> str:
 
     # Validate address length (should be 40 hex characters)
     if len(address_clean) != 40:
-        logger.warning(f"Invalid address length: {address_clean} (length: {len(address_clean)})")
+        logger.warning(
+            f"Invalid address length: {address_clean} (length: {len(address_clean)})"
+        )
         return f"0x{address_clean}"  # Return as-is but with 0x prefix
 
     return f"0x{address_clean}"
+
+
+def mask_wallet_address(address: str, show_chars: int = 6) -> str:
+    """
+    Securely mask wallet address for logging.
+
+    Args:
+        address: Full wallet address to mask
+        show_chars: Number of characters to show at the end (default: 6)
+
+    Returns:
+        Masked address like "0x1234...567890"
+    """
+    if not address or len(address) < show_chars:
+        return "****"
+
+    # Ensure 0x prefix
+    if not address.startswith("0x"):
+        address = f"0x{address}"
+
+    # Show only first 8 chars + ... + last show_chars
+    return f"{address[:8]}...{address[-show_chars:]}"
 
 
 def wei_to_usdc(wei_amount: Union[int, float, str]) -> Decimal:
@@ -73,7 +101,9 @@ def usdc_to_wei(usdc_amount: Union[int, float, str, Decimal]) -> int:
         return 0
 
 
-def calculate_confidence_score(tx: dict[str, Any], patterns: Optional[list[str]] = None) -> float:
+def calculate_confidence_score(
+    tx: dict[str, Any], patterns: Optional[list[str]] = None
+) -> float:
     """
     Calculate confidence score for a detected trade.
 
@@ -120,31 +150,73 @@ def calculate_confidence_score(tx: dict[str, Any], patterns: Optional[list[str]]
 
 
 def calculate_position_size(
-    original_amount: float,
-    account_balance: float,
-    max_position_size: float,
-    risk_percentage: float = 0.01,
-) -> float:
-    """Calculate position size based on risk management rules"""
+    original_amount: Union[float, int, str, Decimal],
+    account_balance: Union[float, int, str, Decimal],
+    max_position_size: Union[float, int, str, Decimal],
+    risk_percentage: Union[float, int, str, Decimal] = Decimal("0.01"),
+) -> Decimal:
+    """
+    Calculate position size based on risk management rules using Decimal for precision.
+
+    Args:
+        original_amount: Original trade amount to copy from
+        account_balance: Account balance
+        max_position_size: Maximum position size allowed
+        risk_percentage: Risk percentage per trade (default 1%)
+
+    Returns:
+        Calculated position size as Decimal
+
+    Raises:
+        ValueError: If inputs are invalid
+    """
     try:
+        # Convert all inputs to Decimal for precision
+        original_amount_dec = Decimal(str(original_amount))
+        account_balance_dec = Decimal(str(account_balance))
+        max_position_dec = Decimal(str(max_position_size))
+        risk_percent_dec = Decimal(str(risk_percentage))
+
+        # Validate inputs
+        if original_amount_dec < Decimal("0"):
+            raise ValueError("Original amount must be positive")
+        if account_balance_dec < Decimal("0"):
+            raise ValueError("Account balance must be positive")
+        if max_position_dec <= Decimal("0"):
+            raise ValueError("Max position size must be positive")
+        if not (Decimal("0") <= risk_percent_dec <= Decimal("1")):
+            raise ValueError("Risk percentage must be between 0 and 1")
+
         # Calculate risk-based size (1% of account per trade)
-        risk_based_size = account_balance * risk_percentage
+        risk_based_size_dec = account_balance_dec * risk_percent_dec
 
         # Calculate proportional size (10% of original trade)
-        proportional_size = original_amount * 0.1
+        proportional_size_dec = original_amount_dec * Decimal("0.1")
 
         # Take the minimum of both approaches, capped by max position size
-        position_size = min(risk_based_size, proportional_size, max_position_size)
+        position_size_dec = min(
+            risk_based_size_dec, proportional_size_dec, max_position_dec
+        )
 
-        # Ensure minimum trade amount
-        min_trade_amount = 1.0  # USDC
-        position_size = max(position_size, min_trade_amount)
+        # Ensure minimum trade amount (1 USDC)
+        min_trade_amount_dec = Decimal("1.0")
+        position_size_dec = max(position_size_dec, min_trade_amount_dec)
 
-        return position_size
+        # Round to 4 decimal places for precision
+        return position_size_dec.quantize(Decimal("0.0001"))
 
     except Exception as e:
         logger.error(f"Error calculating position size: {e}")
-        return min(original_amount * 0.1, max_position_size)
+        # Fallback: return conservative 10% of original trade, capped at max position size
+        try:
+            original_amount_dec = Decimal(str(original_amount))
+            max_position_dec = Decimal(str(max_position_size))
+            return min(original_amount_dec * Decimal("0.1"), max_position_dec).quantize(
+                Decimal("0.0001")
+            )
+        except (ValueError, TypeError, ArithmeticError) as e2:
+            logger.error(f"Critical error in fallback position size calculation: {e2}")
+            return Decimal("0.0")
 
 
 def format_currency(amount: float) -> str:
@@ -193,7 +265,7 @@ def truncate_string(text: str, max_length: int = 50) -> str:
 def safe_json_parse(json_str: str) -> Optional[Dict[str, Any]]:
     """Safely parse JSON string"""
     try:
-        return json.loads(json_str)
+        return cast(Optional[Dict[str, Any]], json.loads(json_str))
     except (json.JSONDecodeError, TypeError) as e:
         logger.error(f"Error parsing JSON: {e}")
         return None
@@ -226,7 +298,15 @@ def generate_environment_hash() -> str:
         # Skip sensitive environment variables
         if any(
             sensitive in key_lower
-            for sensitive in ["key", "secret", "password", "token", "auth", "wallet", "private"]
+            for sensitive in [
+                "key",
+                "secret",
+                "password",
+                "token",
+                "auth",
+                "wallet",
+                "private",
+            ]
         ):
             continue
         env_vars[key] = os.environ[key]
@@ -235,11 +315,11 @@ def generate_environment_hash() -> str:
     return hashlib.md5(env_str.encode()).hexdigest()[:8]
 
 
-def retry_with_backoff(max_attempts: int = 3, base_delay: float = 1.0):
+def retry_with_backoff(max_attempts: int = 3, base_delay: float = 1.0) -> Callable:
     """Decorator for retrying functions with exponential backoff"""
 
-    def decorator(func):
-        async def wrapper(*args, **kwargs):
+    def decorator(func: Callable) -> Callable:
+        async def wrapper(*args: Any, **kwargs: Any) -> Any:
             for attempt in range(max_attempts):
                 try:
                     return await func(*args, **kwargs)
@@ -259,23 +339,59 @@ def retry_with_backoff(max_attempts: int = 3, base_delay: float = 1.0):
 
 
 class BoundedCache:
-    """Efficient TTL-based cache with size limits using OrderedDict for LRU eviction."""
+    """
+    Efficient TTL-based cache with size limits using OrderedDict for LRU eviction.
 
-    def __init__(self, max_size: int = 1000, ttl_seconds: int = 3600) -> None:
+    Features:
+    - Automatic background cleanup task
+    - Memory threshold monitoring
+    - 30-minute maximum TTL enforcement
+    - Efficient expiration cleanup
+    - Thread-safe operations
+    """
+
+    # Maximum allowed TTL (30 minutes)
+    MAX_TTL_SECONDS: int = 1800
+
+    def __init__(
+        self,
+        max_size: int = 1000,
+        ttl_seconds: int = 3600,
+        memory_threshold_mb: Optional[float] = None,
+        cleanup_interval_seconds: int = 60,
+    ) -> None:
         """
         Initialize the bounded cache.
 
         Args:
             max_size: Maximum number of items to store
-            ttl_seconds: Time-to-live in seconds for cache entries
+            ttl_seconds: Time-to-live in seconds for cache entries (capped at 30 minutes)
+            memory_threshold_mb: Optional memory threshold in MB to trigger aggressive cleanup
+            cleanup_interval_seconds: Interval for background cleanup task (default 60s)
         """
+        # Enforce 30-minute maximum TTL
+        if ttl_seconds > self.MAX_TTL_SECONDS:
+            logger.warning(
+                "TTL %ds exceeds maximum %ds. Capping to %ds",
+                ttl_seconds,
+                self.MAX_TTL_SECONDS,
+                self.MAX_TTL_SECONDS,
+            )
+            ttl_seconds = self.MAX_TTL_SECONDS
+
         self.max_size = max_size
         self.ttl_seconds = ttl_seconds
+        self.memory_threshold_mb = memory_threshold_mb
+        self.cleanup_interval_seconds = cleanup_interval_seconds
         self._cache: OrderedDict[str, Any] = OrderedDict()
         self._timestamps: dict[str, float] = {}
         self._hits: int = 0
         self._misses: int = 0
         self._evictions: int = 0
+        self._last_cleanup: float = time()
+        self._cleanup_task: Optional[asyncio.Task[None]] = None
+        self._lock: asyncio.Lock = asyncio.Lock()
+        self._cleanup_counter: int = 0  # Track cleanup frequency
 
     def get(self, key: str) -> Optional[Any]:
         """
@@ -288,7 +404,10 @@ class BoundedCache:
             Cached value if found and not expired, None otherwise
         """
         now: float = time()
-        self._cleanup_expired()
+
+        # Periodic cleanup (every 10 gets to avoid overhead)
+        if self._cleanup_counter % 10 == 0:
+            self._cleanup_expired_lazy()
 
         if key in self._cache:
             # Move to end (most recently used)
@@ -299,13 +418,16 @@ class BoundedCache:
 
             if now - timestamp < self.ttl_seconds:
                 self._hits += 1
+                self._cleanup_counter += 1
                 return value
             else:
                 # Entry expired during access
                 del self._cache[key]
                 del self._timestamps[key]
+                self._evictions += 1
 
         self._misses += 1
+        self._cleanup_counter += 1
         return None
 
     def set(self, key: str, value: Any) -> None:
@@ -316,7 +438,12 @@ class BoundedCache:
             key: Cache key
             value: Value to cache
         """
-        self._cleanup_expired()
+        # Check memory threshold before adding
+        if self.memory_threshold_mb is not None:
+            if self._check_memory_threshold():
+                self._aggressive_cleanup()
+
+        self._cleanup_expired_lazy()
         self._enforce_size_limit()
 
         now: float = time()
@@ -328,11 +455,42 @@ class BoundedCache:
         self._cache[key] = value
         self._timestamps[key] = now
 
-    def _cleanup_expired(self) -> None:
-        """Remove expired entries"""
+    def delete(self, key: str) -> bool:
+        """
+        Explicitly delete a key from the cache.
+
+        Args:
+            key: Cache key to delete
+
+        Returns:
+            True if key was deleted, False if key didn't exist
+        """
+        if key in self._cache:
+            self._cache.pop(key, None)
+            self._timestamps.pop(key, None)
+            return True
+        return False
+
+    def _cleanup_expired_lazy(self) -> None:
+        """
+        Lazy cleanup of expired entries - only runs if enough time has passed.
+        More efficient than checking every operation.
+        """
+        now = time()
+        # Only cleanup if 10% of TTL has passed since last cleanup
+        if now - self._last_cleanup < (self.ttl_seconds * 0.1):
+            return
+
+        self._cleanup_expired_full()
+        self._last_cleanup = now
+
+    def _cleanup_expired_full(self) -> None:
+        """Full cleanup of all expired entries"""
         now = time()
         expired_keys = [
-            key for key, timestamp in self._timestamps.items() if now - timestamp > self.ttl_seconds
+            key
+            for key, timestamp in self._timestamps.items()
+            if now - timestamp > self.ttl_seconds
         ]
 
         for key in expired_keys:
@@ -342,11 +500,99 @@ class BoundedCache:
 
     def _enforce_size_limit(self) -> None:
         """Enforce maximum cache size using LRU eviction"""
-        while len(self._cache) >= self.max_size:
+        # Aggressive eviction if over 90% capacity
+        target_size = (
+            int(self.max_size * 0.9)
+            if len(self._cache) >= self.max_size
+            else self.max_size
+        )
+
+        while len(self._cache) >= target_size:
             # Remove oldest (least recently used) entry
             oldest_key, _ = self._cache.popitem(last=False)
             self._timestamps.pop(oldest_key, None)
             self._evictions += 1
+
+    def _check_memory_threshold(self) -> bool:
+        """
+        Check if memory usage exceeds threshold.
+
+        Returns:
+            True if memory threshold exceeded, False otherwise
+        """
+        if self.memory_threshold_mb is None:
+            return False
+
+        try:
+            # Estimate memory usage (rough calculation)
+            # Each entry: key (str ~50 bytes) + value (varies) + timestamp (float ~24 bytes)
+            estimated_bytes_per_entry = 200  # Conservative estimate
+            estimated_mb = (len(self._cache) * estimated_bytes_per_entry) / (
+                1024 * 1024
+            )
+
+            return estimated_mb > self.memory_threshold_mb
+        except Exception as e:
+            logger.warning(f"Error checking memory threshold: {e}")
+            return False
+
+    def _aggressive_cleanup(self) -> None:
+        """Perform aggressive cleanup when memory threshold is exceeded"""
+        logger.warning(
+            "Memory threshold exceeded. Performing aggressive cleanup. "
+            "Cache size: %d/%d",
+            len(self._cache),
+            self.max_size,
+        )
+
+        # Remove 50% of oldest entries
+        target_size = len(self._cache) // 2
+        while len(self._cache) > target_size:
+            oldest_key, _ = self._cache.popitem(last=False)
+            self._timestamps.pop(oldest_key, None)
+            self._evictions += 1
+
+        # Also cleanup expired entries
+        self._cleanup_expired_full()
+
+    async def start_background_cleanup(self) -> None:
+        """Start background cleanup task"""
+        if self._cleanup_task is not None:
+            return
+
+        self._cleanup_task = asyncio.create_task(self._background_cleanup_loop())
+        logger.debug(
+            "Started background cleanup task for BoundedCache (TTL: %ds)",
+            self.ttl_seconds,
+        )
+
+    async def stop_background_cleanup(self) -> None:
+        """Stop background cleanup task"""
+        if self._cleanup_task is not None:
+            self._cleanup_task.cancel()
+            try:
+                await self._cleanup_task
+            except asyncio.CancelledError:
+                pass
+            self._cleanup_task = None
+            logger.debug("Stopped background cleanup task for BoundedCache")
+
+    async def _background_cleanup_loop(self) -> None:
+        """Background task that periodically cleans up expired entries"""
+        try:
+            while True:
+                await asyncio.sleep(self.cleanup_interval_seconds)
+                async with self._lock:
+                    self._cleanup_expired_full()
+
+                    # Check memory threshold
+                    if self._check_memory_threshold():
+                        self._aggressive_cleanup()
+        except asyncio.CancelledError:
+            logger.debug("Background cleanup task cancelled")
+            raise
+        except Exception as e:
+            logger.error(f"Error in background cleanup task: {e}", exc_info=True)
 
     def clear(self) -> None:
         """Clear all cache entries"""
@@ -355,6 +601,8 @@ class BoundedCache:
         self._hits = 0
         self._misses = 0
         self._evictions = 0
+        self._last_cleanup = time()
+        self._cleanup_counter = 0
 
     def get_stats(self) -> dict[str, Any]:
         """
@@ -366,8 +614,14 @@ class BoundedCache:
         total_requests: int = self._hits + self._misses
         hit_ratio: float = (self._hits / total_requests) if total_requests > 0 else 0.0
 
-        oldest_timestamp: float = min(self._timestamps.values()) if self._timestamps else time()
+        oldest_timestamp: float = (
+            min(self._timestamps.values()) if self._timestamps else time()
+        )
         age_seconds: float = time() - oldest_timestamp
+
+        # Estimate memory usage
+        estimated_bytes_per_entry = 200
+        estimated_mb = (len(self._cache) * estimated_bytes_per_entry) / (1024 * 1024)
 
         return {
             "size": len(self._cache),
@@ -378,12 +632,17 @@ class BoundedCache:
             "evictions": self._evictions,
             "oldest_entry_age_seconds": age_seconds,
             "ttl_seconds": self.ttl_seconds,
+            "estimated_memory_mb": round(estimated_mb, 2),
+            "memory_threshold_mb": self.memory_threshold_mb,
+            "cleanup_counter": self._cleanup_counter,
         }
 
 
 if __name__ == "__main__":
     # Test helpers
-    print(f"Normalized address: {normalize_address('0xAbcdef1234567890abcdef1234567890AbcdEf12')}")
+    print(
+        f"Normalized address: {normalize_address('0xAbcdef1234567890abcdef1234567890AbcdEf12')}"
+    )
     print(f"100 USDC in wei: {usdc_to_wei(100)}")
     print(f"1000000 wei in USDC: {wei_to_usdc(1000000)}")
     print(f"Formatted currency: {format_currency(1234.5678)}")

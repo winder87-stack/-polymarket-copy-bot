@@ -18,7 +18,8 @@ import asyncio
 import logging
 import sys
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
+from typing import Dict, List, Optional
 
 from monitoring.alert_health_checker import run_alert_health_check
 from monitoring.monitoring_config import monitoring_config
@@ -31,11 +32,13 @@ logger = logging.getLogger(__name__)
 class MonitoringOrchestrator:
     """Orchestrates all monitoring activities"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.config = monitoring_config
         self.results = {}
 
-    async def run_all_checks(self, check_types: Optional[List[str]] = None) -> Dict[str, Any]:
+    async def run_all_checks(
+        self, check_types: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
         """Run all monitoring checks"""
         logger.info("🚀 Starting comprehensive monitoring run")
 
@@ -162,7 +165,9 @@ class MonitoringOrchestrator:
         # Check security issues
         security = results.get("security", {})
         if security.get("summary", {}).get("critical_issues", 0) > 0:
-            recommendations.append("🔒 Fix critical security vulnerabilities before continuing")
+            recommendations.append(
+                "🔒 Fix critical security vulnerabilities before continuing"
+            )
 
         # Check performance issues
         performance = results.get("performance", {})
@@ -175,11 +180,15 @@ class MonitoringOrchestrator:
         # Check alert system issues
         alerts_health = results.get("alerts_health", {})
         if alerts_health.get("overall_health") in ["critical", "degraded"]:
-            recommendations.append("🚨 Fix alert system issues to ensure proper monitoring")
+            recommendations.append(
+                "🚨 Fix alert system issues to ensure proper monitoring"
+            )
 
         # General recommendations
         if not recommendations:
-            recommendations.append("✅ All monitoring checks passed - system is healthy")
+            recommendations.append(
+                "✅ All monitoring checks passed - system is healthy"
+            )
 
         return recommendations
 
@@ -207,10 +216,12 @@ class MonitoringOrchestrator:
         with open(latest_file, "w") as f:
             json.dump(json_results, f, indent=2, default=str)
 
-    def _make_json_serializable(self, obj):
+    def _make_json_serializable(self, obj: Any) -> Any:
         """Convert objects to JSON-serializable format"""
         if isinstance(obj, dict):
-            return {key: self._make_json_serializable(value) for key, value in obj.items()}
+            return {
+                key: self._make_json_serializable(value) for key, value in obj.items()
+            }
         elif isinstance(obj, list):
             return [self._make_json_serializable(item) for item in obj]
         elif isinstance(obj, datetime):
@@ -231,7 +242,9 @@ class MonitoringOrchestrator:
 
             if critical_issues > 0 or high_issues > 0:
                 alert_message = "🚨 MONITORING ALERT\n"
-                alert_message += f"Status: {summary.get('overall_status', 'unknown').upper()}\n"
+                alert_message += (
+                    f"Status: {summary.get('overall_status', 'unknown').upper()}\n"
+                )
                 alert_message += f"Critical Issues: {critical_issues}\n"
                 alert_message += f"High Issues: {high_issues}\n"
                 alert_message += f"Total Alerts: {summary.get('total_alerts', 0)}\n\n"
@@ -252,7 +265,7 @@ class MonitoringOrchestrator:
             logger.error(f"Error sending monitoring alert: {e}")
 
 
-async def main():
+async def main() -> int:
     """Main entry point"""
     parser = argparse.ArgumentParser(description="Comprehensive Monitoring Runner")
     parser.add_argument(
@@ -287,21 +300,24 @@ async def main():
         summary = results.get("summary", {})
         logger.info("📊 Monitoring Summary:")
         logger.info(f"   Checks Completed: {summary.get('checks_completed', 0)}")
-        logger.info(f"   Overall Status: {summary.get('overall_status', 'unknown').upper()}")
+        logger.info(
+            f"   Overall Status: {summary.get('overall_status', 'unknown').upper()}"
+        )
         logger.info(f"   Total Alerts: {summary.get('total_alerts', 0)}")
 
-        # Exit with appropriate code
+        # Return appropriate code
         if summary.get("overall_status") == "critical":
-            sys.exit(2)  # Critical
+            return 2  # Critical
         elif summary.get("overall_status") in ["high", "medium"]:
-            sys.exit(1)  # Warning
+            return 1  # Warning
         else:
-            sys.exit(0)  # Success
+            return 0  # Success
 
     except Exception as e:
         logger.error(f"❌ Monitoring run failed: {e}")
-        sys.exit(1)
+        return 1
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    exit_code = asyncio.run(main())
+    sys.exit(exit_code)

@@ -3,6 +3,7 @@
 Integration Verification for Polymarket Copy Trading Bot
 Manual verification of component integration after security fixes.
 """
+
 import os
 import sys
 from pathlib import Path
@@ -46,7 +47,9 @@ def check_imports():
     print("📦 Checking imports...")
 
     # Set test environment
-    os.environ["PRIVATE_KEY"] = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+    os.environ["PRIVATE_KEY"] = (
+        "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+    )
 
     try:
         # Test core imports
@@ -122,7 +125,6 @@ def check_component_integration():
             patch("core.clob_client.Web3") as mock_web3,
             patch("core.wallet_monitor.Web3") as mock_web3_monitor,
         ):
-
             mock_web3_instance = Mock()
             mock_web3_instance.is_connected.return_value = True
             mock_web3.return_value = mock_web3_instance
@@ -153,7 +155,12 @@ def check_test_coverage():
     """Check that comprehensive tests exist."""
     print("🧪 Checking test coverage...")
 
-    test_directories = ["tests/unit", "tests/integration", "tests/performance", "tests/mocks"]
+    test_directories = [
+        "tests/unit",
+        "tests/integration",
+        "tests/performance",
+        "tests/mocks",
+    ]
 
     test_files = [
         "tests/conftest.py",
@@ -197,7 +204,13 @@ def check_deployment_readiness():
 
     # Check systemd service content
     service_content = Path("systemd/polymarket-bot.service").read_text()
-    required_directives = ["[Unit]", "[Service]", "[Install]", "ExecStart=", "User=polymarket-bot"]
+    required_directives = [
+        "[Unit]",
+        "[Service]",
+        "[Install]",
+        "ExecStart=",
+        "User=polymarket-bot",
+    ]
 
     for directive in required_directives:
         if directive not in service_content:
@@ -222,8 +235,8 @@ def generate_integration_report(results):
     report = f"""# Polymarket Copy Trading Bot - Integration Verification Report
 
 ## Executive Summary
-- **Verification Date**: {__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}
-- **Overall Status**: {'✅ PASSED' if all(results.values()) else '❌ ISSUES FOUND'}
+- **Verification Date**: {__import__("datetime").datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")}
+- **Overall Status**: {"✅ PASSED" if all(results.values()) else "❌ ISSUES FOUND"}
 - **Score**: {passed_checks}/{total_checks} checks passed
 
 ## Verification Results
@@ -330,7 +343,9 @@ def main():
         status = "✅ PASSED" if result else "❌ FAILED"
         print(f"   {check_name.replace('_', ' ').title()}: {status}")
 
-    print(f"\n🎯 Overall Status: {'✅ PASSED' if all(results.values()) else '⚠️ ISSUES FOUND'}")
+    print(
+        f"\n🎯 Overall Status: {'✅ PASSED' if all(results.values()) else '⚠️ ISSUES FOUND'}"
+    )
     print(f"📈 Success Rate: {passed_checks}/{total_checks} checks passed")
 
     # Generate report

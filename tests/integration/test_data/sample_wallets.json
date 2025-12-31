@@ -1,0 +1,48 @@
+{
+  "test_wallets": [
+    {
+      "address": "0x742d35Cc6634C0532925a3b8D4C0c2f8a2a3a7b9",
+      "category": "US_POLITICS",
+      "win_rate": 0.68,
+      "roi_30d": 22.5,
+      "max_drawdown": 0.18,
+      "avg_hold_time_hours": 48,
+      "trade_count": 150,
+      "trade_history": [
+        {"timestamp": "2025-01-01T10:00:00Z", "pnl": 15.0, "amount": 150.0, "category": "US_POLITICS"},
+        {"timestamp": "2025-01-01T11:00:00Z", "pnl": -10.0, "amount": 200.0, "category": "US_POLITICS"},
+        {"timestamp": "2025-01-01T12:00:00Z", "pnl": 20.0, "amount": 180.0, "category": "US_POLITICS"},
+        {"timestamp": "2025-01-02T10:00:00Z", "pnl": 5.0, "amount": 175.0, "category": "US_POLITICS"}
+      ],
+      "metrics": {
+        "win_rate": 0.68,
+        "roi_30d": 22.5,
+        "max_drawdown": 0.18,
+        "avg_hold_time_hours": 48,
+        "trade_count": 150
+      }
+    },
+    {
+      "address": "0x8a5d7f382763a2a954e85c8d89a0e3f4a9c5f3b8",
+      "category": "CRYPTO",
+      "win_rate": 0.72,
+      "roi_30d": 18.3,
+      "max_drawdown": 0.22,
+      "avg_hold_time_hours": 24,
+      "trade_count": 85,
+      "trade_history": [
+        {"timestamp": "2025-01-01T10:00:00Z", "pnl": 10.0, "amount": 120.0, "category": "CRYPTO"},
+        {"timestamp": "2025-01-01T11:00:00Z", "pnl": -8.0, "amount": 140.0, "category": "CRYPTO"},
+        {"timestamp": "2025-01-01T12:00:00Z", "pnl": 15.0, "amount": 130.0, "category": "CRYPTO"},
+        {"timestamp": "2025-01-02T10:00:00Z", "pnl": -5.0, "amount": 125.0, "category": "CRYPTO"}
+      ],
+      "metrics": {
+        "win_rate": 0.72,
+        "roi_30d": 18.3,
+        "max_drawdown": 0.22,
+        "avg_hold_time_hours": 24,
+        "trade_count": 85
+      }
+    }
+  ]
+}

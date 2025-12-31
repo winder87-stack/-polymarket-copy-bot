@@ -3,6 +3,7 @@
 System Validation Script for Polymarket Copy Trading Bot
 Performs comprehensive end-to-end validation of the entire system.
 """
+
 import asyncio
 import os
 import sys
@@ -10,6 +11,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
+from unittest.mock import patch
 
 import psutil
 
@@ -70,7 +72,9 @@ class SystemValidator:
             # Calculate final score
             final_score = self.calculate_final_score()
 
-            self.logger.info(f"✅ System validation completed. Final Score: {final_score}/100")
+            self.logger.info(
+                f"✅ System validation completed. Final Score: {final_score}/100"
+            )
 
             return {
                 "timestamp": datetime.now().isoformat(),
@@ -104,9 +108,9 @@ class SystemValidator:
 
         try:
             # Test wallet transaction detection
-            results["wallet_transaction_detection"] = (
-                await self._test_wallet_transaction_detection()
-            )
+            results[
+                "wallet_transaction_detection"
+            ] = await self._test_wallet_transaction_detection()
 
             # Test trade execution
             results["trade_execution"] = await self._test_trade_execution()
@@ -143,7 +147,9 @@ class SystemValidator:
             results["api_failure_recovery"] = await self._test_api_failure_recovery()
 
             # Test trade execution error handling
-            results["trade_execution_error_handling"] = await self._test_trade_execution_errors()
+            results[
+                "trade_execution_error_handling"
+            ] = await self._test_trade_execution_errors()
 
             # Test alerting during failures
             results["alerting_during_failures"] = await self._test_failure_alerting()
@@ -171,7 +177,9 @@ class SystemValidator:
             results["no_sensitive_data_in_logs"] = await self._test_log_security()
 
             # Test private key protection
-            results["private_key_never_exposed"] = await self._test_private_key_protection()
+            results[
+                "private_key_never_exposed"
+            ] = await self._test_private_key_protection()
 
             # Test input sanitization
             results["input_sanitization"] = await self._test_input_sanitization()
@@ -471,7 +479,9 @@ class SystemValidator:
             from tests.mocks.clob_api_mock import CLOBAPIMock
 
             api_mock = CLOBAPIMock()
-            api_mock.set_should_fail(True, ConnectionError("API temporarily unavailable"))
+            api_mock.set_should_fail(
+                True, ConnectionError("API temporarily unavailable")
+            )
 
             # Test that API failures are handled gracefully
             balance = await api_mock.get_balance()
@@ -569,7 +579,9 @@ class SystemValidator:
         """Test that private keys are never exposed."""
         try:
             # Test private key validation
-            valid_key = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+            valid_key = (
+                "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+            )
             assert validate_private_key(valid_key)
 
             # Test that invalid keys are rejected
@@ -645,7 +657,10 @@ class SystemValidator:
             end_time = time.time()
             latency = end_time - start_time
 
-            return {"value": latency, "acceptable": latency < 1.0}  # Should be under 1 second
+            return {
+                "value": latency,
+                "acceptable": latency < 1.0,
+            }  # Should be under 1 second
         except Exception as e:
             self.logger.error(f"End-to-end latency test failed: {e}")
             return {"value": 0, "acceptable": False}
@@ -750,7 +765,9 @@ class SystemValidator:
         """Test environment variable loading."""
         try:
             # Test that environment variables can override defaults
-            with patch.dict(os.environ, {"MAX_DAILY_LOSS": "200.0", "MONITOR_INTERVAL": "30"}):
+            with patch.dict(
+                os.environ, {"MAX_DAILY_LOSS": "200.0", "MONITOR_INTERVAL": "30"}
+            ):
                 # Create new settings instance to test loading
                 from config.settings import Settings
 
@@ -787,7 +804,9 @@ class SystemValidator:
     async def _test_systemd_service(self) -> bool:
         """Test systemd service configuration."""
         try:
-            service_file = Path("/home/ink/polymarket-copy-bot/systemd/polymarket-bot.service")
+            service_file = Path(
+                "/home/ink/polymarket-copy-bot/systemd/polymarket-bot.service"
+            )
 
             if service_file.exists():
                 content = service_file.read_text()
@@ -1115,7 +1134,9 @@ class SystemValidator:
                                     passed_tests += 1
                             elif "stable" in value:
                                 total_tests += 1
-                                if value["stable"] and not value.get("leak_detected", False):
+                                if value["stable"] and not value.get(
+                                    "leak_detected", False
+                                ):
                                     passed_tests += 1
 
                     category_score = (passed_tests / max(total_tests, 1)) * 100
@@ -1131,13 +1152,17 @@ class SystemValidator:
     def get_go_no_go_recommendation(self, score: int) -> str:
         """Get go/no-go recommendation based on score."""
         if score >= 90:
-            return "🚀 GO: System is production-ready with excellent validation results."
+            return (
+                "🚀 GO: System is production-ready with excellent validation results."
+            )
         elif score >= 80:
             return "⚠️ CAUTION: System is mostly ready but requires attention to minor issues."
         elif score >= 70:
             return "🛠️ FIX REQUIRED: System needs significant improvements before production."
         else:
-            return "❌ NO-GO: System requires major rework before production deployment."
+            return (
+                "❌ NO-GO: System requires major rework before production deployment."
+            )
 
     def get_critical_issues(self) -> List[str]:
         """Get list of critical issues requiring immediate attention."""
@@ -1146,7 +1171,9 @@ class SystemValidator:
         # Check for errors in each category
         for category, results in self.results.items():
             if "errors" in results and results["errors"]:
-                critical_issues.extend([f"{category}: {error}" for error in results["errors"]])
+                critical_issues.extend(
+                    [f"{category}: {error}" for error in results["errors"]]
+                )
 
         # Check for failed security tests
         security_results = self.results.get("security", {})
@@ -1217,14 +1244,18 @@ async def main():
                 print(f"  • ... and {len(minor_improvements) - 5} more")
 
         # Category Scores
-        print(f"\n📈 Category Scores:")
+        print("\n📈 Category Scores:")
         for category, cat_results in validator.results.items():
             if category != "user_experience":
                 passed = sum(
-                    1 for k, v in cat_results.items() if k != "errors" and isinstance(v, bool) and v
+                    1
+                    for k, v in cat_results.items()
+                    if k != "errors" and isinstance(v, bool) and v
                 )
                 total = sum(
-                    1 for k, v in cat_results.items() if k != "errors" and isinstance(v, bool)
+                    1
+                    for k, v in cat_results.items()
+                    if k != "errors" and isinstance(v, bool)
                 )
                 score = (passed / max(total, 1)) * 100
                 print(f"{category.title()} Score: {score:.1f}%")
@@ -1246,10 +1277,10 @@ async def main():
 
 ## Executive Summary
 
-- **Final Score**: {results['final_score']}/100
-- **Validation Duration**: {results['duration']:.2f} seconds
-- **Recommendation**: {results['recommendation']}
-- **Timestamp**: {results['timestamp']}
+- **Final Score**: {results["final_score"]}/100
+- **Validation Duration**: {results["duration"]:.2f} seconds
+- **Recommendation**: {results["recommendation"]}
+- **Timestamp**: {results["timestamp"]}
 
 ## Critical Issues Requiring Immediate Attention
 
@@ -1262,31 +1293,31 @@ async def main():
 ## Detailed Category Results
 
 ### Happy Path Validation
-{chr(10).join(f"- **{k.replace('_', ' ').title()}**: {'✅ PASSED' if v else '❌ FAILED'}" for k, v in validator.results['happy_path'].items() if k != 'errors')}
+{chr(10).join(f"- **{k.replace('_', ' ').title()}**: {'✅ PASSED' if v else '❌ FAILED'}" for k, v in validator.results["happy_path"].items() if k != "errors")}
 
 ### Failure Mode Validation
-{chr(10).join(f"- **{k.replace('_', ' ').title()}**: {'✅ PASSED' if v else '❌ FAILED'}" for k, v in validator.results['failure_modes'].items() if k != 'errors')}
+{chr(10).join(f"- **{k.replace('_', ' ').title()}**: {'✅ PASSED' if v else '❌ FAILED'}" for k, v in validator.results["failure_modes"].items() if k != "errors")}
 
 ### Security Validation
-{chr(10).join(f"- **{k.replace('_', ' ').title()}**: {'✅ PASSED' if v else '❌ FAILED'}" for k, v in validator.results['security'].items() if k != 'errors')}
+{chr(10).join(f"- **{k.replace('_', ' ').title()}**: {'✅ PASSED' if v else '❌ FAILED'}" for k, v in validator.results["security"].items() if k != "errors")}
 
 ### Performance Validation
-{chr(10).join(f"- **{k.replace('_', ' ').title()}**: {'✅ PASSED' if v.get('acceptable', False) else '❌ FAILED'}" for k, v in validator.results['performance'].items() if k != 'errors' and isinstance(v, dict))}
+{chr(10).join(f"- **{k.replace('_', ' ').title()}**: {'✅ PASSED' if v.get('acceptable', False) else '❌ FAILED'}" for k, v in validator.results["performance"].items() if k != "errors" and isinstance(v, dict))}
 
 ### Configuration Validation
-{chr(10).join(f"- **{k.replace('_', ' ').title()}**: {'✅ PASSED' if v else '❌ FAILED'}" for k, v in validator.results['configuration'].items() if k != 'errors')}
+{chr(10).join(f"- **{k.replace('_', ' ').title()}**: {'✅ PASSED' if v else '❌ FAILED'}" for k, v in validator.results["configuration"].items() if k != "errors")}
 
 ### Deployment Validation
-{chr(10).join(f"- **{k.replace('_', ' ').title()}**: {'✅ PASSED' if v else '❌ FAILED'}" for k, v in validator.results['deployment'].items() if k != 'errors')}
+{chr(10).join(f"- **{k.replace('_', ' ').title()}**: {'✅ PASSED' if v else '❌ FAILED'}" for k, v in validator.results["deployment"].items() if k != "errors")}
 
 ### User Experience Validation
-{chr(10).join(f"- **{k.replace('_', ' ').title()}**: {v.get('score', 0)}/100" for k, v in validator.results['user_experience'].items() if k != 'errors' and isinstance(v, dict))}
+{chr(10).join(f"- **{k.replace('_', ' ').title()}**: {v.get('score', 0)}/100" for k, v in validator.results["user_experience"].items() if k != "errors" and isinstance(v, dict))}
 
 ## Go/No-Go Decision
 
-Based on the comprehensive validation results, the system is **{'READY' if results['final_score'] >= 80 else 'NOT READY'}** for production deployment.
+Based on the comprehensive validation results, the system is **{"READY" if results["final_score"] >= 80 else "NOT READY"}** for production deployment.
 
-**Rationale**: {results['recommendation']}
+**Rationale**: {results["recommendation"]}
 
 ## Next Steps
 
@@ -1296,7 +1327,7 @@ Based on the comprehensive validation results, the system is **{'READY' if resul
 4. Monitor system performance in production environment
 
 ---
-*Validation completed on {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}*
+*Validation completed on {datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")}*
 """
 
         report_file.write_text(report_content)

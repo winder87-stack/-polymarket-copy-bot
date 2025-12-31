@@ -11,6 +11,12 @@ Architecture:
 - TradeExecutor: Executes copy trades with risk management
 - PolymarketClient: Interfaces with Polymarket's CLOB API
 - AlertManager: Handles Telegram notifications and monitoring
+- LeaderboardScanner: Automatically di                f"✅ Production monitoring server started"
+                f"{' (dashboard: http://localhost:' + str(monitoring_config.dashboard_port) + ')' }"
+                 if monitoring_config.dashboard_enabled else ''}"
+                f"{' (metrics: http://localhost:' + str(monitoring_config.metrics_port) + ')' }"
+                 if monitoring_config.metrics_enabled else ''}"
+            )"ers top-performing wallets to copy
 
 Key Features:
 - Real-time wallet monitoring with caching and rate limiting
@@ -18,6 +24,7 @@ Key Features:
 - Circuit breaker protection against excessive losses
 - Performance monitoring and alerting
 - Graceful error handling and recovery
+- Leaderboard scanner for automatic wallet discovery
 
 Environment Variables Required:
 - PRIVATE_KEY: Ethereum private key for trading
@@ -25,9 +32,10 @@ Environment Variables Required:
 - TELEGRAM_BOT_TOKEN: Telegram bot token for alerts
 - TELEGRAM_CHAT_ID: Telegram chat ID for notifications
 - POLYGONSCAN_API_KEY: PolygonScan API key for transaction monitoring
+- POLYMARKET_API_KEY: Polymarket API key for leaderboard data
 
 Author: Polymarket Bot Team
-Version: 1.0.0
+Version: 1.0.1
 License: MIT
 """
 
@@ -37,13 +45,25 @@ import os
 import signal
 import sys
 import time
-from datetime import datetime, timedelta
-from typing import Any, Dict, Optional
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional, Tuple
 
-import aiohttp
 
-# Configure logging first
+from config import (
+    get_settings,
+    validate_settings,
+    get_scanner_config,
+    validate_scanner_config,
+)
+from core.clob_client import PolymarketClient
+from core.endgame_sweeper import EndgameSweeper
+from core.trade_executor import TradeExecutor
+from core.wallet_monitor import WalletMonitor
+from scanners.leaderboard_scanner import LeaderboardScanner
+from utils.alerts import send_error_alert, send_performance_report, send_telegram_alert
+from utils.helpers import get_environment_info
 from utils.logging_config import setup_logging
+from utils.security import generate_session_id
 
 # Initialize logging
 setup_logging(
@@ -54,33 +74,22 @@ setup_logging(
 
 logger = logging.getLogger(__name__)
 
-# Import after logging is configured
-from config.settings import settings
-from core.clob_client import PolymarketClient
-from core.trade_executor import TradeExecutor
-from core.wallet_monitor import WalletMonitor
-from utils.alerts import (
-    send_error_alert,
-    send_performance_report,
-    send_telegram_alert,
-)
-from utils.helpers import get_environment_info
-from utils.security import generate_session_id
-
 
 class PolymarketCopyBot:
     """
     Main bot controller for Polymarket copy trading operations.
 
     This class orchestrates the entire copy trading workflow:
-    1. Monitors target wallets for trading activity
-    2. Applies risk management rules to trade signals
-    3. Executes copy trades on Polymarket
-    4. Manages open positions (stop-loss, take-profit)
-    5. Provides monitoring, alerting, and performance reporting
+    1. Scans leaderboard for top-performing wallets
+    2. Monitors target wallets for trading activity
+    3. Applies risk management rules to trade signals
+    4. Executes copy trades on Polymarket
+    5. Manages open positions (stop-loss, take-profit)
+    6. Provides monitoring, alerting, and performance reporting
 
     Attributes:
         settings: Application configuration settings
+        scanner_config: Leaderboard scanner configuration
         running: Flag indicating if the bot is actively running
         start_time: Timestamp when the bot was started
         session_id: Unique identifier for this bot session
@@ -90,6 +99,7 @@ class PolymarketCopyBot:
         clob_client: Interface to Polymarket's Conditional Order Book
         wallet_monitor: Blockchain transaction monitoring service
         trade_executor: Trade execution and position management engine
+        leaderboard_scanner: Automated wallet discovery system
     """
 
     def __init__(self) -> None:
@@ -99,18 +109,28 @@ class PolymarketCopyBot:
         Sets up all core components, performance monitoring, and configuration.
         The bot is initialized in a stopped state and must be started with start().
         """
-        self.settings = settings
+        self.settings = get_settings()
+        self.scanner_config = get_scanner_config()
         self.running = False
-        self.start_time = datetime.now()
+        self.start_time = datetime.now(timezone.utc)
         self.last_health_check: Optional[datetime] = None
+        self.last_wallet_update: float = 0
+        self.wallet_update_interval: float = 3600.0  # 1 hour
         self.session_id = generate_session_id()
+        self.target_wallets: List[Dict[str, Any]] = []
 
         # Core components - initialized during startup
         self.clob_client: Optional[PolymarketClient] = None
         self.wallet_monitor: Optional[WalletMonitor] = None
         self.trade_executor: Optional[TradeExecutor] = None
+        self.leaderboard_scanner: Optional[LeaderboardScanner] = None
+        self.endgame_sweeper: Optional[EndgameSweeper] = None
 
-        # Performance monitoring and optimization
+        # Production monitoring server (MCP)
+        self.monitoring_server: Optional[Any] = None
+        self.monitoring_task: Optional[asyncio.Task] = None
+
+        # Performance monitoring
         self.performance_stats: Dict[str, Any] = {
             "cycles_completed": 0,
             "trades_processed": 0,
@@ -123,40 +143,72 @@ class PolymarketCopyBot:
         }
 
         # Performance optimization settings
-        self.max_concurrent_health_checks = 3  # Limit concurrent health checks
-        self.performance_report_interval = 300  # 5 minutes between reports
-        self.last_performance_report = time.time()
+        self.max_concurrent_health_checks = 3
+        self.performance_report_interval = 300  # 5 minutes
+        self.last_performance_report: float = time.time()
+        self.last_daily_reset: Optional[datetime] = None
 
-        logger.info(f"🚀 Initialized Polymarket Copy Bot (Session ID: {self.session_id})")
+        logger.info(
+            f"🚀 Initialized Polymarket Copy Bot (Session ID: {self.session_id})"
+        )
 
     async def initialize(self) -> bool:
         """
         Initialize all bot components and perform startup checks.
 
-        This method sets up the core components (CLOB client, wallet monitor,
-        trade executor) and performs initial health checks to ensure the bot
-        can operate properly.
-
         Returns:
             bool: True if initialization successful, False otherwise
-
-        Raises:
-            Exception: If critical components fail to initialize
         """
         try:
             logger.info("🚀 Initializing Polymarket Copy Bot components...")
 
             # Validate settings
-            self.settings.validate_critical_settings()
+            validate_settings()
+            validate_scanner_config()
 
             # Initialize CLOB client
             self.clob_client = PolymarketClient()
-
-            # Initialize wallet monitor
-            self.wallet_monitor = WalletMonitor()
+            logger.info("✅ CLOB client initialized")
 
             # Initialize trade executor
-            self.trade_executor = TradeExecutor(self.clob_client)
+            self.trade_executor = TradeExecutor(self.clob_client, self.settings)
+            logger.info("✅ Trade executor initialized")
+
+            # Initialize endgame sweeper (if enabled)
+            if self.settings.endgame.enabled:
+                self.endgame_sweeper = EndgameSweeper(
+                    clob_client=self.clob_client,
+                    circuit_breaker=self.trade_executor.circuit_breaker,
+                )
+                logger.info("🎯 Endgame sweeper initialized and enabled")
+            else:
+                self.endgame_sweeper = None
+                logger.info("🎯 Endgame sweeper disabled (ENDGAME_ENABLED=false)")
+
+            # Run initial wallet scan to get target wallets
+            await self.update_target_wallets()
+
+            # Initialize wallet monitor with target wallets
+            if self.target_wallets:
+                self.wallet_monitor = WalletMonitor(
+                    settings=self.settings,
+                    trade_executor=self.trade_executor,
+                    target_wallets=[w["address"] for w in self.target_wallets],
+                )
+                logger.info(
+                    f"✅ Wallet monitor initialized with {len(self.target_wallets)} wallets"
+                )
+            else:
+                logger.error(
+                    "❌ Failed to initialize wallet monitor: no target wallets available"
+                )
+                return False
+
+            # Start background cleanup tasks
+            await self._start_background_cleanup_tasks()
+
+            # Start production monitoring server (MCP)
+            await self._start_monitoring_server()
 
             # Health check
             if not await self.health_check():
@@ -166,22 +218,63 @@ class PolymarketCopyBot:
             logger.info("✅ All components initialized successfully")
             return True
 
-        except (ConnectionError, TimeoutError, aiohttp.ClientError) as e:
-            logger.critical(
-                f"❌ Network error during initialization: {str(e)[:100]}", exc_info=True
-            )
-            await send_error_alert(f"Initialization network error: {str(e)[:100]}")
-            return False
-        except (ValueError, TypeError, KeyError) as e:
-            logger.critical(
-                f"❌ Configuration error during initialization: {str(e)[:100]}", exc_info=True
-            )
-            await send_error_alert(f"Initialization config error: {str(e)[:100]}")
-            return False
         except Exception as e:
-            logger.critical(f"❌ Unexpected error during initialization: {str(e)}", exc_info=True)
-            await send_error_alert(f"Initialization unexpected error: {str(e)[:100]}")
+            logger.critical(
+                f"❌ Critical error during initialization: {str(e)}", exc_info=True
+            )
+            await send_error_alert(f"Initialization failed: {str(e)[:100]}")
             return False
+
+    async def update_target_wallets(self):
+        """Update target wallets from leaderboard scanner"""
+        try:
+            logger.info("🔍 Scanning leaderboard for top-performing wallets...")
+
+            if not self.leaderboard_scanner:
+                logger.error("❌ Leaderboard scanner not initialized")
+                return
+
+            # Get top wallets from scanner
+            top_wallets = self.leaderboard_scanner.get_top_wallets()
+
+            if not top_wallets:
+                logger.warning("⚠️ No qualified wallets found in leaderboard scan")
+                return
+
+            # Extract wallet addresses and position size factors
+            self.target_wallets = [
+                {
+                    "address": wallet["address"],
+                    "position_size_factor": wallet.get("position_size_factor", 1.0),
+                    "confidence_score": wallet.get("confidence_score", 0.0),
+                    "risk_score": wallet.get("risk_score", 0.0),
+                }
+                for wallet in top_wallets
+            ]
+
+            logger.info(f"✅ Found {len(self.target_wallets)} qualified wallets:")
+            for i, wallet in enumerate(self.target_wallets[:10], 1):
+                logger.info(
+                    f"  {i}. {wallet['address'][:8]}... - "
+                    f"Confidence: {wallet['confidence_score']:.2f}, "
+                    f"Risk: {wallet['risk_score']:.2f}, "
+                    f"Size Factor: {wallet['position_size_factor']:.2f}"
+                )
+
+            # Update wallet monitor if it exists
+            if self.wallet_monitor:
+                position_size_factors = {
+                    w["address"]: w["position_size_factor"] for w in self.target_wallets
+                }
+                await self.wallet_monitor.update_target_wallets(
+                    [w["address"] for w in self.target_wallets], position_size_factors
+                )
+
+            self.last_wallet_update = time.time()
+
+        except Exception as e:
+            logger.error(f"❌ Error updating target wallets: {str(e)}", exc_info=True)
+            await send_error_alert(f"Wallet update failed: {str(e)[:100]}")
 
     async def health_check(self) -> bool:
         """
@@ -205,9 +298,9 @@ class PolymarketCopyBot:
 
     async def _should_perform_health_check(self) -> bool:
         """Check if health check should be performed based on cache"""
-        if not self.last_health_check or (datetime.now() - self.last_health_check) > timedelta(
-            minutes=5
-        ):
+        if not self.last_health_check or (
+            datetime.now(timezone.utc) - self.last_health_check
+        ) > timedelta(minutes=5):
             return True
         return False
 
@@ -221,24 +314,23 @@ class PolymarketCopyBot:
             health_checks.append(("Wallet Monitor", self.wallet_monitor.health_check()))
         if self.trade_executor:
             health_checks.append(("Trade Executor", self.trade_executor.health_check()))
+        if self.leaderboard_scanner:
+            health_checks.append(
+                ("Leaderboard Scanner", self.leaderboard_scanner.health_check())
+            )
+        if self.endgame_sweeper:
+            health_checks.append(
+                ("Endgame Sweeper", self.endgame_sweeper.health_check())
+            )
 
         return health_checks
 
-    async def _execute_health_checks(self, health_checks: List[Tuple[str, Any]]) -> List[Any]:
+    async def _execute_health_checks(
+        self, health_checks: List[Tuple[str, Any]]
+    ) -> List[Any]:
         """Execute health checks with concurrency control"""
-        if len(health_checks) <= self.max_concurrent_health_checks:
-            # Run all concurrently for small numbers
-            tasks = [check for _, check in health_checks]
-            return await asyncio.gather(*tasks, return_exceptions=True)
-        else:
-            # Run in batches for larger numbers (future-proofing)
-            results = []
-            for i in range(0, len(health_checks), self.max_concurrent_health_checks):
-                batch = health_checks[i : i + self.max_concurrent_health_checks]
-                batch_tasks = [check for _, check in batch]
-                batch_results = await asyncio.gather(*batch_tasks, return_exceptions=True)
-                results.extend(batch_results)
-            return results
+        tasks = [check for _, check in health_checks]
+        return await asyncio.gather(*tasks, return_exceptions=True)
 
     async def _analyze_health_check_results(
         self, health_checks: List[Tuple[str, Any]], results: List[Any]
@@ -250,64 +342,63 @@ class PolymarketCopyBot:
         for (component_name, _), result in zip(health_checks, results):
             if isinstance(result, Exception):
                 all_healthy = False
-                failed_components.append(f"{component_name} (exception)")
+                failed_components.append(
+                    f"{component_name} (exception: {str(result)[:50]})"
+                )
                 logger.warning(f"⚠️ {component_name} health check exception: {result}")
             elif result is not True:
                 all_healthy = False
-                failed_components.append(component_name)
+                failed_components.append(f"{component_name} (returned: {result})")
                 logger.warning(f"⚠️ {component_name} health check failed")
 
         if all_healthy:
             logger.info("✅ All health checks passed")
-            self.last_health_check = datetime.now()
+            self.last_health_check = datetime.now(timezone.utc)
             return True
         else:
-            return await self._handle_health_check_failure(results, failed_components)
+            await self._handle_health_check_failure(failed_components)
+            return False
 
-    async def _handle_health_check_failure(
-        self, results: List[Any], failed_components: List[str]
-    ) -> bool:
+    async def _handle_health_check_failure(self, failed_components: List[str]) -> None:
         """Handle and alert on health check failures"""
-        logger.error("❌ Health check failed")
+        error_msg = "Health check failed for components: " + ", ".join(
+            failed_components
+        )
+        logger.error(f"❌ {error_msg}")
 
-        error_details = []
-        for i, result in enumerate(results):
-            if isinstance(result, Exception):
-                error_details.append(f"Component {i}: {str(result)}")
-            elif result is not True:
-                error_details.append(f"Component {i}: Failed health check")
-
-        # Send alert on health check failure
         await send_error_alert(
             "Health check failed",
             {
-                "results": error_details,
-                "timestamp": datetime.now().isoformat(),
+                "failed_components": failed_components,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "session_id": self.session_id,
             },
         )
-
-        return False
 
     async def monitor_loop(self) -> None:
         """
         Main monitoring loop - core bot operation orchestrator.
 
         This method coordinates the main trading loop components:
-        1. Health checks before processing
-        2. Wallet monitoring and trade execution
-        3. Position management
-        4. Maintenance and cleanup tasks
-        5. Performance monitoring and reporting
+        1. Periodic wallet updates from leaderboard scanner
+        2. Health checks before processing
+        3. Wallet monitoring and trade execution
+        4. Position management
+        5. Maintenance and cleanup tasks
+        6. Performance monitoring and reporting
         """
         logger.info(
-            f"🔍 Starting monitoring loop. Checking every {self.settings.monitoring.monitor_interval} seconds"
+            f"🔍 Starting monitoring loop. Checking every {self.settings.monitor_interval} seconds"
         )
 
         while self.running:
             cycle_start = time.time()
 
             try:
+                # Periodically update target wallets from scanner
+                if time.time() - self.last_wallet_update > self.wallet_update_interval:
+                    await self.update_target_wallets()
+
                 # Pre-cycle health check
                 if not await self._perform_health_check():
                     await asyncio.sleep(5)
@@ -316,11 +407,12 @@ class PolymarketCopyBot:
                 # Main cycle operations
                 await self._monitor_wallets_and_execute_trades()
                 await self._manage_positions()
+                await self._run_endgame_sweeper()
                 await self._perform_maintenance_tasks()
 
                 # Calculate sleep time to maintain consistent interval
                 cycle_time = time.time() - cycle_start
-                sleep_time = max(0, self.settings.monitoring.monitor_interval - cycle_time)
+                sleep_time = max(0, self.settings.monitor_interval - cycle_time)
 
                 if sleep_time > 0:
                     await asyncio.sleep(sleep_time)
@@ -333,13 +425,14 @@ class PolymarketCopyBot:
 
     async def _perform_health_check(self) -> bool:
         """Perform health check before proceeding with monitoring cycle"""
-        if not await self.health_check():
-            logger.warning("⚠️ Health check failed. Skipping this monitoring cycle.")
-            return False
-        return True
+        return await self.health_check()
 
     async def _monitor_wallets_and_execute_trades(self) -> None:
         """Monitor wallets for new trades and execute copy trades"""
+        if not self.wallet_monitor:
+            logger.error("❌ Wallet monitor not initialized")
+            return
+
         wallet_start = time.time()
         detected_trades = await self.wallet_monitor.monitor_wallets()
         wallet_time = time.time() - wallet_start
@@ -370,14 +463,18 @@ class PolymarketCopyBot:
         trade_count: int,
     ) -> int:
         """Execute detected trades with batching and performance monitoring"""
-        max_concurrent_trades = min(10, len(detected_trades))  # Max 10 concurrent trades
+        max_concurrent_trades = min(
+            10, len(detected_trades)
+        )  # Max 10 concurrent trades
 
         if trade_count <= max_concurrent_trades:
             # Execute all trades concurrently for small batches
             results = await self._execute_trade_batch(detected_trades)
         else:
             # Execute in batches for large numbers of trades
-            results = await self._execute_trade_batches(detected_trades, max_concurrent_trades)
+            results = await self._execute_trade_batches(
+                detected_trades, max_concurrent_trades
+            )
 
         # Analyze results
         success_count, error_count = self._analyze_trade_results(results, trade_count)
@@ -394,6 +491,10 @@ class PolymarketCopyBot:
 
     async def _execute_trade_batch(self, trades: List[Dict[str, Any]]) -> List[Any]:
         """Execute a batch of trades concurrently"""
+        if not self.trade_executor:
+            logger.error("❌ Trade executor not initialized")
+            return [Exception("Trade executor not initialized") for _ in trades]
+
         tasks = [self.trade_executor.execute_copy_trade(trade) for trade in trades]
         return await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -413,7 +514,9 @@ class PolymarketCopyBot:
 
         return results
 
-    def _analyze_trade_results(self, results: List[Any], trade_count: int) -> Tuple[int, int]:
+    def _analyze_trade_results(
+        self, results: List[Any], trade_count: int
+    ) -> Tuple[int, int]:
         """Analyze trade execution results and log summary"""
         success_count = sum(
             1 for r in results if isinstance(r, dict) and r.get("status") == "success"
@@ -427,44 +530,169 @@ class PolymarketCopyBot:
             )
         if error_count > 0:
             logger.warning(f"⚠️ {error_count} trades failed during execution")
+            for i, result in enumerate(results):
+                if isinstance(result, Exception):
+                    logger.error(f"Trade {i} failed: {str(result)[:100]}")
 
         return success_count, error_count
 
     async def _manage_positions(self) -> None:
         """Manage open positions (stop loss/take profit)"""
-        await self.trade_executor.manage_positions()
+        if self.trade_executor:
+            await self.trade_executor.manage_positions()
+
+    async def _run_endgame_sweeper(self) -> None:
+        """Run endgame sweeper scan if enabled"""
+        if not self.endgame_sweeper:
+            return
+
+        try:
+            # Check if enough time has passed since last scan
+            if self.endgame_sweeper.last_scan_time:
+                time_since_scan = time.time() - self.endgame_sweeper.last_scan_time
+                if time_since_scan < self.settings.endgame.scan_interval_seconds:
+                    return
+
+            # Run scan
+            result = await self.endgame_sweeper.scan_and_execute()
+
+            # Log results if any trades executed
+            if result.get("trades_executed", 0) > 0:
+                logger.info(
+                    f"🎯 Endgame sweeper: {result['trades_executed']} trades executed, "
+                    f"{result['open_positions']} positions open"
+                )
+
+        except Exception as e:
+            logger.error(f"❌ Error running endgame sweeper: {e}", exc_info=True)
 
     async def _perform_maintenance_tasks(self) -> None:
         """Perform maintenance tasks like cleanup and reporting"""
         # Clean up old processed transactions
-        await self.wallet_monitor.clean_processed_transactions()
+        if self.wallet_monitor:
+            await self.wallet_monitor.clean_processed_transactions()
 
         # Periodic performance report
-        if time.time() - self.last_performance_report > self.performance_report_interval:
+        if (
+            time.time() - self.last_performance_report
+            > self.performance_report_interval
+        ):
             await self._periodic_performance_report()
 
-    async def _handle_monitoring_cycle_error(self, error: Exception, cycle_start: float) -> None:
+        # Daily reset check
+        await self._check_daily_reset()
+
+    async def _check_daily_reset(self):
+        """Check if we need to reset daily metrics"""
+        now = datetime.now(timezone.utc)
+        if not self.last_daily_reset or now.date() > self.last_daily_reset.date():
+            logger.info("📅 Performing daily reset")
+            if self.trade_executor:
+                self.trade_executor.reset_daily_metrics()
+            self.last_daily_reset = now
+
+    async def _start_background_cleanup_tasks(self) -> None:
+        """Start background cleanup tasks for all caches"""
+        try:
+            # Start scanner background tasks
+            if self.leaderboard_scanner:
+                self.leaderboard_scanner.start_scanning()
+                logger.info("✅ Started leaderboard scanner background task")
+
+            # Start cache cleanup tasks
+            if self.trade_executor:
+                await self.trade_executor.start_background_tasks()
+            if self.wallet_monitor:
+                await self.wallet_monitor.start_background_tasks()
+
+            logger.info("✅ Started all background cleanup tasks")
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to start some background tasks: {e}")
+
+    async def _stop_background_cleanup_tasks(self) -> None:
+        """Stop background cleanup tasks for all caches"""
+        try:
+            if self.leaderboard_scanner:
+                self.leaderboard_scanner.stop_scanning()
+            if self.trade_executor:
+                await self.trade_executor.stop_background_tasks()
+            if self.wallet_monitor:
+                await self.wallet_monitor.stop_background_tasks()
+            logger.info("✅ Stopped all background tasks")
+        except Exception as e:
+            logger.warning(f"⚠️ Error stopping background tasks: {e}")
+
+    async def _start_monitoring_server(self) -> None:
+        """Start production monitoring server as background task."""
+        try:
+            from config.mcp_config import get_monitoring_config
+
+            monitoring_config = get_monitoring_config()
+
+            if not monitoring_config.enabled:
+                logger.info("ℹ️ Production monitoring server disabled in config")
+                return
+
+            logger.info("🔍 Starting production monitoring server...")
+
+            # Import monitoring server (use enhanced version if available)
+            try:
+                from mcp.monitoring_server_enhanced import get_monitoring_server
+
+                _ = get_monitoring_server  # Mark as used
+            except ImportError:
+                # Fallback to original monitoring server
+                from mcp.monitoring_server import get_monitoring_server
+
+                _ = get_monitoring_server  # Mark as used
+                logger.info("Using original monitoring server")
+
+            dashboard_msg = ""
+            if monitoring_config.dashboard_enabled:
+                dashboard_msg = (
+                    f" (dashboard: http://localhost:{monitoring_config.dashboard_port})"
+                )
+            metrics_msg = ""
+            if monitoring_config.metrics_enabled:
+                metrics_msg = (
+                    f" (metrics: http://localhost:{monitoring_config.metrics_port})"
+                )
+            logger.info(
+                f"✅ Production monitoring server started{dashboard_msg}{metrics_msg}"
+            )
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to start monitoring server: {e}")
+            logger.warning("Continuing without monitoring server")
+            self.monitoring_server = None
+
+    async def _stop_monitoring_server(self) -> None:
+        """Stop production monitoring server."""
+        if self.monitoring_server:
+            try:
+                await self.monitoring_server.stop()
+                logger.info("✅ Stopped production monitoring server")
+            except Exception as e:
+                logger.warning(f"⚠️ Error stopping monitoring server: {e}")
+
+    async def _handle_monitoring_cycle_error(
+        self, error: Exception, cycle_start: float
+    ) -> None:
         """Handle errors that occur during monitoring cycles"""
         cycle_time = time.time() - cycle_start
 
-        if isinstance(error, (ConnectionError, TimeoutError, aiohttp.ClientError)):
-            logger.error(f"❌ Network error in monitoring loop: {str(error)[:100]}", exc_info=True)
-            await send_error_alert(
-                f"Monitoring loop network error: {str(error)[:100]}",
-                {"cycle_time": cycle_time, "session_id": self.session_id},
-            )
-        elif isinstance(error, (ValueError, TypeError, KeyError)):
-            logger.error(f"❌ Data error in monitoring loop: {str(error)[:100]}", exc_info=True)
-            await send_error_alert(
-                f"Monitoring loop data error: {str(error)[:100]}",
-                {"cycle_time": cycle_time, "session_id": self.session_id},
-            )
-        else:
-            logger.critical(f"❌ Unexpected error in monitoring loop: {str(error)}", exc_info=True)
-            await send_error_alert(
-                f"Monitoring loop unexpected error: {str(error)[:100]}",
-                {"cycle_time": cycle_time, "session_id": self.session_id},
-            )
+        error_type = type(error).__name__
+        error_msg = str(error)[:200]  # Limit error message length
+
+        logger.error(f"❌ {error_type} in monitoring loop: {error_msg}", exc_info=True)
+
+        await send_error_alert(
+            f"Monitoring loop error: {error_type}",
+            {
+                "error_message": error_msg,
+                "cycle_time": cycle_time,
+                "session_id": self.session_id,
+            },
+        )
 
         # Wait before retrying
         await asyncio.sleep(5)
@@ -473,29 +701,33 @@ class PolymarketCopyBot:
         """Start the bot"""
         if not await self.initialize():
             logger.critical("❌ Failed to initialize bot. Exiting.")
-            sys.exit(1)
+            raise InitializationError("Failed to initialize bot components")
 
         self.running = True
-        self.start_time = datetime.now()
+        self.start_time = datetime.now(timezone.utc)
 
         logger.info("🚀 Starting Polymarket Copy Bot")
         logger.info(f"Session ID: {self.session_id}")
-        logger.info(f"Monitoring {len(self.settings.monitoring.target_wallets)} wallets")
+        logger.info("Monitoring wallets from leaderboard scanner")
         logger.info(
-            f"Risk parameters: Max position=${self.settings.risk.max_position_size:.2f}, Max daily loss=${self.settings.risk.max_daily_loss:.2f}"
+            f"Risk parameters: Max position=${self.settings.max_position_size:.2f}, "
+            f"Max daily loss=${self.settings.max_daily_loss:.2f}"
         )
 
         # Send startup alert
         env_info = get_environment_info()
+        endgame_status = "✅ Enabled" if self.endgame_sweeper else "❌ Disabled"
+
         await send_telegram_alert(
             f"🚀 **BOT STARTED**\n"
             f"Session ID: `{self.session_id}`\n"
-            f"Version: 1.0.0\n"
-            f"Wallet: `{self.clob_client.wallet_address[-6:]}`\n"
-            f"Monitored wallets: {len(self.settings.monitoring.target_wallets)}\n"
+            f"Version: 1.0.1\n"
+            f"Wallet: `{self.clob_client.wallet_address[-6:] if self.clob_client else 'N/A'}`\n"
+            f"Scanner: Active (updating every {self.scanner_config.SCAN_INTERVAL_HOURS} hours)\n"
+            f"Endgame Sweeper: {endgame_status}\n"
             f"Environment: {env_info['system']} {env_info['machine']}\n"
             f"Start time: {self.start_time.strftime('%Y-%m-%d %H:%M:%S UTC')}\n"
-            f"Max Daily Loss: ${self.settings.risk.max_daily_loss:.2f}"
+            f"Max Daily Loss: ${self.settings.max_daily_loss:.2f}"
         )
 
         # Start monitoring loop
@@ -528,22 +760,44 @@ class PolymarketCopyBot:
         for task in tasks:
             task.cancel()
 
-        # Wait for tasks to complete with timeout
-        await asyncio.gather(*tasks, return_exceptions=True)
+        try:
+            await asyncio.gather(*tasks, return_exceptions=True)
+        except Exception as e:
+            logger.warning(f"Error during task cancellation: {e}")
 
         # Send shutdown alert
-        runtime = datetime.now() - self.start_time if self.start_time else timedelta(0)
-        metrics = self.trade_executor.get_performance_metrics() if self.trade_executor else {}
-
-        await send_telegram_alert(
-            f"🛑 **BOT STOPPED**\n"
-            f"Session ID: `{self.session_id}`\n"
-            f"Runtime: {runtime}\n"
-            f"Total trades: {metrics.get('total_trades', 0)}\n"
-            f"Successful trades: {metrics.get('successful_trades', 0)}\n"
-            f"Success rate: {metrics.get('success_rate', 0):.1%}\n"
-            f"Daily loss: ${metrics.get('daily_loss', 0):.2f}"
+        runtime = (
+            datetime.now(timezone.utc) - self.start_time
+            if self.start_time
+            else timedelta(0)
         )
+        metrics = (
+            self.trade_executor.get_performance_metrics() if self.trade_executor else {}
+        )
+
+        try:
+            await send_telegram_alert(
+                f"🛑 **BOT STOPPED**\n"
+                f"Session ID: `{self.session_id}`\n"
+                f"Runtime: {runtime}\n"
+                f"Total trades: {metrics.get('total_trades', 0)}\n"
+                f"Successful trades: {metrics.get('successful_trades', 0)}\n"
+                f"Success rate: {metrics.get('success_rate', 0):.1%}\n"
+                f"Daily loss: ${metrics.get('daily_loss', 0):.2f}"
+            )
+        except Exception as e:
+            logger.error(f"Error sending shutdown alert: {e}")
+
+        # Stop background tasks
+        await self._stop_background_cleanup_tasks()
+
+        # Stop monitoring server
+        await self._stop_monitoring_server()
+
+        # Stop endgame sweeper
+        if self.endgame_sweeper:
+            await self.endgame_sweeper.stop()
+            logger.info("✅ Endgame sweeper stopped")
 
         logger.info("✅ Bot shutdown completed successfully")
 
@@ -556,40 +810,48 @@ class PolymarketCopyBot:
         self.performance_stats["trades_successful"] += trades_successful
         self.performance_stats["total_cycle_time"] += cycle_time
         self.performance_stats["last_cycle_time"] = cycle_time
-        self.performance_stats["avg_cycle_time"] = (
-            self.performance_stats["total_cycle_time"] / self.performance_stats["cycles_completed"]
-        )
+
+        if self.performance_stats["cycles_completed"] > 0:
+            self.performance_stats["avg_cycle_time"] = (
+                self.performance_stats["total_cycle_time"]
+                / self.performance_stats["cycles_completed"]
+            )
+
         self.performance_stats["uptime_seconds"] = (
-            datetime.now() - self.start_time
+            datetime.now(timezone.utc) - self.start_time
         ).total_seconds()
 
-        # Memory usage tracking (optional, for advanced monitoring)
+        # Memory usage tracking (optional)
         try:
             import psutil
 
             process = psutil.Process()
-            self.performance_stats["memory_usage_mb"] = process.memory_info().rss / 1024 / 1024
-        except ImportError:
+            self.performance_stats["memory_usage_mb"] = (
+                process.memory_info().rss / 1024 / 1024
+            )
+        except (ImportError, Exception):
             self.performance_stats["memory_usage_mb"] = 0.0
 
     async def _periodic_performance_report(self):
-        """
-        Generate and send periodic performance report.
-
-        This method was consolidated from a duplicate definition to maintain
-        a single source of truth for performance reporting logic. The previous
-        duplicate definition (lines 463-504) was removed as this version is
-        more comprehensive and includes detailed performance metrics.
-        """
+        """Generate and send periodic performance report"""
         try:
             self.last_performance_report = time.time()
 
             # Get component performance stats
             wallet_stats = (
-                self.wallet_monitor.get_performance_stats() if self.wallet_monitor else {}
+                self.wallet_monitor.get_performance_stats()
+                if self.wallet_monitor
+                else {}
             )
             trade_stats = (
-                self.trade_executor.get_performance_metrics() if self.trade_executor else {}
+                self.trade_executor.get_performance_metrics()
+                if self.trade_executor
+                else {}
+            )
+            scanner_stats = (
+                self.leaderboard_scanner.get_scan_status()
+                if self.leaderboard_scanner
+                else {}
             )
 
             # Calculate overall performance
@@ -603,12 +865,12 @@ class PolymarketCopyBot:
             performance_health = "🟢 GOOD"
             if (
                 self.performance_stats["avg_cycle_time"]
-                > self.settings.monitoring.monitor_interval * 1.5
+                > self.settings.monitor_interval * 1.5
             ):
                 performance_health = "🟡 SLOW"
             elif (
                 self.performance_stats["avg_cycle_time"]
-                > self.settings.monitoring.monitor_interval * 2
+                > self.settings.monitor_interval * 2
             ):
                 performance_health = "🔴 CRITICAL"
 
@@ -627,19 +889,19 @@ class PolymarketCopyBot:
                     "avg_api_call_time": wallet_stats.get("avg_api_call_time", 0),
                     "open_positions": trade_stats.get("open_positions", 0),
                     "daily_loss": trade_stats.get("daily_loss", 0),
-                    "circuit_breaker_active": trade_stats.get("circuit_breaker_active", False),
+                    "circuit_breaker_active": trade_stats.get(
+                        "circuit_breaker_active", False
+                    ),
+                    "scanner_status": scanner_stats.get("is_running", False),
+                    "scanner_wallets": scanner_stats.get("wallet_count", 0),
                 }
             )
 
             logger.info(f"📊 Performance report sent - Health: {performance_health}")
 
-        except (ConnectionError, TimeoutError, aiohttp.ClientError) as e:
-            logger.error(f"Network error generating performance report: {str(e)[:100]}")
-        except (ValueError, TypeError, KeyError, AttributeError) as e:
-            logger.error(f"Data error generating performance report: {str(e)[:100]}")
         except Exception as e:
-            logger.critical(
-                f"Unexpected error generating performance report: {str(e)}", exc_info=True
+            logger.error(
+                f"Error generating performance report: {str(e)[:100]}", exc_info=True
             )
 
 
@@ -658,12 +920,13 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         logger.info("🛑 Bot terminated by user")
-    except (ConnectionError, TimeoutError, aiohttp.ClientError) as e:
-        logger.critical(f"❌ Network fatal error: {str(e)}", exc_info=True)
+        sys.exit(0)
+    except InitializationError as e:
+        logger.critical(f"❌ Initialization failed: {str(e)}", exc_info=True)
         sys.exit(1)
-    except (ValueError, TypeError, KeyError, ImportError) as e:
-        logger.critical(f"❌ Configuration fatal error: {str(e)}", exc_info=True)
-        sys.exit(1)
+    except GracefulShutdown:
+        logger.info("🛑 Graceful shutdown completed")
+        sys.exit(0)
     except Exception as e:
-        logger.critical(f"❌ Unexpected fatal error: {str(e)}", exc_info=True)
+        logger.critical(f"❌ Fatal error: {str(e)}", exc_info=True)
         sys.exit(1)

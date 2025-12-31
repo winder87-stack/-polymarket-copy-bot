@@ -3,6 +3,7 @@
 Simple Integration Check for Polymarket Copy Trading Bot
 Verifies component integration after security fixes.
 """
+
 import os
 import sys
 from pathlib import Path
@@ -13,7 +14,9 @@ def main():
     print("=" * 60)
 
     # Set test environment
-    os.environ["PRIVATE_KEY"] = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+    os.environ["PRIVATE_KEY"] = (
+        "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+    )
 
     checks_passed = 0
     total_checks = 0

@@ -26,17 +26,27 @@ else:
 
 
 class RiskManagementConfig(BaseModel):
-    max_position_size: float = Field(default=50.0, description="Maximum USDC per position", ge=1.0)
-    max_daily_loss: float = Field(default=100.0, description="Circuit breaker threshold", ge=0.0)
+    max_position_size: float = Field(
+        default=50.0, description="Maximum USDC per position", ge=1.0
+    )
+    max_daily_loss: float = Field(
+        default=100.0, description="Circuit breaker threshold", ge=0.0
+    )
     min_trade_amount: float = Field(
         default=1.0, description="Ignore trades smaller than this", ge=0.01
     )
-    max_concurrent_positions: int = Field(default=10, description="Maximum open positions", ge=1)
-    stop_loss_percentage: float = Field(default=0.15, description="15% stop loss", ge=0.01, le=0.5)
+    max_concurrent_positions: int = Field(
+        default=10, description="Maximum open positions", ge=1
+    )
+    stop_loss_percentage: float = Field(
+        default=0.15, description="15% stop loss", ge=0.01, le=0.5
+    )
     take_profit_percentage: float = Field(
         default=0.25, description="25% take profit", ge=0.01, le=1.0
     )
-    max_slippage: float = Field(default=0.02, description="2% maximum slippage", ge=0.001, le=0.1)
+    max_slippage: float = Field(
+        default=0.02, description="2% maximum slippage", ge=0.001, le=0.1
+    )
 
 
 class NetworkConfig(BaseModel):
@@ -44,19 +54,81 @@ class NetworkConfig(BaseModel):
         default="https://clob.polymarket.com", description="Polymarket CLOB host"
     )
     chain_id: int = Field(default=137, description="Polygon mainnet")
-    polygon_rpc_url: str = Field(default="https://polygon-rpc.com", description="Polygon RPC URL")
-    polygonscan_api_key: str = Field(default="", description="Polygonscan API key")
+    polygon_rpc_url: str = Field(
+        default="https://polygon-rpc.com",
+        description="Primary Polygon RPC URL (QuickNode)",
+    )
+    polygon_rpc_fallbacks: List[str] = Field(
+        default_factory=list,
+        description="Fallback RPC endpoints for failover (comma-separated in env var)",
+    )
+    polygonscan_api_key: str = Field(
+        default="", description="Polygonscan API key (optional)"
+    )
+
+    @field_validator("polygon_rpc_fallbacks", mode="before")
+    @classmethod
+    def parse_fallback_endpoints(cls, v: Any) -> List[str]:
+        """
+        Parse fallback endpoints from environment variable or list.
+
+        Args:
+            v: String (comma-separated) or list of endpoints
+
+        Returns:
+            List of endpoint URLs
+        """
+        if isinstance(v, str):
+            # Parse comma-separated string
+            endpoints = [e.strip() for e in v.split(",") if e.strip()]
+            return endpoints
+        elif isinstance(v, list):
+            return v
+        else:
+            # Try to load from environment
+            env_value = os.getenv("POLYGON_RPC_FALLBACKS")
+            if env_value:
+                return [e.strip() for e in env_value.split(",") if e.strip()]
+            return []
 
 
 class TradingConfig(BaseModel):
     private_key: str = Field(description="Wallet private key")
     wallet_address: Optional[str] = Field(
-        None, description="Wallet address (auto-calculated if empty)"
+        "", description="Wallet address (auto-calculated if empty)"
     )
     gas_limit: int = Field(default=300000, description="Default gas limit", ge=21000)
-    max_gas_price: int = Field(default=100, description="Maximum gas price in gwei", ge=1)
+    max_gas_price: int = Field(
+        default=100, description="Maximum gas price in gwei", ge=1
+    )
     gas_price_multiplier: float = Field(
         default=1.1, description="Gas price multiplier for priority", ge=1.0, le=2.0
+    )
+    # Advanced gas optimization
+    gas_optimization_enabled: bool = Field(
+        default=True, description="Enable advanced gas optimization"
+    )
+    gas_optimization_mode: str = Field(
+        default="balanced",
+        description="Gas optimization mode: conservative, balanced, or aggressive",
+    )
+    gas_prediction_enabled: bool = Field(
+        default=True, description="Enable gas price prediction using historical data"
+    )
+    mev_protection_enabled: bool = Field(
+        default=True, description="Enable MEV protection mechanisms"
+    )
+    gas_spike_threshold: float = Field(
+        default=2.0,
+        description="Gas spike detection threshold multiplier",
+        ge=1.0,
+        le=5.0,
+    )
+    max_gas_wait_minutes: int = Field(
+        default=15,
+        description="Maximum minutes to wait for gas to decrease",
+        ge=0,
+        le=60,
     )
 
 
@@ -64,30 +136,83 @@ class MonitoringConfig(BaseModel):
     monitor_interval: int = Field(
         default=15, description="Seconds between wallet checks", ge=5, le=300
     )
-    wallets_file: str = Field(default="config/wallets.json", description="Path to wallets config")
+    wallets_file: str = Field(
+        default="config/wallets.json", description="Path to wallets config"
+    )
     target_wallets: List[str] = Field(
         default_factory=list, description="List of wallet addresses to monitor"
     )
     min_confidence_score: float = Field(
-        default=0.7, description="Minimum confidence score for trade detection", ge=0.1, le=0.95
+        default=0.7,
+        description="Minimum confidence score for trade detection",
+        ge=0.1,
+        le=0.95,
     )
 
 
 class AlertingConfig(BaseModel):
     telegram_bot_token: Optional[str] = Field(None, description="Telegram bot token")
     telegram_chat_id: Optional[str] = Field(None, description="Telegram chat ID")
-    alert_on_trade: bool = Field(default=True, description="Send alerts on trade execution")
+    alert_on_trade: bool = Field(
+        default=True, description="Send alerts on trade execution"
+    )
     alert_on_error: bool = Field(default=True, description="Send alerts on errors")
     alert_on_circuit_breaker: bool = Field(
         default=True, description="Send alerts when circuit breaker activates"
     )
 
 
+class EndgameConfig(BaseModel):
+    enabled: bool = Field(default=False, description="Enable endgame sweeper strategy")
+    min_probability: float = Field(
+        default=0.95,
+        description="Minimum probability for endgame trades",
+        ge=0.5,
+        le=0.99,
+    )
+    max_probability_exit: float = Field(
+        default=0.998,
+        description="Auto-exit probability threshold (black swan protection)",
+        ge=0.95,
+        le=1.0,
+    )
+    min_liquidity_usdc: float = Field(
+        default=10000.0, description="Minimum daily liquidity in USDC", ge=1000.0
+    )
+    max_days_to_resolution: int = Field(
+        default=7, description="Maximum days until market resolution", ge=1, le=30
+    )
+    max_position_percentage: float = Field(
+        default=0.03,
+        description="Maximum position size (3% of portfolio)",
+        ge=0.01,
+        le=0.10,
+    )
+    stop_loss_percentage: float = Field(
+        default=0.10,
+        description="Stop loss at 10% move against entry",
+        ge=0.05,
+        le=0.20,
+    )
+    min_annualized_return: float = Field(
+        default=20.0,
+        description="Minimum annualized return percentage",
+        ge=10.0,
+        le=100.0,
+    )
+    scan_interval_seconds: int = Field(
+        default=300, description="Seconds between endgame scans", ge=60, le=3600
+    )
+
+
 class LoggingConfig(BaseModel):
     log_level: str = Field(default="INFO", description="Logging level")
-    log_file: str = Field(default="logs/polymarket_bot.log", description="Log file path")
+    log_file: str = Field(
+        default="logs/polymarket_bot.log", description="Log file path"
+    )
     log_format: str = Field(
-        default="%(asctime)s - %(name)s - %(levelname)s - %(message)s", description="Log format"
+        default="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        description="Log format",
     )
 
 
@@ -98,12 +223,14 @@ class Settings(BaseModel):
     monitoring: MonitoringConfig = Field(default_factory=lambda: MonitoringConfig())
     alerts: AlertingConfig = Field(default_factory=lambda: AlertingConfig())
     logging: LoggingConfig = Field(default_factory=lambda: LoggingConfig())
+    endgame: EndgameConfig = Field(default_factory=lambda: EndgameConfig())
 
     # Environment variables mapping
     env_mappings: ClassVar[Dict[str, str]] = {
         "network.clob_host": "CLOB_HOST",
         "network.chain_id": "CHAIN_ID",
         "network.polygon_rpc_url": "POLYGON_RPC_URL",
+        "network.polygon_rpc_fallbacks": "POLYGON_RPC_FALLBACKS",
         "network.polygonscan_api_key": "POLYGONSCAN_API_KEY",
         "risk.max_slippage": "MAX_SLIPPAGE",
         "risk.max_position_size": "MAX_POSITION_SIZE",
@@ -122,9 +249,17 @@ class Settings(BaseModel):
         "trading.private_key": "PRIVATE_KEY",
         "trading.wallet_address": "WALLET_ADDRESS",
         "monitoring.min_confidence_score": "MIN_CONFIDENCE_SCORE",
+        "endgame.enabled": "ENDGAME_ENABLED",
+        "endgame.min_probability": "ENDGAME_MIN_PROBABILITY",
+        "endgame.max_probability_exit": "ENDGAME_MAX_PROBABILITY_EXIT",
+        "endgame.min_liquidity_usdc": "ENDGAME_MIN_LIQUIDITY",
+        "endgame.max_days_to_resolution": "ENDGAME_MAX_DAYS",
+        "endgame.max_position_percentage": "ENDGAME_MAX_POSITION_PERCENT",
+        "endgame.stop_loss_percentage": "ENDGAME_STOP_LOSS_PERCENT",
+        "endgame.min_annualized_return": "ENDGAME_MIN_ANNUALIZED_RETURN",
+        "endgame.scan_interval_seconds": "ENDGAME_SCAN_INTERVAL",
     }
 
-    @field_validator("trading", mode="before")
     @classmethod
     def validate_trading_config(cls, v: Any) -> Dict[str, Any]:
         """
@@ -154,7 +289,7 @@ class Settings(BaseModel):
 
             wallet_address = os.getenv("WALLET_ADDRESS")
             if wallet_address:
-                v["wallet_address"] = InputValidator.validate_wallet_address(wallet_address)
+                v["wallet_address"] = wallet_address
 
             return v
         except ValidationError:
@@ -180,7 +315,9 @@ class Settings(BaseModel):
                 with open(wallets_file, "r", encoding="utf-8") as f:
                     wallets_config = json.load(f)
                     v["target_wallets"] = wallets_config.get("target_wallets", [])
-                    v["min_confidence_score"] = wallets_config.get("min_confidence_score", 0.7)
+                    v["min_confidence_score"] = wallets_config.get(
+                        "min_confidence_score", 0.7
+                    )
                     logger.info(f"Loaded {len(v['target_wallets'])} target wallets")
             except Exception as e:
                 logger.error(f"Error loading wallets config: {e}")
@@ -238,6 +375,9 @@ class Settings(BaseModel):
                 current[final_key] = float(value)
             except ValueError:
                 pass
+        elif final_key == "polygon_rpc_fallbacks":
+            # Parse comma-separated endpoints
+            current[final_key] = [e.strip() for e in value.split(",") if e.strip()]
         else:
             current[final_key] = value
 
@@ -305,6 +445,18 @@ class Settings(BaseModel):
 # Singleton instance
 settings = Settings()
 
+
+def get_settings() -> Settings:
+    """Get settings singleton instance"""
+    return settings
+
+
+def validate_settings() -> Settings:
+    """Validate settings configuration"""
+    settings.validate_critical_settings()
+    return settings
+
+
 # Create logs directory if it doesn't exist
 log_dir = os.path.dirname(settings.logging.log_file)
 os.makedirs(log_dir, exist_ok=True)
@@ -318,7 +470,9 @@ logging.basicConfig(
 
 logger.info("✅ Settings loaded successfully")
 logger.info(f"Network: {settings.network.clob_host}")
-logger.info(f"Risk management enabled: Max daily loss=${settings.risk.max_daily_loss:.2f}")
+logger.info(
+    f"Risk management enabled: Max daily loss=${settings.risk.max_daily_loss:.2f}"
+)
 
 if __name__ == "__main__":
     settings.validate_critical_settings()

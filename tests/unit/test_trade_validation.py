@@ -15,7 +15,6 @@ Tests cover:
 - Edge cases and boundary conditions
 """
 
-import time
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 
@@ -307,7 +306,7 @@ class TestTradeValidationIntegration:
     async def test_validation_with_risk_management(self, trade_validator, valid_trade):
         """Test that validation integrates properly with risk management"""
         # Mock successful validation
-        with patch.object(trade_validator, '_validate_trade', return_value=True):
+        with patch.object(trade_validator, "_validate_trade", return_value=True):
             result = await trade_validator.execute_copy_trade(valid_trade)
 
             # Should not be rejected for validation reasons
@@ -318,7 +317,7 @@ class TestTradeValidationIntegration:
     async def test_validation_failure_blocks_trade(self, trade_validator, valid_trade):
         """Test that validation failure blocks trade execution"""
         # Mock validation failure
-        with patch.object(trade_validator, '_validate_trade', return_value=False):
+        with patch.object(trade_validator, "_validate_trade", return_value=False):
             result = await trade_validator.execute_copy_trade(valid_trade)
 
             # Should be rejected due to validation
@@ -333,9 +332,14 @@ class TestTradeValidationIntegration:
         with caplog.at_level("ERROR"):
             trade_validator._validate_trade(invalid_trade)
 
-        assert "validation error" in caplog.text.lower() or "invalid" in caplog.text.lower()
+        assert (
+            "validation error" in caplog.text.lower()
+            or "invalid" in caplog.text.lower()
+        )
 
-    def test_validation_with_missing_optional_fields(self, trade_validator, valid_trade):
+    def test_validation_with_missing_optional_fields(
+        self, trade_validator, valid_trade
+    ):
         """Test validation with missing optional fields"""
         # Remove optional fields
         optional_fields = ["token_id", "confidence_score"]
@@ -371,7 +375,9 @@ class TestTradeValidationEdgeCases:
 
     def test_unicode_characters_in_strings(self, trade_validator, valid_trade):
         """Test handling of unicode characters in string fields"""
-        valid_trade["tx_hash"] = "0x1234567890abcdefñçüabcdef1234567890abcdef"  # Unicode in hash
+        valid_trade["tx_hash"] = (
+            "0x1234567890abcdefñçüabcdef1234567890abcdef"  # Unicode in hash
+        )
         is_valid = trade_validator._validate_trade(valid_trade)
         assert is_valid is False  # Invalid characters in hash
 
@@ -384,14 +390,16 @@ class TestTradeValidationEdgeCases:
 
     def test_special_characters_in_wallet_address(self, trade_validator, valid_trade):
         """Test wallet address with special characters"""
-        valid_trade["wallet_address"] = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e!"  # Special char
+        valid_trade["wallet_address"] = (
+            "0x742d35Cc6634C0532925a3b844Bc454e4438f44e!"  # Special char
+        )
         is_valid = trade_validator._validate_trade(valid_trade)
         assert is_valid is False
 
     def test_scientific_notation_numbers(self, trade_validator, valid_trade):
         """Test numbers in scientific notation"""
         valid_trade["amount"] = 1e-6  # Very small number in scientific notation
-        valid_trade["price"] = 1e6    # Very large number in scientific notation
+        valid_trade["price"] = 1e6  # Very large number in scientific notation
 
         is_valid = trade_validator._validate_trade(valid_trade)
         assert is_valid is True

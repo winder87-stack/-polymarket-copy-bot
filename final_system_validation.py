@@ -3,6 +3,7 @@
 Final System Validation - Polymarket Copy Trading Bot
 Comprehensive end-to-end validation before production deployment.
 """
+
 import asyncio
 import json
 import os
@@ -38,16 +39,28 @@ class SystemValidator:
         print("=" * 60)
 
         # Component Integration Tests
-        self.results["component_initialization"] = await self.test_component_initialization()
-        self.results["configuration_validation"] = await self.test_configuration_validation()
+        self.results[
+            "component_initialization"
+        ] = await self.test_component_initialization()
+        self.results[
+            "configuration_validation"
+        ] = await self.test_configuration_validation()
         self.results["security_validation"] = await self.test_security_validation()
-        self.results["performance_validation"] = await self.test_performance_validation()
-        self.results["reliability_validation"] = await self.test_reliability_validation()
-        self.results["integration_validation"] = await self.test_integration_validation()
+        self.results[
+            "performance_validation"
+        ] = await self.test_performance_validation()
+        self.results[
+            "reliability_validation"
+        ] = await self.test_reliability_validation()
+        self.results[
+            "integration_validation"
+        ] = await self.test_integration_validation()
 
         # Calculate overall score
         self.results["overall_score"] = self.calculate_overall_score()
-        self.results["validation_duration"] = (datetime.now() - self.start_time).total_seconds()
+        self.results["validation_duration"] = (
+            datetime.now() - self.start_time
+        ).total_seconds()
 
         return self.results
 
@@ -55,7 +68,12 @@ class SystemValidator:
         """Test component initialization and basic functionality."""
         print("🔧 Testing Component Initialization...")
 
-        results = {"status": "PASS", "components_tested": 0, "components_passed": 0, "details": []}
+        results = {
+            "status": "PASS",
+            "components_tested": 0,
+            "components_passed": 0,
+            "details": [],
+        }
 
         try:
             # Test settings initialization
@@ -146,7 +164,12 @@ class SystemValidator:
         """Test security features and controls."""
         print("🔒 Testing Security Validation...")
 
-        results = {"status": "PASS", "security_tests": 0, "security_passed": 0, "details": []}
+        results = {
+            "status": "PASS",
+            "security_tests": 0,
+            "security_passed": 0,
+            "details": [],
+        }
 
         try:
             from utils.security import mask_sensitive_data, validate_private_key
@@ -202,8 +225,10 @@ class SystemValidator:
         try:
             # Test API caching performance
             results["performance_tests"] += 1
-            with patch("core.wallet_monitor.Web3"), patch("aiohttp.ClientSession") as mock_session:
-
+            with (
+                patch("core.wallet_monitor.Web3"),
+                patch("aiohttp.ClientSession") as mock_session,
+            ):
                 mock_response = AsyncMock()
                 mock_response.status = 200
                 mock_response.json = AsyncMock(
@@ -214,9 +239,7 @@ class SystemValidator:
                     }
                 )
 
-                mock_session.return_value.__aenter__.return_value.get.return_value.__aenter__.return_value = (
-                    mock_response
-                )
+                mock_session.return_value.__aenter__.return_value.get.return_value.__aenter__.return_value = mock_response
 
                 wallet_monitor = WalletMonitor()
                 start_time = time.time()
@@ -237,7 +260,9 @@ class SystemValidator:
                 # Cache should provide significant speedup
                 if second_call_time < first_call_time * 0.1:  # 10x faster
                     results["performance_passed"] += 1
-                    results["metrics"]["cache_speedup"] = first_call_time / second_call_time
+                    results["metrics"]["cache_speedup"] = (
+                        first_call_time / second_call_time
+                    )
                     results["details"].append(
                         f"Cache speedup: {results['metrics']['cache_speedup']:.1f}x"
                     )
@@ -264,9 +289,13 @@ class SystemValidator:
             if concurrent_time < 0.5:  # Less than 0.5 seconds
                 results["performance_passed"] += 1
                 results["metrics"]["concurrent_processing_time"] = concurrent_time
-                results["details"].append(f"Concurrent processing: {concurrent_time:.2f}s")
+                results["details"].append(
+                    f"Concurrent processing: {concurrent_time:.2f}s"
+                )
             else:
-                results["details"].append(f"⚠️ Concurrent processing slow: {concurrent_time:.2f}s")
+                results["details"].append(
+                    f"⚠️ Concurrent processing slow: {concurrent_time:.2f}s"
+                )
 
         except Exception as e:
             results["status"] = "FAIL"
@@ -278,7 +307,12 @@ class SystemValidator:
         """Test system reliability and error handling."""
         print("🛡️ Testing Reliability Validation...")
 
-        results = {"status": "PASS", "reliability_tests": 0, "reliability_passed": 0, "details": []}
+        results = {
+            "status": "PASS",
+            "reliability_tests": 0,
+            "reliability_passed": 0,
+            "details": [],
+        }
 
         try:
             # Test circuit breaker functionality
@@ -367,7 +401,12 @@ class SystemValidator:
         """Test end-to-end component integration."""
         print("🔗 Testing Integration Validation...")
 
-        results = {"status": "PASS", "integration_tests": 0, "integration_passed": 0, "details": []}
+        results = {
+            "status": "PASS",
+            "integration_tests": 0,
+            "integration_passed": 0,
+            "details": [],
+        }
 
         try:
             # Test main bot integration
@@ -377,7 +416,6 @@ class SystemValidator:
                 patch("core.wallet_monitor.Web3"),
                 patch("main.PolymarketCopyBot.monitor_loop", new_callable=AsyncMock),
             ):
-
                 bot = PolymarketCopyBot()
 
                 # Test initialization
@@ -386,7 +424,9 @@ class SystemValidator:
 
                 # Test health check
                 health_ok = await bot.health_check()
-                assert health_ok is True or health_ok is None  # None means recently checked
+                assert (
+                    health_ok is True or health_ok is None
+                )  # None means recently checked
 
                 results["integration_passed"] += 1
                 results["details"].append("✅ Main bot integration working")
@@ -394,7 +434,6 @@ class SystemValidator:
             # Test trade flow integration
             results["integration_tests"] += 1
             with patch("core.clob_client.Web3"), patch("core.wallet_monitor.Web3"):
-
                 # Create integrated components
                 clob_client = PolymarketClient()
                 WalletMonitor()
@@ -415,7 +454,9 @@ class SystemValidator:
                 # Mock API responses
                 clob_client.get_balance = AsyncMock(return_value=1000.0)
                 clob_client.get_current_price = AsyncMock(return_value=0.5)
-                clob_client.place_order = AsyncMock(return_value={"orderID": "test_order_123"})
+                clob_client.place_order = AsyncMock(
+                    return_value={"orderID": "test_order_123"}
+                )
 
                 # Execute trade
                 result = await trade_executor.execute_copy_trade(mock_trade)
@@ -451,22 +492,36 @@ class SystemValidator:
 
         for test_result in self.results.values():
             if isinstance(test_result, dict) and "status" in test_result:
-                if "components_tested" in test_result and "components_passed" in test_result:
+                if (
+                    "components_tested" in test_result
+                    and "components_passed" in test_result
+                ):
                     total_tests += test_result["components_tested"]
                     total_passed += test_result["components_passed"]
                 elif "tests_run" in test_result and "tests_passed" in test_result:
                     total_tests += test_result.get("tests_run", 0)
                     total_passed += test_result.get("tests_passed", 0)
-                elif "security_tests" in test_result and "security_passed" in test_result:
+                elif (
+                    "security_tests" in test_result and "security_passed" in test_result
+                ):
                     total_tests += test_result["security_tests"]
                     total_passed += test_result["security_passed"]
-                elif "performance_tests" in test_result and "performance_passed" in test_result:
+                elif (
+                    "performance_tests" in test_result
+                    and "performance_passed" in test_result
+                ):
                     total_tests += test_result["performance_tests"]
                     total_passed += test_result["performance_passed"]
-                elif "reliability_tests" in test_result and "reliability_passed" in test_result:
+                elif (
+                    "reliability_tests" in test_result
+                    and "reliability_passed" in test_result
+                ):
                     total_tests += test_result["reliability_tests"]
                     total_passed += test_result["reliability_passed"]
-                elif "integration_tests" in test_result and "integration_passed" in test_result:
+                elif (
+                    "integration_tests" in test_result
+                    and "integration_passed" in test_result
+                ):
                     total_tests += test_result["integration_tests"]
                     total_passed += test_result["integration_passed"]
 
@@ -502,9 +557,7 @@ Test Results:
                         for detail in test_result["details"]:
                             report += f"  {detail}\n"
 
-        report += (
-            f"\nValidation Duration: {self.results.get('validation_duration', 0):.2f} seconds\n"
-        )
+        report += f"\nValidation Duration: {self.results.get('validation_duration', 0):.2f} seconds\n"
 
         # Final recommendation
         if score >= 90:
@@ -519,9 +572,7 @@ Test Results:
         if score >= 90:
             report += "\n✅ System validation PASSED - Ready for production deployment!"
         elif score >= 80:
-            report += (
-                "\n⚠️ System validation PASSED with conditions - Monitor closely in production."
-            )
+            report += "\n⚠️ System validation PASSED with conditions - Monitor closely in production."
         else:
             report += "\n❌ System validation FAILED - Critical issues must be resolved before deployment."
 
@@ -531,7 +582,9 @@ Test Results:
 async def main():
     """Run the final system validation."""
     # Set up test environment
-    os.environ["PRIVATE_KEY"] = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+    os.environ["PRIVATE_KEY"] = (
+        "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+    )
     os.environ["POLYGON_RPC_URL"] = "https://polygon-rpc.com"
     os.environ["TELEGRAM_BOT_TOKEN"] = "test_token"
     os.environ["TELEGRAM_CHAT_ID"] = "123456789"

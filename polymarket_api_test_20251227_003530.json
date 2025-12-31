@@ -1,0 +1,50 @@
+{
+  "timestamp": "2025-12-27T06:35:26.762235+00:00",
+  "tests_run": [
+    {
+      "test": "health_check",
+      "success": false,
+      "message": "Health check error: 'PolymarketLeaderboardAPI' object has no attribute 'health_check'",
+      "timestamp": "2025-12-27T06:35:26.762559+00:00"
+    },
+    {
+      "test": "leaderboard_basic",
+      "success": false,
+      "message": "Leaderboard error: 'PolymarketLeaderboardAPI' object has no attribute 'get_leaderboard'",
+      "timestamp": "2025-12-27T06:35:27.263498+00:00"
+    },
+    {
+      "test": "leaderboard_pagination",
+      "success": false,
+      "message": "Pagination error: 'PolymarketLeaderboardAPI' object has no attribute 'get_leaderboard'",
+      "timestamp": "2025-12-27T06:35:27.764470+00:00"
+    },
+    {
+      "test": "rate_limiting",
+      "success": false,
+      "message": "Rate limiting test error: 'PolymarketLeaderboardAPI' object has no attribute 'get_leaderboard'",
+      "timestamp": "2025-12-27T06:35:28.265304+00:00"
+    },
+    {
+      "test": "endpoint_fallback",
+      "success": false,
+      "message": "Fallback test error: 'PolymarketLeaderboardAPI' object has no attribute 'get_leaderboard'",
+      "timestamp": "2025-12-27T06:35:28.765690+00:00"
+    },
+    {
+      "test": "data_validation",
+      "success": false,
+      "message": "Validation error: 'PolymarketLeaderboardAPI' object has no attribute 'get_leaderboard'",
+      "timestamp": "2025-12-27T06:35:29.266536+00:00"
+    },
+    {
+      "test": "emergency_fallback",
+      "success": false,
+      "message": "Fallback test error: 'PolymarketLeaderboardAPI' object has no attribute 'base_url'",
+      "timestamp": "2025-12-27T06:35:29.767287+00:00"
+    }
+  ],
+  "passed": 0,
+  "failed": 7,
+  "errors": []
+}

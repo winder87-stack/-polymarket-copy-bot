@@ -47,31 +47,53 @@ class TestPositionSizing:
     async def test_basic_calculation(self, position_manager):
         """Test normal position size calculation"""
         # Setup
-        original_trade = {"amount": 10.0, "price": 0.5, "condition_id": "test_condition"}
+        original_trade = {
+            "amount": 10.0,
+            "price": 0.5,
+            "condition_id": "test_condition",
+        }
 
         with (
-            patch.object(position_manager.clob_client, "get_balance", return_value=1000.0),
-            patch.object(position_manager.clob_client, "get_current_price", return_value=0.52),
+            patch.object(
+                position_manager.clob_client, "get_balance", return_value=1000.0
+            ),
+            patch.object(
+                position_manager.clob_client, "get_current_price", return_value=0.52
+            ),
         ):
             # Execute
             result = await position_manager._calculate_copy_amount(original_trade, {})
 
             # Verify - should calculate based on 1% account risk
             expected_risk_amount = 1000.0 * 0.01  # 1% of balance
-            expected_position_size = expected_risk_amount / abs(0.52 - 0.5)  # Risk per price unit
-            expected_position_size = min(expected_position_size, 50.0)  # Max position size
-            expected_position_size = max(expected_position_size, 1.0)  # Min trade amount
+            expected_position_size = expected_risk_amount / abs(
+                0.52 - 0.5
+            )  # Risk per price unit
+            expected_position_size = min(
+                expected_position_size, 50.0
+            )  # Max position size
+            expected_position_size = max(
+                expected_position_size, 1.0
+            )  # Min trade amount
 
             assert result == pytest.approx(expected_position_size, rel=0.1)
 
     @pytest.mark.asyncio
     async def test_zero_price_risk_raises_error(self, position_manager):
         """Test that zero price risk raises ValueError"""
-        original_trade = {"amount": 10.0, "price": 0.5, "condition_id": "test_condition"}
+        original_trade = {
+            "amount": 10.0,
+            "price": 0.5,
+            "condition_id": "test_condition",
+        }
 
         with (
-            patch.object(position_manager.clob_client, "get_balance", return_value=1000.0),
-            patch.object(position_manager.clob_client, "get_current_price", return_value=0.5),  # Same price
+            patch.object(
+                position_manager.clob_client, "get_balance", return_value=1000.0
+            ),
+            patch.object(
+                position_manager.clob_client, "get_current_price", return_value=0.5
+            ),  # Same price
         ):
             # Execute - should raise error for zero price risk
             with pytest.raises(ZeroDivisionError):
@@ -80,11 +102,19 @@ class TestPositionSizing:
     @pytest.mark.asyncio
     async def test_negative_price_difference(self, position_manager):
         """Test handling of negative price differences"""
-        original_trade = {"amount": 10.0, "price": 0.6, "condition_id": "test_condition"}
+        original_trade = {
+            "amount": 10.0,
+            "price": 0.6,
+            "condition_id": "test_condition",
+        }
 
         with (
-            patch.object(position_manager.clob_client, "get_balance", return_value=1000.0),
-            patch.object(position_manager.clob_client, "get_current_price", return_value=0.5),  # Lower price
+            patch.object(
+                position_manager.clob_client, "get_balance", return_value=1000.0
+            ),
+            patch.object(
+                position_manager.clob_client, "get_current_price", return_value=0.5
+            ),  # Lower price
         ):
             result = await position_manager._calculate_copy_amount(original_trade, {})
 
@@ -99,11 +129,19 @@ class TestPositionSizing:
     @pytest.mark.asyncio
     async def test_respects_max_position(self, position_manager):
         """Test that position size respects maximum position limit"""
-        original_trade = {"amount": 10.0, "price": 0.5, "condition_id": "test_condition"}
+        original_trade = {
+            "amount": 10.0,
+            "price": 0.5,
+            "condition_id": "test_condition",
+        }
 
         with (
-            patch.object(position_manager.clob_client, "get_balance", return_value=10000.0),  # Large balance
-            patch.object(position_manager.clob_client, "get_current_price", return_value=0.52),
+            patch.object(
+                position_manager.clob_client, "get_balance", return_value=10000.0
+            ),  # Large balance
+            patch.object(
+                position_manager.clob_client, "get_current_price", return_value=0.52
+            ),
         ):
             result = await position_manager._calculate_copy_amount(original_trade, {})
 
@@ -113,11 +151,19 @@ class TestPositionSizing:
     @pytest.mark.asyncio
     async def test_negative_balance_fallback(self, position_manager):
         """Test fallback when balance is negative"""
-        original_trade = {"amount": 10.0, "price": 0.5, "condition_id": "test_condition"}
+        original_trade = {
+            "amount": 10.0,
+            "price": 0.5,
+            "condition_id": "test_condition",
+        }
 
         with (
-            patch.object(position_manager.clob_client, "get_balance", return_value=-100.0),
-            patch.object(position_manager.clob_client, "get_current_price", return_value=0.52),
+            patch.object(
+                position_manager.clob_client, "get_balance", return_value=-100.0
+            ),
+            patch.object(
+                position_manager.clob_client, "get_current_price", return_value=0.52
+            ),
         ):
             result = await position_manager._calculate_copy_amount(original_trade, {})
 
@@ -128,11 +174,17 @@ class TestPositionSizing:
     @pytest.mark.asyncio
     async def test_zero_balance_fallback(self, position_manager):
         """Test fallback when balance is zero"""
-        original_trade = {"amount": 10.0, "price": 0.5, "condition_id": "test_condition"}
+        original_trade = {
+            "amount": 10.0,
+            "price": 0.5,
+            "condition_id": "test_condition",
+        }
 
         with (
             patch.object(position_manager.clob_client, "get_balance", return_value=0.0),
-            patch.object(position_manager.clob_client, "get_current_price", return_value=0.52),
+            patch.object(
+                position_manager.clob_client, "get_current_price", return_value=0.52
+            ),
         ):
             result = await position_manager._calculate_copy_amount(original_trade, {})
 
@@ -143,11 +195,19 @@ class TestPositionSizing:
     @pytest.mark.asyncio
     async def test_none_balance_fallback(self, position_manager):
         """Test fallback when balance is None"""
-        original_trade = {"amount": 10.0, "price": 0.5, "condition_id": "test_condition"}
+        original_trade = {
+            "amount": 10.0,
+            "price": 0.5,
+            "condition_id": "test_condition",
+        }
 
         with (
-            patch.object(position_manager.clob_client, "get_balance", return_value=None),
-            patch.object(position_manager.clob_client, "get_current_price", return_value=0.52),
+            patch.object(
+                position_manager.clob_client, "get_balance", return_value=None
+            ),
+            patch.object(
+                position_manager.clob_client, "get_current_price", return_value=0.52
+            ),
         ):
             result = await position_manager._calculate_copy_amount(original_trade, {})
 
@@ -158,11 +218,19 @@ class TestPositionSizing:
     @pytest.mark.asyncio
     async def test_none_current_price_fallback(self, position_manager):
         """Test fallback when current price is None"""
-        original_trade = {"amount": 10.0, "price": 0.5, "condition_id": "test_condition"}
+        original_trade = {
+            "amount": 10.0,
+            "price": 0.5,
+            "condition_id": "test_condition",
+        }
 
         with (
-            patch.object(position_manager.clob_client, "get_balance", return_value=1000.0),
-            patch.object(position_manager.clob_client, "get_current_price", return_value=None),
+            patch.object(
+                position_manager.clob_client, "get_balance", return_value=1000.0
+            ),
+            patch.object(
+                position_manager.clob_client, "get_current_price", return_value=None
+            ),
         ):
             result = await position_manager._calculate_copy_amount(original_trade, {})
 
@@ -173,11 +241,23 @@ class TestPositionSizing:
     @pytest.mark.asyncio
     async def test_decimal_precision(self, position_manager):
         """Test decimal precision in position size calculation"""
-        original_trade = {"amount": Decimal("10.0"), "price": Decimal("0.5"), "condition_id": "test_condition"}
+        original_trade = {
+            "amount": Decimal("10.0"),
+            "price": Decimal("0.5"),
+            "condition_id": "test_condition",
+        }
 
         with (
-            patch.object(position_manager.clob_client, "get_balance", return_value=Decimal("1000.0")),
-            patch.object(position_manager.clob_client, "get_current_price", return_value=Decimal("0.52")),
+            patch.object(
+                position_manager.clob_client,
+                "get_balance",
+                return_value=Decimal("1000.0"),
+            ),
+            patch.object(
+                position_manager.clob_client,
+                "get_current_price",
+                return_value=Decimal("0.52"),
+            ),
         ):
             result = await position_manager._calculate_copy_amount(original_trade, {})
 
@@ -188,11 +268,19 @@ class TestPositionSizing:
     @pytest.mark.asyncio
     async def test_extreme_price_values(self, position_manager):
         """Test handling of extreme price values"""
-        original_trade = {"amount": 10.0, "price": 0.000001, "condition_id": "test_condition"}
+        original_trade = {
+            "amount": 10.0,
+            "price": 0.000001,
+            "condition_id": "test_condition",
+        }
 
         with (
-            patch.object(position_manager.clob_client, "get_balance", return_value=1000.0),
-            patch.object(position_manager.clob_client, "get_current_price", return_value=0.000002),
+            patch.object(
+                position_manager.clob_client, "get_balance", return_value=1000.0
+            ),
+            patch.object(
+                position_manager.clob_client, "get_current_price", return_value=0.000002
+            ),
         ):
             result = await position_manager._calculate_copy_amount(original_trade, {})
 
@@ -204,11 +292,19 @@ class TestPositionSizing:
     async def test_extreme_trade_amounts(self, position_manager):
         """Test handling of extreme trade amounts"""
         # Very large original trade
-        original_trade = {"amount": 1000000.0, "price": 0.5, "condition_id": "test_condition"}
+        original_trade = {
+            "amount": 1000000.0,
+            "price": 0.5,
+            "condition_id": "test_condition",
+        }
 
         with (
-            patch.object(position_manager.clob_client, "get_balance", return_value=1000.0),
-            patch.object(position_manager.clob_client, "get_current_price", return_value=0.52),
+            patch.object(
+                position_manager.clob_client, "get_balance", return_value=1000.0
+            ),
+            patch.object(
+                position_manager.clob_client, "get_current_price", return_value=0.52
+            ),
         ):
             result = await position_manager._calculate_copy_amount(original_trade, {})
 
@@ -216,11 +312,19 @@ class TestPositionSizing:
             assert result <= position_manager.settings.risk.max_position_size
 
         # Very small original trade
-        original_trade = {"amount": 0.000001, "price": 0.5, "condition_id": "test_condition"}
+        original_trade = {
+            "amount": 0.000001,
+            "price": 0.5,
+            "condition_id": "test_condition",
+        }
 
         with (
-            patch.object(position_manager.clob_client, "get_balance", return_value=1000.0),
-            patch.object(position_manager.clob_client, "get_current_price", return_value=0.52),
+            patch.object(
+                position_manager.clob_client, "get_balance", return_value=1000.0
+            ),
+            patch.object(
+                position_manager.clob_client, "get_current_price", return_value=0.52
+            ),
         ):
             result = await position_manager._calculate_copy_amount(original_trade, {})
 
@@ -231,11 +335,21 @@ class TestPositionSizing:
     async def test_price_risk_edge_cases(self, position_manager):
         """Test edge cases in price risk calculation"""
         # Test very small price differences
-        original_trade = {"amount": 10.0, "price": 0.5, "condition_id": "test_condition"}
+        original_trade = {
+            "amount": 10.0,
+            "price": 0.5,
+            "condition_id": "test_condition",
+        }
 
         with (
-            patch.object(position_manager.clob_client, "get_balance", return_value=1000.0),
-            patch.object(position_manager.clob_client, "get_current_price", return_value=0.5000001),  # Very small diff
+            patch.object(
+                position_manager.clob_client, "get_balance", return_value=1000.0
+            ),
+            patch.object(
+                position_manager.clob_client,
+                "get_current_price",
+                return_value=0.5000001,
+            ),  # Very small diff
         ):
             result = await position_manager._calculate_copy_amount(original_trade, {})
 
@@ -246,14 +360,26 @@ class TestPositionSizing:
     @pytest.mark.asyncio
     async def test_account_risk_limits(self, position_manager):
         """Test that position size respects account risk limits"""
-        original_trade = {"amount": 10.0, "price": 0.5, "condition_id": "test_condition"}
+        original_trade = {
+            "amount": 10.0,
+            "price": 0.5,
+            "condition_id": "test_condition",
+        }
 
         with (
-            patch.object(position_manager.clob_client, "get_balance", return_value=100.0),  # Small balance
-            patch.object(position_manager.clob_client, "get_current_price", return_value=0.52),
+            patch.object(
+                position_manager.clob_client, "get_balance", return_value=100.0
+            ),  # Small balance
+            patch.object(
+                position_manager.clob_client, "get_current_price", return_value=0.52
+            ),
         ):
             result = await position_manager._calculate_copy_amount(original_trade, {})
 
             # Should not risk more than account_risk_percent of balance
-            max_risk_amount = 100.0 * position_manager.settings.risk.account_risk_percent
-            assert result <= max_risk_amount / abs(0.52 - 0.5)  # Should respect risk limit
+            max_risk_amount = (
+                100.0 * position_manager.settings.risk.account_risk_percent
+            )
+            assert result <= max_risk_amount / abs(
+                0.52 - 0.5
+            )  # Should respect risk limit

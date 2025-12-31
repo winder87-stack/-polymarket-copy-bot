@@ -5,6 +5,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
+MemoryLimit=1G
 User=polymarket-bot
 Group=polymarket-bot
 WorkingDirectory=/home/polymarket-bot/polymarket-copy-bot

@@ -82,7 +82,9 @@ class TestMaskSensitiveValue:
 
     def test_mask_sensitive_value_private_key(self):
         """Test masking private key."""
-        private_key = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+        private_key = (
+            "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+        )
 
         result = _mask_sensitive_value("private_key", private_key)
 
@@ -142,7 +144,11 @@ class TestMaskSensitiveValue:
 
     def test_mask_sensitive_value_list(self):
         """Test masking list values."""
-        test_list = ["0x742d35Cc6634C0532925a3b844Bc454e4438f44e", "normal_item", "secret_item"]
+        test_list = [
+            "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+            "normal_item",
+            "secret_item",
+        ]
 
         result = _mask_sensitive_value("items", test_list)
 
@@ -228,7 +234,9 @@ class TestValidatePrivateKey:
 
     def test_validate_private_key_invalid_length_long(self):
         """Test validating private key that is too long."""
-        long_key = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef12"
+        long_key = (
+            "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef12"
+        )
 
         result = validate_private_key(long_key)
 

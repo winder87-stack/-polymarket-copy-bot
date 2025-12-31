@@ -202,7 +202,11 @@ class TestCalculateConfidenceScore:
 
     def test_calculate_confidence_score_input_length(self):
         """Test confidence score based on input data length."""
-        tx = {"value": "0", "gasUsed": "21000", "input": "0x" + "a" * 200}  # Long input data
+        tx = {
+            "value": "0",
+            "gasUsed": "21000",
+            "input": "0x" + "a" * 200,
+        }  # Long input data
 
         result = calculate_confidence_score(tx)
 
@@ -301,7 +305,9 @@ class TestCalculatePositionSize:
     def test_calculate_position_size_error_handling(self):
         """Test position size calculation error handling."""
         result = calculate_position_size(
-            original_amount=-10.0, account_balance=1000.0, max_position_size=50.0  # Invalid
+            original_amount=-10.0,
+            account_balance=1000.0,
+            max_position_size=50.0,  # Invalid
         )
 
         # Should fall back to safe calculation
@@ -504,7 +510,9 @@ class TestGetEnvironmentInfo:
     ):
         """Test environment info collection."""
         mock_system.return_value = "Linux"
-        mock_platform.return_value = "Linux-5.4.0-74-generic-x86_64-with-Ubuntu-20.04.3-LTS"
+        mock_platform.return_value = (
+            "Linux-5.4.0-74-generic-x86_64-with-Ubuntu-20.04.3-LTS"
+        )
         mock_machine.return_value = "x86_64"
         mock_processor.return_value = "x86_64"
         mock_version.return_value = "3.9.7 (default, Sep 10 2021, 14:59:43) [GCC 9.3.0]"
@@ -512,7 +520,10 @@ class TestGetEnvironmentInfo:
         result = get_environment_info()
 
         assert result["system"] == "Linux"
-        assert result["platform"] == "Linux-5.4.0-74-generic-x86_64-with-Ubuntu-20.04.3-LTS"
+        assert (
+            result["platform"]
+            == "Linux-5.4.0-74-generic-x86_64-with-Ubuntu-20.04.3-LTS"
+        )
         assert result["machine"] == "x86_64"
         assert result["processor"] == "x86_64"
         assert "3.9.7" in result["python_version"]
@@ -631,7 +642,9 @@ class TestHelpersIntegration:
         # Convert back to USDC
         back_to_usdc = wei_to_usdc(wei_amount)
 
-        assert abs(back_to_usdc - original_usdc) < 0.000001  # Account for precision loss
+        assert (
+            abs(back_to_usdc - original_usdc) < 0.000001
+        )  # Account for precision loss
 
     def test_address_normalization_consistency(self):
         """Test that address normalization is consistent."""
@@ -717,7 +730,11 @@ class TestHelpersIntegration:
             ("", 10, ""),
             ("short", 10, "short"),
             ("exactly ten chars", 16, "exactly ten chars"),
-            ("this is a very long string that exceeds the limit", 20, "this is a very lo..."),
+            (
+                "this is a very long string that exceeds the limit",
+                20,
+                "this is a very lo...",
+            ),
             (None, 10, ""),
         ]
 

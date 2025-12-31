@@ -1,0 +1,50 @@
+[Unit]
+Description=Polymarket MCP Servers (Monitoring, Testing, Code Search)
+Documentation=https://github.com/polymarket/polymarket-copy-bot
+After=network.target polymarket-bot.service
+Wants=polymarket-bot.service
+
+[Service]
+Type=simple
+User=polymarket
+Group=polymarket
+WorkingDirectory=/home/ink/polymarket-copy-bot
+Environment="PATH=/home/ink/polymarket-copy-bot/venv/bin:/usr/local/bin:/usr/bin:/bin"
+EnvironmentFile=-/home/ink/polymarket-copy-bot/.env
+EnvironmentFile=-/home/ink/polymarket-copy-bot/.env.production
+
+# Main command - starts all MCP servers
+# This will be replaced by actual entry point
+ExecStart=/home/ink/polymarket-copy-bot/venv/bin/python -m main_mcp
+
+# Resource limits for MCP servers (CRITICAL: Must not impact trading)
+# Max 15% of total system resources for all 3 MCP servers
+CPUQuota=15%
+MemoryMax=1G  # Max 1GB for all 3 MCP servers
+
+# Restart policy
+Restart=always
+RestartSec=5
+StartLimitInterval=300
+StartLimitBurst=3
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/home/ink/polymarket-copy-bot/logs /home/ink/polymarket-copy-bot/monitoring/data
+ReadWritePaths=/home/ink/polymarket-copy-bot/data
+
+# Logging
+StandardOutput=append:/home/ink/polymarket-copy-bot/logs/mcp_servers.log
+StandardError=append:/home/ink/polymarket-copy-bot/logs/mcp_servers_error.log
+SyslogIdentifier=polymarket-mcp
+
+# Health checks
+# Check if dashboard is responsive (after 10 second startup delay)
+ExecStartPost=/bin/sh -c 'sleep 10 && curl -f http://localhost:8080/health || exit 1'
+
+# Health check timer (every 60 seconds)
+[Install]
+WantedBy=multi-user.target

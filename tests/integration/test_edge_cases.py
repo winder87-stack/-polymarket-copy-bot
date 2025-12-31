@@ -27,7 +27,9 @@ class TestBlockchainReorgScenarios:
                 "blockNumber": reorg_data["original_tx"]["blockNumber"],
                 "from": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
                 "to": mock_wallet_monitor.polymarket_contracts[0],
-                "timeStamp": str(int((datetime.now() - timedelta(hours=1)).timestamp())),
+                "timeStamp": str(
+                    int((datetime.now() - timedelta(hours=1)).timestamp())
+                ),
                 "input": "0x1234567890abcdef",
             }
         )
@@ -85,7 +87,9 @@ class TestBlockchainReorgScenarios:
                 "value": "0",
                 "gasUsed": "150000",
                 "gasPrice": "50000000000",
-                "timeStamp": str(int((datetime.now() - timedelta(hours=i)).timestamp())),
+                "timeStamp": str(
+                    int((datetime.now() - timedelta(hours=i)).timestamp())
+                ),
                 "input": f"0x1234567890abcdef{i:016x}",
                 "blockNumber": str(base_block + i),
             }
@@ -122,7 +126,9 @@ class TestNetworkPartitionTesting:
         assert transactions == []  # Should return empty list on error
 
     @pytest.mark.asyncio
-    async def test_network_timeout_handling(self, mock_wallet_monitor, edge_case_scenarios):
+    async def test_network_timeout_handling(
+        self, mock_wallet_monitor, edge_case_scenarios
+    ):
         """Test network timeout handling."""
         timeout_error = edge_case_scenarios["network_partition"]["timeout_error"]
 
@@ -153,7 +159,9 @@ class TestNetworkPartitionTesting:
         results = []
         for i in range(4):
             try:
-                transactions = await mock_wallet_monitor.get_wallet_transactions("0xtest")
+                transactions = await mock_wallet_monitor.get_wallet_transactions(
+                    "0xtest"
+                )
                 results.append(transactions)
             except ConnectionError:
                 results.append("failed")
@@ -189,7 +197,9 @@ class TestNetworkPartitionTesting:
 class TestInvalidTransactionHandling:
     """Test handling of invalid transactions."""
 
-    def test_malformed_transaction_parsing(self, mock_wallet_monitor, edge_case_scenarios):
+    def test_malformed_transaction_parsing(
+        self, mock_wallet_monitor, edge_case_scenarios
+    ):
         """Test parsing of malformed transactions."""
         invalid_tx = edge_case_scenarios["invalid_transaction"]["missing_fields"]
 
@@ -210,7 +220,9 @@ class TestInvalidTransactionHandling:
                 "to": mock_wallet_monitor.polymarket_contracts[0],
                 "gasUsed": "150000",
                 "gasPrice": "50000000000",
-                "timeStamp": str(int((datetime.now() - timedelta(hours=1)).timestamp())),
+                "timeStamp": str(
+                    int((datetime.now() - timedelta(hours=1)).timestamp())
+                ),
                 "input": "0x1234567890abcdef",
                 "blockNumber": "50000000",
             }
@@ -222,7 +234,9 @@ class TestInvalidTransactionHandling:
         assert trade is not None
         assert trade["price"] == 1.5  # Invalid price
 
-    def test_ancient_transaction_filtering(self, mock_wallet_monitor, edge_case_scenarios):
+    def test_ancient_transaction_filtering(
+        self, mock_wallet_monitor, edge_case_scenarios
+    ):
         """Test filtering of ancient transactions."""
         ancient_tx = {
             "hash": "0xancient1234567890abcdef1234567890abcdef1234567890abcdef",
@@ -232,7 +246,11 @@ class TestInvalidTransactionHandling:
             "gasUsed": "150000",
             "gasPrice": "50000000000",
             "timeStamp": str(
-                int(edge_case_scenarios["invalid_transaction"]["ancient_timestamp"].timestamp())
+                int(
+                    edge_case_scenarios["invalid_transaction"][
+                        "ancient_timestamp"
+                    ].timestamp()
+                )
             ),
             "input": "0x1234567890abcdef",
             "blockNumber": "50000000",
@@ -287,7 +305,9 @@ class TestInvalidTransactionHandling:
 class TestClockSkewScenarios:
     """Test clock skew scenarios."""
 
-    def test_future_timestamp_transaction(self, mock_wallet_monitor, edge_case_scenarios):
+    def test_future_timestamp_transaction(
+        self, mock_wallet_monitor, edge_case_scenarios
+    ):
         """Test handling of transactions with future timestamps."""
         future_tx = {
             "hash": "0xfuture1234567890abcdef1234567890abcdef1234567890abcdef",
@@ -306,7 +326,9 @@ class TestClockSkewScenarios:
         trade = mock_wallet_monitor.parse_polymarket_trade(future_tx)
 
         # Should be rejected due to future timestamp or handled gracefully
-        assert trade is not None  # In this implementation, it parses but timestamp is in future
+        assert (
+            trade is not None
+        )  # In this implementation, it parses but timestamp is in future
 
     def test_past_timestamp_transaction(self, mock_wallet_monitor, edge_case_scenarios):
         """Test handling of transactions with past timestamps."""
@@ -317,7 +339,9 @@ class TestClockSkewScenarios:
             "value": "0",
             "gasUsed": "150000",
             "gasPrice": "50000000000",
-            "timeStamp": str(int(edge_case_scenarios["clock_skew"]["past_timestamp"].timestamp())),
+            "timeStamp": str(
+                int(edge_case_scenarios["clock_skew"]["past_timestamp"].timestamp())
+            ),
             "input": "0x1234567890abcdef",
             "blockNumber": "50000000",
         }
@@ -462,7 +486,9 @@ class TestConcurrencyEdgeCases:
         transactions = [tx] * 10  # Same transaction 10 times
 
         # Process concurrently
-        tasks = [mock_wallet_monitor.detect_polymarket_trades([tx]) for tx in transactions]
+        tasks = [
+            mock_wallet_monitor.detect_polymarket_trades([tx]) for tx in transactions
+        ]
         results = await asyncio.gather(*tasks)
 
         # Only one trade should be detected (due to duplicate prevention)
@@ -565,13 +591,17 @@ class TestStateCorruptionScenarios:
         # Add many trades to history
         wallet = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
         for i in range(500):
-            trade = {"tx_hash": f"0xtrade{i:064x}", "timestamp": datetime.now(), "amount": 10.0}
+            trade = {
+                "tx_hash": f"0xtrade{i:064x}",
+                "timestamp": datetime.now(),
+                "amount": 10.0,
+            }
             mock_wallet_monitor.wallet_trade_history[wallet].append(trade)
 
         # Apply limits (simulate cleanup)
-        mock_wallet_monitor.wallet_trade_history[wallet] = mock_wallet_monitor.wallet_trade_history[
-            wallet
-        ][-100:]
+        mock_wallet_monitor.wallet_trade_history[wallet] = (
+            mock_wallet_monitor.wallet_trade_history[wallet][-100:]
+        )
 
         # Should be within limits
         assert len(mock_wallet_monitor.wallet_trade_history[wallet]) <= 100
@@ -584,7 +614,9 @@ class TestErrorPropagationAndHandling:
     """Test error propagation and handling."""
 
     @pytest.mark.asyncio
-    async def test_cascading_error_handling(self, mock_wallet_monitor, mock_trade_executor):
+    async def test_cascading_error_handling(
+        self, mock_wallet_monitor, mock_trade_executor
+    ):
         """Test cascading error handling."""
         # Set up scenario where wallet monitoring fails
         mock_wallet_monitor.monitor_wallets.side_effect = Exception("Monitoring failed")

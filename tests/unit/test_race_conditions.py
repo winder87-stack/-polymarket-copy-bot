@@ -14,6 +14,7 @@ import signal
 import time
 from unittest.mock import MagicMock, patch
 
+import aiohttp
 import pytest
 
 from config.settings import Settings
@@ -321,8 +322,12 @@ class TestNetworkFailureRaceConditions:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Analyze results
-        successes = sum(1 for r in results if isinstance(r, str) and r.startswith("success_"))
-        errors = sum(1 for r in results if isinstance(r, str) and r.startswith("error_"))
+        successes = sum(
+            1 for r in results if isinstance(r, str) and r.startswith("success_")
+        )
+        errors = sum(
+            1 for r in results if isinstance(r, str) and r.startswith("error_")
+        )
         exceptions = sum(1 for r in results if isinstance(r, Exception))
 
         # Should have mix of successes and failures

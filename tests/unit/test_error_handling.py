@@ -110,7 +110,9 @@ class TestNetworkErrorHandling:
             message="Internal Server Error",
         )
 
-        with patch.object(trade_executor.clob_client, "place_order", side_effect=http_error):
+        with patch.object(
+            trade_executor.clob_client, "place_order", side_effect=http_error
+        ):
             result = await trade_executor.execute_copy_trade(trade)
 
             # Should handle HTTP error gracefully
@@ -183,7 +185,9 @@ class TestDataValidationErrorHandling:
             with patch.object(
                 trade_executor.clob_client, "get_market", return_value=corrupted_market
             ):
-                token_id = trade_executor._get_token_id_for_outcome(corrupted_market, {})
+                token_id = trade_executor._get_token_id_for_outcome(
+                    corrupted_market, {}
+                )
                 # Should handle gracefully
                 assert token_id is None
 
@@ -206,7 +210,8 @@ class TestDataValidationErrorHandling:
                 # Expected - this is what we're testing for
                 pass
 
-    def test_type_conversion_error_handling(self, trade_executor):
+    @pytest.mark.asyncio
+    async def test_type_conversion_error_handling(self, trade_executor):
         """Test handling of type conversion errors"""
         # Test invalid numeric strings
         invalid_numbers = ["not_a_number", "", "NaN", "inf", None]
@@ -214,10 +219,13 @@ class TestDataValidationErrorHandling:
         for invalid_num in invalid_numbers:
             # Should handle gracefully in position calculation
             with (
-                patch.object(trade_executor.clob_client, "get_balance", return_value=invalid_num),
-                patch.object(trade_executor.clob_client, "get_current_price", return_value=0.5),
+                patch.object(
+                    trade_executor.clob_client, "get_balance", return_value=invalid_num
+                ),
+                patch.object(
+                    trade_executor.clob_client, "get_current_price", return_value=0.5
+                ),
             ):
-
                 result = await trade_executor._calculate_copy_amount(
                     {"amount": 10.0, "price": 0.5, "condition_id": "test"}, {}
                 )
@@ -235,10 +243,15 @@ class TestAPIFailureRecovery:
         """Test handling of API rate limits"""
         # Mock rate limit error (HTTP 429)
         rate_limit_error = aiohttp.ClientResponseError(
-            request_info=MagicMock(), history=MagicMock(), status=429, message="Too Many Requests"
+            request_info=MagicMock(),
+            history=MagicMock(),
+            status=429,
+            message="Too Many Requests",
         )
 
-        with patch.object(trade_executor.clob_client, "place_order", side_effect=rate_limit_error):
+        with patch.object(
+            trade_executor.clob_client, "place_order", side_effect=rate_limit_error
+        ):
             trade = {
                 "tx_hash": "0x123",
                 "wallet_address": "0xabc",
@@ -260,10 +273,15 @@ class TestAPIFailureRecovery:
         """Test handling of API authentication failures"""
         # Mock auth error (HTTP 401)
         auth_error = aiohttp.ClientResponseError(
-            request_info=MagicMock(), history=MagicMock(), status=401, message="Unauthorized"
+            request_info=MagicMock(),
+            history=MagicMock(),
+            status=401,
+            message="Unauthorized",
         )
 
-        with patch.object(trade_executor.clob_client, "get_balance", side_effect=auth_error):
+        with patch.object(
+            trade_executor.clob_client, "get_balance", side_effect=auth_error
+        ):
             balance = await trade_executor.clob_client.get_balance()
 
             # Should handle auth failure gracefully
@@ -313,13 +331,16 @@ class TestGracefulDegradation:
         # Mock all API calls failing
         with (
             patch.object(
-                trade_executor.clob_client, "get_balance", side_effect=Exception("API down")
+                trade_executor.clob_client,
+                "get_balance",
+                side_effect=Exception("API down"),
             ),
             patch.object(
-                trade_executor.clob_client, "get_current_price", side_effect=Exception("API down")
+                trade_executor.clob_client,
+                "get_current_price",
+                side_effect=Exception("API down"),
             ),
         ):
-
             result = await trade_executor._calculate_copy_amount(trade, {})
 
             # Should use fallback calculation
@@ -376,7 +397,6 @@ class TestGracefulDegradation:
             ),
             patch.object(trade_executor, "execute_copy_trade") as mock_execute,
         ):
-
             mock_execute.return_value = {"status": "failed", "reason": "API degraded"}
 
             # Run position management
@@ -391,11 +411,15 @@ class TestErrorLoggingAndAlerting:
 
     @patch("core.trade_executor.send_error_alert")
     @pytest.mark.asyncio
-    async def test_error_alerting_on_critical_failures(self, mock_alert, trade_executor):
+    async def test_error_alerting_on_critical_failures(
+        self, mock_alert, trade_executor
+    ):
         """Test that critical failures trigger alerts"""
         # Mock a critical failure
         with patch.object(
-            trade_executor.clob_client, "place_order", side_effect=Exception("Critical API failure")
+            trade_executor.clob_client,
+            "place_order",
+            side_effect=Exception("Critical API failure"),
         ):
             trade = {
                 "tx_hash": "0x123",
@@ -427,14 +451,18 @@ class TestErrorLoggingAndAlerting:
         ]
 
         for error, expected_type in test_cases:
-            with patch.object(trade_executor, "_handle_trade_execution_error") as mock_handler:
+            with patch.object(
+                trade_executor, "_handle_trade_execution_error"
+            ) as mock_handler:
                 mock_handler.return_value = {
                     "status": "error",
                     "error": f"{expected_type}: {str(error)}",
                 }
 
                 # This would normally be called internally, but we're testing the pattern
-                result = trade_executor._handle_trade_execution_error(error, {"tx_hash": "test"})
+                result = trade_executor._handle_trade_execution_error(
+                    error, {"tx_hash": "test"}
+                )
 
                 # Verify error categorization
                 assert expected_type in result["error"]
@@ -491,7 +519,9 @@ class TestRecoveryScenarios:
             else:
                 raise Exception("State update failed")
 
-        with patch.object(trade_executor.clob_client, "place_order", side_effect=partial_failure):
+        with patch.object(
+            trade_executor.clob_client, "place_order", side_effect=partial_failure
+        ):
             result = await trade_executor.execute_copy_trade(trade)
 
             # Should still be considered successful (order was placed)
@@ -513,7 +543,9 @@ class TestRecoveryScenarios:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Should recover gracefully from individual failures
-        successes = sum(1 for r in results if isinstance(r, str) and r.startswith("success_"))
+        successes = sum(
+            1 for r in results if isinstance(r, str) and r.startswith("success_")
+        )
         failures = sum(1 for r in results if isinstance(r, Exception))
 
         assert successes == 6  # 2/3 should succeed
@@ -531,7 +563,9 @@ class TestRecoveryScenarios:
             # Should not crash despite corrupted state
         except Exception as e:
             # If it does crash, the error should be meaningful
-            assert "corrupted" not in str(e).lower()  # Should not expose corruption details
+            assert (
+                "corrupted" not in str(e).lower()
+            )  # Should not expose corruption details
 
     @pytest.mark.asyncio
     async def test_network_recovery_and_retry(self, trade_executor):
@@ -549,7 +583,9 @@ class TestRecoveryScenarios:
             return {"orderID": "recovered123"}
 
         with patch.object(
-            trade_executor.clob_client, "place_order", side_effect=failing_then_succeeding
+            trade_executor.clob_client,
+            "place_order",
+            side_effect=failing_then_succeeding,
         ):
             trade = {
                 "tx_hash": "0x123",

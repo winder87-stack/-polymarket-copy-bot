@@ -48,12 +48,14 @@ class HealthStatus(BaseModel):
 class SystemHealthCheck:
     """System health check functionality"""
 
-    def __init__(self, project_root: Optional[Path] = None):
+    def __init__(self, project_root: Optional[Path] = None) -> None:
         self.project_root = project_root or Path(__file__).parent.parent
         self.env_manager = EnvironmentManager(self.project_root)
         self.dep_manager = DependencyManager(self.project_root)
 
-    async def check_overall_health(self, environment: str = "production") -> HealthStatus:
+    async def check_overall_health(
+        self, environment: str = "production"
+    ) -> HealthStatus:
         """Perform comprehensive health check"""
         checks = {}
         issues = []
@@ -91,7 +93,9 @@ class SystemHealthCheck:
                 "total": len(dep_statuses),
                 "installed": len([s for s in dep_statuses if s.is_installed]),
                 "critical_installed": len([s for s in critical_deps if s.is_installed]),
-                "vulnerabilities": len(self.dep_manager.check_vulnerabilities(environment)),
+                "vulnerabilities": len(
+                    self.dep_manager.check_vulnerabilities(environment)
+                ),
             }
 
             missing_critical = [s.name for s in critical_deps if not s.is_installed]
@@ -136,8 +140,12 @@ class SystemHealthCheck:
             "cpu_percent": psutil.cpu_percent(interval=1),
             "memory_percent": psutil.virtual_memory().percent,
             "disk_usage": psutil.disk_usage(self.project_root).percent,
-            "memory_available_gb": round(psutil.virtual_memory().available / (1024**3), 2),
-            "disk_available_gb": round(psutil.disk_usage(self.project_root).free / (1024**3), 2),
+            "memory_available_gb": round(
+                psutil.virtual_memory().available / (1024**3), 2
+            ),
+            "disk_available_gb": round(
+                psutil.disk_usage(self.project_root).free / (1024**3), 2
+            ),
         }
 
     def _check_services(self, environment: str) -> Dict[str, Any]:
@@ -163,15 +171,16 @@ class SystemHealthCheck:
             try:
                 import subprocess
 
-                service_name = (
-                    f"polymarket-bot{'-' + environment if environment != 'production' else ''}"
-                )
+                service_name = f"polymarket-bot{'-' + environment if environment != 'production' else ''}"
                 result = subprocess.run(
-                    ["systemctl", "is-active", service_name], capture_output=True, text=True
+                    ["systemctl", "is-active", service_name],
+                    capture_output=True,
+                    text=True,
                 )
 
                 services["systemd_service"] = result.stdout.strip()
-            except Exception:
+            except (subprocess.SubprocessError, FileNotFoundError, OSError) as e:
+                logger.debug(f"Failed to check systemd service: {e}")
                 services["systemd_service"] = "unknown"
 
         return services
@@ -192,7 +201,12 @@ class SystemHealthCheck:
                     data = tomllib.load(f)
                 return data.get("tool", {}).get("poetry", {}).get("version", "unknown")
 
-        except Exception:
+        except (IOError, OSError, KeyError) as e:
+            logger.debug(f"Failed to read version: {e}")
+            pass
+        except Exception as e:
+            # Handle tomllib-specific errors separately
+            logger.debug(f"Failed to parse version: {e}")
             pass
 
         return "unknown"
@@ -209,7 +223,9 @@ class SystemHealthCheck:
             if not req_file.exists():
                 result["reproducible"] = False
                 result["issues"].append("Requirements file missing")
-                result["recommendations"].append("Run: python utils/dependency_manager.py generate")
+                result["recommendations"].append(
+                    "Run: python utils/dependency_manager.py generate"
+                )
 
             # Check environment template
             env_template = self.project_root / f"env-{environment}-template.txt"
@@ -237,12 +253,12 @@ if FastAPI:
     health_checker = SystemHealthCheck()
 
     @app.get("/health", response_model=HealthStatus)
-    async def get_health(environment: str = "production"):
+    async def get_health(environment: str = "production") -> Dict[str, Any]:
         """Get comprehensive health status"""
         return await health_checker.check_overall_health(environment)
 
     @app.get("/health/environment")
-    async def get_environment_health(environment: str = "production"):
+    async def get_environment_health(environment: str = "production") -> Dict[str, Any]:
         """Get environment-specific health"""
         env_health = health_checker.env_manager.validate_environment(environment)
         return {
@@ -259,7 +275,7 @@ if FastAPI:
         }
 
     @app.get("/health/dependencies")
-    async def get_dependency_health(environment: str = "production"):
+    async def get_dependency_health(environment: str = "production") -> Dict[str, Any]:
         """Get dependency health status"""
         statuses = health_checker.dep_manager.get_dependency_status(environment)
         vulnerabilities = health_checker.dep_manager.check_vulnerabilities(environment)
@@ -291,16 +307,20 @@ if FastAPI:
         }
 
     @app.get("/health/reproducibility")
-    async def get_reproducibility_status(environment: str = "production"):
+    async def get_reproducibility_status(
+        environment: str = "production",
+    ) -> Dict[str, Any]:
         """Check environment reproducibility"""
         return await health_checker.check_environment_reproduction(environment)
 
 
-def main():
+def main() -> int:
     """CLI interface for health checks"""
     import argparse
 
-    parser = argparse.ArgumentParser(description="Health Check System for Polymarket Copy Bot")
+    parser = argparse.ArgumentParser(
+        description="Health Check System for Polymarket Copy Bot"
+    )
     parser.add_argument("action", choices=["check", "serve", "reproduce"])
     parser.add_argument("--env", default="production", help="Environment name")
     parser.add_argument("--port", type=int, default=8000, help="Port for health API")
@@ -334,7 +354,7 @@ def main():
     elif args.action == "serve":
         if not FastAPI:
             print("❌ FastAPI not available. Install with: pip install fastapi uvicorn")
-            sys.exit(1)
+            return 1
 
         print(f"🚀 Starting health check API on port {args.port}")
         uvicorn.run(app, host="0.0.0.0", port=args.port)
@@ -347,6 +367,8 @@ def main():
 
         asyncio.run(run_reproduce())
 
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

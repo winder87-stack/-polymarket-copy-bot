@@ -53,7 +53,9 @@ class SimpleMarketMakerDetector:
         recent_trades = [
             trade
             for trade in trades
-            if datetime.fromisoformat(trade.get("timestamp", datetime.now().isoformat()))
+            if datetime.fromisoformat(
+                trade.get("timestamp", datetime.now().isoformat())
+            )
             > analysis_cutoff
         ]
 
@@ -92,7 +94,9 @@ class SimpleMarketMakerDetector:
             "metrics": metrics,
         }
 
-    def _calculate_behavioral_metrics(self, trades: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _calculate_behavioral_metrics(
+        self, trades: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Calculate behavioral metrics"""
 
         metrics = {
@@ -110,7 +114,9 @@ class SimpleMarketMakerDetector:
         metrics["temporal_metrics"] = self._analyze_temporal_patterns(sorted_trades)
 
         # Directional Analysis
-        metrics["directional_metrics"] = self._analyze_directional_patterns(sorted_trades)
+        metrics["directional_metrics"] = self._analyze_directional_patterns(
+            sorted_trades
+        )
 
         # Position Analysis
         metrics["position_metrics"] = self._analyze_position_patterns(sorted_trades)
@@ -119,11 +125,15 @@ class SimpleMarketMakerDetector:
         metrics["market_metrics"] = self._analyze_market_patterns(sorted_trades)
 
         # Consistency Analysis
-        metrics["consistency_metrics"] = self._analyze_consistency_patterns(sorted_trades)
+        metrics["consistency_metrics"] = self._analyze_consistency_patterns(
+            sorted_trades
+        )
 
         return metrics
 
-    def _analyze_temporal_patterns(self, trades: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _analyze_temporal_patterns(
+        self, trades: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Analyze temporal trading patterns"""
 
         if not trades:
@@ -144,11 +154,15 @@ class SimpleMarketMakerDetector:
             "trading_hours_uniformity": 0.8,  # Simplified
         }
 
-    def _analyze_directional_patterns(self, trades: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _analyze_directional_patterns(
+        self, trades: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Analyze buy/sell directional patterns"""
 
         buy_count = sum(1 for trade in trades if trade.get("side", "").upper() == "BUY")
-        sell_count = sum(1 for trade in trades if trade.get("side", "").upper() == "SELL")
+        sell_count = sum(
+            1 for trade in trades if trade.get("side", "").upper() == "SELL"
+        )
 
         total_trades = len(trades)
         buy_ratio = buy_count / total_trades if total_trades > 0 else 0
@@ -163,10 +177,16 @@ class SimpleMarketMakerDetector:
             "balance_score": balance_score,
         }
 
-    def _analyze_position_patterns(self, trades: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _analyze_position_patterns(
+        self, trades: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Analyze position sizing patterns"""
 
-        amounts = [abs(float(trade.get("amount", 0))) for trade in trades if trade.get("amount")]
+        amounts = [
+            abs(float(trade.get("amount", 0)))
+            for trade in trades
+            if trade.get("amount")
+        ]
 
         # Position size analysis
         if amounts:
@@ -207,7 +227,9 @@ class SimpleMarketMakerDetector:
             "market_diversity": min(num_markets / 5, 1.0),  # Scale to 0-1
         }
 
-    def _analyze_consistency_patterns(self, trades: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _analyze_consistency_patterns(
+        self, trades: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Analyze trading consistency"""
 
         # Simplified consistency analysis
@@ -228,28 +250,37 @@ class SimpleMarketMakerDetector:
 
         # High-frequency trading (weight: 0.25)
         trades_per_hour = metrics.get("temporal_metrics", {}).get("trades_per_hour", 0)
-        freq_score = min(trades_per_hour / self.thresholds["high_frequency_threshold"], 1.0)
+        freq_score = min(
+            trades_per_hour / self.thresholds["high_frequency_threshold"], 1.0
+        )
         score += freq_score * 0.25
         total_weight += 0.25
 
         # Buy/sell balance (weight: 0.20)
         balance_score = metrics.get("directional_metrics", {}).get("balance_score", 0)
         balance_threshold = 1 - self.thresholds["balance_ratio_threshold"]
-        balance_contribution = max(0, (balance_score - balance_threshold) / (1 - balance_threshold))
+        balance_contribution = max(
+            0, (balance_score - balance_threshold) / (1 - balance_threshold)
+        )
         score += balance_contribution * 0.20
         total_weight += 0.20
 
         # Multi-market trading (weight: 0.15)
         markets_count = metrics.get("market_metrics", {}).get("markets_traded_count", 0)
-        market_score = min(markets_count / self.thresholds["multi_market_threshold"], 1.0)
+        market_score = min(
+            markets_count / self.thresholds["multi_market_threshold"], 1.0
+        )
         score += market_score * 0.15
         total_weight += 0.15
 
         # Volume consistency (weight: 0.10)
-        volume_consistency = metrics.get("consistency_metrics", {}).get("volume_consistency", 0)
+        volume_consistency = metrics.get("consistency_metrics", {}).get(
+            "volume_consistency", 0
+        )
         consistency_threshold = self.thresholds["consistency_threshold"]
         consistency_contribution = max(
-            0, (volume_consistency - consistency_threshold) / (1 - consistency_threshold)
+            0,
+            (volume_consistency - consistency_threshold) / (1 - consistency_threshold),
         )
         score += consistency_contribution * 0.10
         total_weight += 0.10
@@ -345,7 +376,9 @@ class MarketMakerDetectionRunner:
             logger.error(f"Error loading wallets: {e}")
             return []
 
-    def generate_mock_trade_data(self, wallet_address: str, days: int = 7) -> List[Dict[str, Any]]:
+    def generate_mock_trade_data(
+        self, wallet_address: str, days: int = 7
+    ) -> List[Dict[str, Any]]:
         """
         Generate realistic mock trade data for analysis demonstration.
         """
@@ -459,13 +492,17 @@ class MarketMakerDetectionRunner:
     async def run_detection_on_all_wallets(self) -> Dict[str, Any]:
         """Run detection analysis on all configured wallets"""
 
-        logger.info(f"🚀 Starting market maker detection for {len(self.wallets)} wallets...")
+        logger.info(
+            f"🚀 Starting market maker detection for {len(self.wallets)} wallets..."
+        )
 
         successful_analyses = 0
         failed_analyses = 0
 
         for i, wallet_address in enumerate(self.wallets, 1):
-            logger.info(f"🔍 Analyzing wallet {i}/{len(self.wallets)}: {wallet_address[:10]}...")
+            logger.info(
+                f"🔍 Analyzing wallet {i}/{len(self.wallets)}: {wallet_address[:10]}..."
+            )
 
             analysis = await self.run_detection_on_wallet(wallet_address)
 
@@ -511,7 +548,9 @@ class MarketMakerDetectionRunner:
             "average_mm_probability": (
                 sum(probabilities) / len(probabilities) if probabilities else 0
             ),
-            "average_confidence": sum(confidences) / len(confidences) if confidences else 0,
+            "average_confidence": sum(confidences) / len(confidences)
+            if confidences
+            else 0,
             "market_maker_percentage": classifications.get("market_maker", 0)
             / len(self.analysis_results)
             * 100,
@@ -533,17 +572,27 @@ class MarketMakerDetectionRunner:
         results = summary.get("results_summary", {})
         if results:
             print("\n🎯 Results Summary:")
-            print(f"   Average MM Probability: {results.get('average_mm_probability', 0):.3f}")
+            print(
+                f"   Average MM Probability: {results.get('average_mm_probability', 0):.3f}"
+            )
             print(f"   Average Confidence: {results.get('average_confidence', 0):.3f}")
-            print(f"   Market Maker Percentage: {results.get('market_maker_percentage', 0):.1f}%")
+            print(
+                f"   Market Maker Percentage: {results.get('market_maker_percentage', 0):.1f}%"
+            )
             print(
                 f"   High Confidence Classifications: {results.get('high_confidence_classifications', 0)}"
             )
 
             print("\n📈 Classification Distribution:")
-            for classification, count in results.get("classification_distribution", {}).items():
-                percentage = count / sum(results["classification_distribution"].values()) * 100
-                print(f"   {classification.replace('_', ' ').title()}: {count} ({percentage:.1f}%)")
+            for classification, count in results.get(
+                "classification_distribution", {}
+            ).items():
+                percentage = (
+                    count / sum(results["classification_distribution"].values()) * 100
+                )
+                print(
+                    f"   {classification.replace('_', ' ').title()}: {count} ({percentage:.1f}%)"
+                )
 
         print("\n" + "=" * 60)
 

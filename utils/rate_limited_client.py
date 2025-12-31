@@ -133,7 +133,9 @@ class RateLimitedPolygonscanClient:
                 if response.status == 429:
                     raise RateLimitError("Polygonscan rate limit exceeded")
                 elif response.status != 200:
-                    raise PolygonscanError(f"Polygonscan API error: HTTP {response.status}")
+                    raise PolygonscanError(
+                        f"Polygonscan API error: HTTP {response.status}"
+                    )
 
                 data = await response.json()
 
@@ -141,22 +143,29 @@ class RateLimitedPolygonscanClient:
                 if data.get("status") == "0":
                     error_msg = data.get("message", "Unknown error")
                     if "rate limit" in error_msg.lower():
-                        raise RateLimitError(f"Polygonscan API rate limited: {error_msg}")
+                        raise RateLimitError(
+                            f"Polygonscan API rate limited: {error_msg}"
+                        )
                     else:
                         raise PolygonscanError(f"Polygonscan API error: {error_msg}")
 
                 # Handle both v1 and v2 API response formats
-                if (data.get("status") == "1" and data.get("message") == "OK") or data.get(
-                    "status"
-                ) == "success":
+                if (
+                    data.get("status") == "1" and data.get("message") == "OK"
+                ) or data.get("status") == "success":
                     transactions = data.get("result", [])
 
                     # Handle different response structures
-                    if isinstance(transactions, dict) and "transactions" in transactions:
+                    if (
+                        isinstance(transactions, dict)
+                        and "transactions" in transactions
+                    ):
                         transactions = transactions["transactions"]
 
                     if not isinstance(transactions, list):
-                        raise PolygonscanError(f"Unexpected response format: {type(transactions)}")
+                        raise PolygonscanError(
+                            f"Unexpected response format: {type(transactions)}"
+                        )
 
                     # Limit transactions for performance
                     if len(transactions) > max_transactions:
@@ -192,7 +201,9 @@ class RateLimitedPolygonscanClient:
         for address in addresses:
             try:
                 logger.debug(f"Fetching transactions for {address}")
-                txs = await self.get_transactions(address, start_block, end_block, max_transactions)
+                txs = await self.get_transactions(
+                    address, start_block, end_block, max_transactions
+                )
                 results[address] = txs
                 logger.debug(f"Retrieved {len(txs)} transactions for {address}")
             except Exception as e:
@@ -260,7 +271,9 @@ class RateLimitedPolymarketClient:
                 from py_clob_client.client import ClobClient
                 from py_clob_client.constants import POLYGON
 
-                client = ClobClient(host=self.host, key=self.private_key, chain_id=POLYGON)
+                client = ClobClient(
+                    host=self.host, key=self.private_key, chain_id=POLYGON
+                )
 
                 # Map method names to client methods
                 if method == "get_balance":

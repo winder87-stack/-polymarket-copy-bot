@@ -19,9 +19,11 @@ import json
 import logging
 from collections import defaultdict
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
+from scipy import stats
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import Matern
 
@@ -36,7 +38,7 @@ class ParameterOptimizer:
     and stability analysis to ensure robust parameter selection.
     """
 
-    def __init__(self, backtesting_engine):
+    def __init__(self, backtesting_engine) -> None:
         self.backtesting_engine = backtesting_engine
 
         # Optimization configuration
@@ -83,14 +85,22 @@ class ParameterOptimizer:
                 "diversification_clusters": {"min": 3, "max": 8, "type": "int"},
             },
             "adaptive_strategy_engine": {
-                "strategy_switch_threshold": {"min": 0.05, "max": 0.25, "type": "float"},
+                "strategy_switch_threshold": {
+                    "min": 0.05,
+                    "max": 0.25,
+                    "type": "float",
+                },
                 "hysteresis_band": {"min": 0.01, "max": 0.10, "type": "float"},
                 "performance_window_days": {"min": 3, "max": 14, "type": "int"},
                 "min_confidence_threshold": {"min": 0.4, "max": 0.8, "type": "float"},
             },
             "market_maker_tactics": {
                 "min_spread_capture_pct": {"min": 0.01, "max": 0.10, "type": "float"},
-                "inventory_rebalance_threshold": {"min": 0.1, "max": 0.4, "type": "float"},
+                "inventory_rebalance_threshold": {
+                    "min": 0.1,
+                    "max": 0.4,
+                    "type": "float",
+                },
                 "gas_efficiency_threshold": {"min": 0.5, "max": 0.9, "type": "float"},
             },
         }
@@ -128,10 +138,11 @@ class ParameterOptimizer:
             Complete optimization results with validation
         """
 
-        optimization_result = {
+        optimization_result: Dict[str, Any] = {
             "strategy_name": strategy_name,
             "optimization_method": optimization_method,
-            "parameter_space": parameter_space or self.parameter_definitions.get(strategy_name, {}),
+            "parameter_space": parameter_space
+            or self.parameter_definitions.get(strategy_name, {}),
             "optimal_parameters": {},
             "optimization_path": [],
             "validation_results": {},
@@ -142,7 +153,9 @@ class ParameterOptimizer:
 
         try:
             # Get parameter space
-            param_space = parameter_space or self.parameter_definitions.get(strategy_name, {})
+            param_space = parameter_space or self.parameter_definitions.get(
+                strategy_name, {}
+            )
 
             if not param_space:
                 optimization_result["error"] = (
@@ -152,11 +165,17 @@ class ParameterOptimizer:
 
             # Run optimization based on method
             if optimization_method == "grid":
-                optimal_params, optimization_path = await self._grid_search_optimization(
+                (
+                    optimal_params,
+                    optimization_path,
+                ) = await self._grid_search_optimization(
                     strategy_name, param_space, dataset, start_date, end_date, capital
                 )
             elif optimization_method == "genetic":
-                optimal_params, optimization_path = await self._genetic_algorithm_optimization(
+                (
+                    optimal_params,
+                    optimization_path,
+                ) = await self._genetic_algorithm_optimization(
                     strategy_name, param_space, dataset, start_date, end_date, capital
                 )
             elif optimization_method == "bayesian":
@@ -164,7 +183,9 @@ class ParameterOptimizer:
                     strategy_name, param_space, dataset, start_date, end_date, capital
                 )
             else:
-                optimization_result["error"] = f"Unknown optimization method: {optimization_method}"
+                optimization_result["error"] = (
+                    f"Unknown optimization method: {optimization_method}"
+                )
                 return optimization_result
 
             optimization_result["optimal_parameters"] = optimal_params
@@ -254,7 +275,9 @@ class ParameterOptimizer:
 
         return best_params, optimization_path
 
-    def _generate_parameter_grid(self, param_space: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _generate_parameter_grid(
+        self, param_space: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """Generate parameter grid for grid search."""
 
         # Simplified grid generation - in practice would use more sophisticated sampling
@@ -262,7 +285,14 @@ class ParameterOptimizer:
 
         # For demonstration, generate a smaller grid
         n_points_per_param = min(
-            5, max(1, int(self.optimization_config["grid_search_points"] ** (1 / len(param_space))))
+            5,
+            max(
+                1,
+                int(
+                    float(self.optimization_config["grid_search_points"])
+                    ** (1 / len(param_space))
+                ),
+            ),
         )
 
         # Generate parameter values
@@ -273,7 +303,9 @@ class ParameterOptimizer:
             param_type = param_def["type"]
 
             if param_type == "int":
-                values = np.linspace(param_min, param_max, n_points_per_param, dtype=int)
+                values = np.linspace(
+                    param_min, param_max, n_points_per_param, dtype=int
+                )
             else:
                 values = np.linspace(param_min, param_max, n_points_per_param)
 
@@ -357,9 +389,13 @@ class ParameterOptimizer:
 
             # Create next generation
             if generation < generations - 1:
-                population = self._evolve_population(population, fitness_scores, param_space)
+                population = self._evolve_population(
+                    population, fitness_scores, param_space
+                )
 
-            logger.debug(f"Generation {generation + 1}: best fitness = {max(fitness_scores):.4f}")
+            logger.debug(
+                f"Generation {generation + 1}: best fitness = {max(fitness_scores):.4f}"
+            )
 
         return best_individual or {}, optimization_path
 
@@ -431,14 +467,19 @@ class ParameterOptimizer:
         """Tournament selection for genetic algorithm."""
 
         tournament_size = 3
-        tournament_indices = np.random.choice(len(population), tournament_size, replace=False)
+        tournament_indices = np.random.choice(
+            len(population), tournament_size, replace=False
+        )
         tournament_fitness = [fitness_scores[i] for i in tournament_indices]
         winner_idx = tournament_indices[np.argmax(tournament_fitness)]
 
         return population[winner_idx]
 
     def _crossover(
-        self, parent1: Dict[str, Any], parent2: Dict[str, Any], param_space: Dict[str, Any]
+        self,
+        parent1: Dict[str, Any],
+        parent2: Dict[str, Any],
+        param_space: Dict[str, Any],
     ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """Perform crossover between two parents."""
 
@@ -455,7 +496,9 @@ class ParameterOptimizer:
 
         return child1, child2
 
-    def _mutate(self, individual: Dict[str, Any], param_space: Dict[str, Any]) -> Dict[str, Any]:
+    def _mutate(
+        self, individual: Dict[str, Any], param_space: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Apply mutation to individual."""
 
         mutated = individual.copy()
@@ -494,7 +537,11 @@ class ParameterOptimizer:
         """Perform Bayesian optimization."""
 
         # Set up Gaussian process
-        kernel = Matern(nu=2.5) if self.optimization_config["bayesian_kernel"] == "matern" else None
+        kernel = (
+            Matern(nu=2.5)
+            if self.optimization_config["bayesian_kernel"] == "matern"
+            else None
+        )
 
         gp = GaussianProcessRegressor(
             kernel=kernel, alpha=1e-6, normalize_y=True, n_restarts_optimizer=10
@@ -528,12 +575,19 @@ class ParameterOptimizer:
                     gp.fit(X_train, y_train)
 
                     # Find next point to evaluate (Expected Improvement)
-                    next_point = self._acquire_next_point(gp, param_space, X_train, y_train)
+                    next_point = self._acquire_next_point(
+                        gp, param_space, X_train, y_train
+                    )
 
                     # Evaluate next point
                     next_params = dict(zip(param_space.keys(), next_point))
                     evaluation = await self._evaluate_parameter_combination(
-                        strategy_name, next_params, dataset, start_date, end_date, capital
+                        strategy_name,
+                        next_params,
+                        dataset,
+                        start_date,
+                        end_date,
+                        capital,
                     )
 
                     # Add to observations
@@ -549,10 +603,14 @@ class ParameterOptimizer:
                         }
                     )
 
-                    logger.debug(f"BO iteration {iteration + 1}: score = {evaluation['score']:.4f}")
+                    logger.debug(
+                        f"BO iteration {iteration + 1}: score = {evaluation['score']:.4f}"
+                    )
 
             except Exception as e:
-                logger.error(f"Error in Bayesian optimization iteration {iteration}: {e}")
+                logger.error(
+                    f"Error in Bayesian optimization iteration {iteration}: {e}"
+                )
                 break
 
         # Find best parameters
@@ -792,18 +850,22 @@ class ParameterOptimizer:
         }
 
         # Use existing walk-forward method from backtesting engine
-        walk_forward_results = await self.backtesting_engine.run_walk_forward_optimization(
-            [self._create_strategy_config(strategy_name, optimal_params)],
-            dataset,
-            start_date,
-            end_date,
+        walk_forward_results = (
+            await self.backtesting_engine.run_walk_forward_optimization(
+                [self._create_strategy_config(strategy_name, optimal_params)],
+                dataset,
+                start_date,
+                end_date,
+            )
         )
 
         if walk_forward_results and "walk_forward_windows" in walk_forward_results:
             wf_scores = []
             for window in walk_forward_results["walk_forward_windows"]:
                 testing_perf = window.get("testing_performance", {})
-                score = testing_perf.get(self.optimization_config["optimization_target"], 0)
+                score = testing_perf.get(
+                    self.optimization_config["optimization_target"], 0
+                )
                 wf_scores.append(score)
 
                 wf_results["walk_forward_scores"].append(
@@ -879,7 +941,9 @@ class ParameterOptimizer:
 
         for param_name, param_value in optimal_params.items():
             # Test parameter variations
-            param_def = self.parameter_definitions.get(strategy_name, {}).get(param_name, {})
+            param_def = self.parameter_definitions.get(strategy_name, {}).get(
+                param_name, {}
+            )
             param_min = param_def.get("min", param_value * 0.5)
             param_max = param_def.get("max", param_value * 1.5)
             param_type = param_def.get("type", "float")
@@ -953,11 +1017,15 @@ class ParameterOptimizer:
 
         # Find values within 5% of optimal score
         threshold_score = optimal_score * 0.95
-        robust_values = [v for v, s in zip(test_values, test_scores) if s >= threshold_score]
+        robust_values = [
+            v for v, s in zip(test_values, test_scores) if s >= threshold_score
+        ]
 
         return {
             "robust_values": robust_values,
-            "robust_range_width": max(robust_values) - min(robust_values) if robust_values else 0,
+            "robust_range_width": max(robust_values) - min(robust_values)
+            if robust_values
+            else 0,
             "robustness_score": len(robust_values) / len(test_values),
         }
 
@@ -1008,7 +1076,9 @@ class ParameterOptimizer:
 
         return robustness_results
 
-    def _create_validation_summary(self, validation_results: Dict[str, Any]) -> Dict[str, Any]:
+    def _create_validation_summary(
+        self, validation_results: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Create validation summary with recommendations."""
 
         summary = {
@@ -1028,20 +1098,28 @@ class ParameterOptimizer:
             oos_ratio = oos.get("oos_ratio", 0)
             if oos_ratio > 0.8:
                 scores.append(1.0)
-                summary["validation_strengths"].append("Strong out-of-sample performance")
+                summary["validation_strengths"].append(
+                    "Strong out-of-sample performance"
+                )
             elif oos_ratio > 0.6:
                 scores.append(0.7)
-                summary["validation_concerns"].append("Moderate out-of-sample degradation")
+                summary["validation_concerns"].append(
+                    "Moderate out-of-sample degradation"
+                )
             else:
                 scores.append(0.3)
-                summary["validation_concerns"].append("Significant out-of-sample degradation")
+                summary["validation_concerns"].append(
+                    "Significant out-of-sample degradation"
+                )
 
             # Walk-forward validation
             wf = validation_results.get("walk_forward_validation", {})
             wf_volatility = wf.get("wf_volatility", 1.0)
             if wf_volatility < 0.2:
                 scores.append(1.0)
-                summary["validation_strengths"].append("Stable walk-forward performance")
+                summary["validation_strengths"].append(
+                    "Stable walk-forward performance"
+                )
             else:
                 scores.append(0.5)
                 summary["validation_concerns"].append("High walk-forward volatility")
@@ -1052,15 +1130,21 @@ class ParameterOptimizer:
             cv_mean = cv.get("cv_mean", 0)
             if cv_std / abs(cv_mean) < 0.3 if cv_mean != 0 else False:
                 scores.append(1.0)
-                summary["validation_strengths"].append("Consistent cross-validation performance")
+                summary["validation_strengths"].append(
+                    "Consistent cross-validation performance"
+                )
             else:
                 scores.append(0.6)
-                summary["validation_concerns"].append("Variable cross-validation results")
+                summary["validation_concerns"].append(
+                    "Variable cross-validation results"
+                )
 
             # Parameter sensitivity
             sensitivity = validation_results.get("parameter_sensitivity", {})
             high_sensitivity_params = [
-                param for param, data in sensitivity.items() if data.get("sensitivity", 0) > 0.25
+                param
+                for param, data in sensitivity.items()
+                if data.get("sensitivity", 0) > 0.25
             ]
 
             if not high_sensitivity_params:
@@ -1123,7 +1207,9 @@ class ParameterOptimizer:
         try:
             # Divide time period into windows
             total_days = (end_date - start_date).days
-            window_size = max(30, total_days // self.optimization_config["stability_windows"])
+            window_size = max(
+                30, total_days // self.optimization_config["stability_windows"]
+            )
 
             stability_scores = defaultdict(list)
 
@@ -1136,7 +1222,11 @@ class ParameterOptimizer:
 
                 # Optimize parameters for this window
                 window_optimization = await self.optimize_strategy_parameters(
-                    strategy_name, dataset, window_start, window_end, optimization_method="bayesian"
+                    strategy_name,
+                    dataset,
+                    window_start,
+                    window_end,
+                    optimization_method="bayesian",
                 )
 
                 window_params = window_optimization.get("optimal_parameters", {})
@@ -1148,13 +1238,17 @@ class ParameterOptimizer:
                         window_value = window_params[param_name]
 
                         if overall_value != 0:
-                            deviation = abs(window_value - overall_value) / abs(overall_value)
+                            deviation = abs(window_value - overall_value) / abs(
+                                overall_value
+                            )
                             stability_scores[param_name].append(deviation)
 
             # Calculate stability metrics
             for param_name, deviations in stability_scores.items():
                 if deviations:
-                    stability_score = 1 - np.mean(deviations)  # Lower deviation = higher stability
+                    stability_score = 1 - np.mean(
+                        deviations
+                    )  # Lower deviation = higher stability
                     stability_results["parameter_stability_scores"][param_name] = {
                         "stability_score": stability_score,
                         "mean_deviation": np.mean(deviations),
@@ -1178,7 +1272,9 @@ class ParameterOptimizer:
             # Stability recommendations
             unstable_params = [
                 param
-                for param, data in stability_results["parameter_stability_scores"].items()
+                for param, data in stability_results[
+                    "parameter_stability_scores"
+                ].items()
                 if data["stability_score"] < 0.7
             ]
 
@@ -1227,7 +1323,9 @@ class ParameterOptimizer:
             # Parameter stability
             stability_scores = [
                 data.get("stability_score", 0.5)
-                for data in stability_analysis.get("parameter_stability_scores", {}).values()
+                for data in stability_analysis.get(
+                    "parameter_stability_scores", {}
+                ).values()
             ]
             avg_stability = np.mean(stability_scores) if stability_scores else 0.5
             scores.append(avg_stability)
@@ -1247,9 +1345,9 @@ class ParameterOptimizer:
                 "oos_degradation": oos_perf.get("oos_degradation", 0),
                 "validation_confidence": validation_score,
                 "parameter_stability": avg_stability,
-                "walk_forward_avg_score": validation_results.get("walk_forward_validation", {}).get(
-                    "average_wf_score", 0
-                ),
+                "walk_forward_avg_score": validation_results.get(
+                    "walk_forward_validation", {}
+                ).get("average_wf_score", 0),
             }
 
             # Assessments
@@ -1300,9 +1398,9 @@ Optimization Performance Summary:
 - Production Readiness: {readiness}
 
 Key Metrics:
-- Out-of-Sample Performance: {summary['key_performance_metrics']['out_of_sample_ratio']:.2f}
-- Parameter Stability Score: {summary['key_performance_metrics']['parameter_stability']:.2f}
-- Validation Confidence: {summary['key_performance_metrics']['validation_confidence']:.2f}
+- Out-of-Sample Performance: {summary["key_performance_metrics"]["out_of_sample_ratio"]:.2f}
+- Parameter Stability Score: {summary["key_performance_metrics"]["parameter_stability"]:.2f}
+- Validation Confidence: {summary["key_performance_metrics"]["validation_confidence"]:.2f}
 """
 
         return summary_text.strip()
